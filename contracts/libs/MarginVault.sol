@@ -163,32 +163,20 @@ library MarginVault {
     }
 
     /**
-     * @dev increase the collateral balance in a vault
+     * @dev increase the collaterals balances in a vault
      * @param _vault vault to add collateral to
-     * @param _collateralAsset address of the _collateralAsset being added to the user's vault
-     * @param _amount number of _collateralAssets being added to the user's vault
-     * @param _index index of _collateralAssets in the user's vault.collateralAssets array
+     * @param _collateralAssets addresses of the _collateralAssets being added to the user's vault
+     * @param _amounts number of _collateralAssets being added to the user's vault
      */
-    function addCollateral(
+    function addCollaterals(
         Vault storage _vault,
-        address _collateralAsset,
-        uint256 _amount,
-        uint256 _index
+        address[] calldata _collateralAssets,
+        uint256[] calldata _amounts
     ) external {
-        require(_amount > 0, "V7");
-
-        // valid indexes in any array are between 0 and array.length - 1.
-        // if adding an amount to an preexisting short oToken, check that _index is in the range of 0->length-1
-        if ((_index == _vault.collateralAssets.length) && (_index == _vault.collateralAmounts.length)) {
-            _vault.collateralAssets.push(_collateralAsset);
-            _vault.collateralAmounts.push(_amount);
-        } else {
-            require((_index < _vault.collateralAssets.length) && (_index < _vault.collateralAmounts.length), "V8");
-            address existingCollateral = _vault.collateralAssets[_index];
-            require((existingCollateral == _collateralAsset) || (existingCollateral == address(0)), "V9");
-
-            _vault.collateralAmounts[_index] = _vault.collateralAmounts[_index].add(_amount);
-            _vault.collateralAssets[_index] = _collateralAsset;
+        require(_collateralAssets.length == _amounts.length, "_collateralAssets and _amounts length mismatch");
+        for (uint256 i = 0; i < _collateralAssets.length; i++) {
+            _vault.collateralAmounts[i] = _vault.collateralAmounts[i].add(_amounts[i]);
+            _vault.unusedCollateralAmounts[i] = _vault.unusedCollateralAmounts[i].add(_amounts[i]);
         }
     }
 

@@ -650,6 +650,9 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             Actions.ActionArgs memory action = _actions[i];
             Actions.ActionType actionType = action.actionType;
 
+            // Check to assets and amounts length to be the same
+            require(action.assets.length == action.amounts.length, "assets and amounts length must be the same");
+
             // actions except Settle, Redeem, Liquidate and Call are "Vault-updating actinos"
             // only allow update 1 vault in each operate call
             if (
@@ -722,6 +725,7 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         uint256 vaultId = accountVaultCounter[_args.owner].add(1);
 
         require(_args.vaultId == vaultId, "C15");
+        require(whitelist.isWhitelistedOtoken(_args.oTokenAddress), "C23");
 
         // store new vault
         accountVaultCounter[_args.owner] = vaultId;
@@ -741,6 +745,7 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         notPartiallyPaused
         onlyAuthorized(msg.sender, _args.owner)
     {
+        // TODO for long restrict actions to 1 length amounts and 1 length assets
         require(_checkVaultId(_args.owner, _args.vaultId), "C35");
         // only allow vault owner or vault operator to deposit long otoken
         require((_args.from == msg.sender) || (_args.from == _args.owner), "C16");
@@ -751,10 +756,10 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
         require(block.timestamp < otoken.expiryTimestamp(), "C18");
 
-        vaults[_args.owner][_args.vaultId].addLong(_args.assets[0], _args.amount, _args.index);
-        pool.transferToPool(_args.assets[0], _args.from, _args.amount);
+        vaults[_args.owner][_args.vaultId].addLong(_args.assets[0], _args.amounts[0], _args.index);
+        pool.transferToPool(_args.assets[0], _args.from, _args.amounts[0]);
 
-        emit LongOtokenDeposited(_args.assets[0], _args.owner, _args.from, _args.vaultId, _args.amount);
+        emit LongOtokenDeposited(_args.assets[0], _args.owner, _args.from, _args.vaultId, _args.amounts[0]);
     }
 
     /**
@@ -796,25 +801,22 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
         uint256 collateralsLength = _args.assets.length;
 
-        for (uint256 i = 0; i < collateralsLength; i++) {
-            require(whitelist.isWhitelistedCollateral(_args.assets[i]), "C21");
-        }
+        require(whitelist.isWhitelistedCollaterals(_args.assets), "C21");
 
         (, uint256 typeVault, ) = getVaultWithDetails(_args.owner, _args.vaultId);
 
         for (uint256 i = 0; i < collateralsLength; i++) {
+            // TODO should exlude this case? partial collaterization
             if (typeVault == 1) {
-                nakedPoolBalance[_args.assets[i]] = nakedPoolBalance[_args.assets[i]].add(_args.amount);
+                nakedPoolBalance[_args.assets[i]] = nakedPoolBalance[_args.assets[i]].add(_args.amounts[0]);
 
                 require(nakedPoolBalance[_args.assets[i]] <= nakedCap[_args.assets[i]], "C37");
             }
 
-            vaults[_args.owner][_args.vaultId].addCollateral(_args.assets[i], _args.amount, _args.index);
-
-            pool.transferToPool(_args.assets[i], _args.from, _args.amount);
-
-            emit CollateralAssetDeposited(_args.assets[i], _args.owner, _args.from, _args.vaultId, _args.amount);
+            pool.transferToPool(_args.assets[i], _args.from, _args.amounts[i]);
+            emit CollateralAssetDeposited(_args.assets[i], _args.owner, _args.from, _args.vaultId, _args.amounts[i]);
         }
+        vaults[_args.owner][_args.vaultId].addCollaterals(_args.assets, _args.amounts);
     }
 
     /**

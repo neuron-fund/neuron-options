@@ -104,8 +104,11 @@ library Actions {
     struct OpenVaultArgs {
         // address of the account owner
         address owner;
+        // We restrict vault to be specific for existing oToken so it's collaterals assets will be the same as oToken's
+        address oTokenAddress;
         // vault id to create
         uint256 vaultId;
+        // TODO we do not use this, our vaults are always fully collaterized
         // vault type, 0 for spread/max loss and 1 for naked margin vault
         uint256 vaultType;
     }
@@ -123,7 +126,7 @@ library Actions {
         // in future versions this would be the index of the short / long / collateral asset that needs to be modified
         uint256 index;
         // amount of asset that is to be deposited
-        uint256 amount;
+        uint256[] amounts;
     }
 
     struct RedeemArgs {
@@ -200,7 +203,12 @@ library Actions {
         // for block.timestamp we only have 2 vault types
         require(vaultType < 2, "A3");
 
-        return OpenVaultArgs({owner: _args.owner, vaultId: _args.vaultId, vaultType: vaultType});
+        return OpenVaultArgs({
+            oTokenAddress: _args.secondAddress,
+            owner: _args.owner, 
+            vaultId: _args.vaultId, 
+            vaultType: vaultType
+        });
     }
 
     /**
@@ -262,7 +270,7 @@ library Actions {
                 from: _args.secondAddress,
                 assets: _args.assets,
                 index: _args.index,
-                amount: _args.amounts[0]
+                amounts: _args.amounts
             });
     }
 
@@ -284,6 +292,7 @@ library Actions {
                 owner: _args.owner,
                 vaultId: _args.vaultId,
                 to: _args.secondAddress,
+                // TODO is it correct to use the first asset here? If yes add check that assets and amounts is same length
                 asset: _args.assets[0],
                 index: _args.index,
                 amount: _args.amounts[0]
