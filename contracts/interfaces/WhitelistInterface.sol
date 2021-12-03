@@ -2,47 +2,50 @@
 pragma solidity 0.8.10;
 
 interface WhitelistInterface {
-    /* View functions */
-
     function addressBook() external view returns (address);
 
-    function isWhitelistedProduct(
-        address _underlying,
-        address _strike,
-        address[] calldata _collateral,
-        bool _isPut
-    ) external view returns (bool);
+    function blacklistCallee(address _callee) external;
 
-    function isWhitelistedCollateral(address _collateral) external view returns (bool);
+    function blacklistCollateral(address[] memory _collaterals) external;
 
-    function isWhitelistedOtoken(address _otoken) external view returns (bool);
-
-    function isWhitelistedCallee(address _callee) external view returns (bool);
-
-    /* Admin / factory only functions */
-    function whitelistProduct(
-        address _underlying,
-        address _strike,
-        address _collateral,
-        bool _isPut
-    ) external;
+    function blacklistOtoken(address _otokenAddress) external;
 
     function blacklistProduct(
         address _underlying,
         address _strike,
-        address _collateral,
+        address[] memory _collaterals,
         bool _isPut
     ) external;
 
-    function whitelistCollateral(address _collateral) external;
+    function isWhitelistedCallee(address _callee) external view returns (bool);
 
-    function blacklistCollateral(address _collateral) external;
+    function isWhitelistedCollaterals(address[] memory _collaterals) external view returns (bool);
 
-    function whitelistOtoken(address _otoken) external;
+    function isWhitelistedOtoken(address _otoken) external view returns (bool);
 
-    function blacklistOtoken(address _otoken) external;
+    function isWhitelistedProduct(
+        address _underlying,
+        address _strike,
+        address[] memory _collateral,
+        bool _isPut
+    ) external view returns (bool);
+
+    function owner() external view returns (address);
+
+    function renounceOwnership() external;
+
+    function transferOwnership(address newOwner) external;
 
     function whitelistCallee(address _callee) external;
 
-    function blacklistCallee(address _callee) external;
+    function whitelistCollaterals(address[] memory _collaterals) external;
+
+    function whitelistOtoken(address _otokenAddress) external;
+
+    function whitelistProduct(
+        address _underlying,
+        address _strike,
+        address[] memory _collaterals,
+        bool _isPut
+    ) external;
 }
