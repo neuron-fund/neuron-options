@@ -34,19 +34,21 @@ contract MarginCalculator is Ownable {
 
     /// @dev struct to store all needed vault details
     struct VaultDetails {
+        address oTokenAddress;
         address shortUnderlyingAsset;
         address shortStrikeAsset;
+        address[] shortAmounts;
         address[] shortCollateralAssets;
         address longUnderlyingAsset;
         address longStrikeAsset;
         address[] longCollateralAssets;
         uint256 shortStrikePrice;
         uint256 shortExpiryTimestamp;
-        // TODO shortCollateralDecimals
         uint256[] shortCollateralsDecimals;
         uint256 longStrikePrice;
         uint256 longExpiryTimestamp;
         uint256[] longCollateralsDecimals;
+        uint256[] collateralAmounts;
         uint256[] collateralsDecimals;
         uint256 vaultType;
         bool isShortPut;
@@ -368,6 +370,25 @@ contract MarginCalculator is Ownable {
     }
 
     /**
+     * @notice get an oToken's payout/cash value after expiry, in the collateral asset
+     * @param _otoken oToken address
+     * @param _amount amount of the oToken to calculate the payout for, always represented in 1e8
+     * @return amount of collateral to pay out
+     */
+    function getPayout(address _otoken, uint256 _amount) public view returns (uint256[] memory) {
+        // payoutsRaw continats amounts of each of collateral asset in collateral asset decimals to be paid out for 1e8 of the oToken
+        uint256[] memory payoutsRaw = calculator.getExpiredPayoutRate(_otoken);
+        uint256[] memory payouts = new uint256[](payoutsRaw.length);
+        for (uint256 i = 0; i < payoutsRaw.length; i++) {
+            // TODO is it possible to have significant precision loss here?
+            // TODO can it overflow uint256 on multiplication?
+            payouts[i] = payoutsRaw[i].mul(_amount).div(10**BASE);
+        }
+
+        return payouts;
+    }
+
+    /**
      * @notice return the cash value of an expired oToken, denominated in collateral
      * @param _otoken oToken address
      * @return how much collateral can be taken out by 1 otoken unit, scaled by 1e8,
@@ -377,7 +398,7 @@ contract MarginCalculator is Ownable {
         require(_otoken != address(0), "MarginCalculator: Invalid token address");
 
         OTokenDetails memory oTokenDetails = OTokenDetails(
-            new address[](0), // yvUSDC
+            new address[](0), // [yvUSDC, cUSDC, ...etc]
             address(0), // WETH
             address(0), // USDC
             0,
@@ -408,6 +429,7 @@ contract MarginCalculator is Ownable {
         // Amounts of collateral to transfer for 1 oToken
         uint256[] memory collateralsPayoutRate = new uint256[](oTokenDetails.collaterals.length);
 
+        // TODO this calculations should be done only once after oToken expiry but not on every redeem as its now. It will help save gas for redeemers
         for (uint256 i = 0; i < oTokenDetails.collaterals.length; i++) {
             // the exchangeRate was scaled by 1e8, if 1e8 otoken can take out 1 USDC, the exchangeRate is currently 1e8
             // we want to return: how much USDC units can be taken out by 1 (1e8 units) oToken
@@ -562,6 +584,7 @@ contract MarginCalculator is Ownable {
      * @param _vaultType vault type
      * @return the vault collateral amount, and marginRequired the minimal amount of collateral needed in a vault, scaled to 1e27
      */
+    // TODO this function is unused
     function getMarginRequired(MarginVault.Vault memory _vault, uint256 _vaultType)
         external
         view
@@ -590,47 +613,29 @@ contract MarginCalculator is Ownable {
         view
         returns (uint256[] memory, bool)
     {
-        // TODO just use vault's usedCollateralAmounts
+        // TODO should use usedCollateralAmounts or sub amounts from getPayout
         VaultDetails memory vaultDetails = _getVaultDetails(_vault, _vaultType);
 
         // include all the checks for to ensure the vault is valid
         _checkIsValidVault(_vault, vaultDetails);
 
         // if the vault contains no oTokens, return the amount of collateral
+        // TODO do we even need this check?
         if (!vaultDetails.hasShort && !vaultDetails.hasLong) {
-            uint256[] memory amount = vaultDetails.hasCollateral
-                ? _vault.collateralAmounts
-                : new uint256[](_vault.collateralAmounts.length);
-            return (amount, true);
+            // TODO check hasCollateral everywhere used it or not
+            return (_vault.collateralAmounts, true);
         }
 
-        // get required margin, denominated in collateral, scaled in 1e27
-        (
-            bool isExcess,
-            FPI.FixedPointInt[] memory collateralsAmounts,
-            FPI.FixedPointInt[] memory collateralRequired
-        ) = _getMarginRequired(_vault, vaultDetails);
-        FPI.FixedPointInt[] memory excessCollaterals = new FPI.FixedPointInt[](collateralsAmounts.length);
-
-        for (uint256 i = 0; i < collateralsAmounts.length; i++) {
-            excessCollaterals[i] = collateralsAmounts[i].sub(collateralRequired[i]);
+        if (vaultDetails.hasShort) {
+            uint256[] memory payoutForMintedOTokens = getPayout(_vault.oTokenAddress, _vault.shortAmounts[0]);
+            uint256[] memory unusedCollateral = new uint256[](_vault.collateralAssets.length);
+            for (uint256 i = 0; i < _vault.collateralAssets.length; i++) {
+                unusedCollateral[i] = _vault.collateralAmounts.sub(payoutForMintedOTokens[i]);
+            }
+            return (unusedCollateral, true);
+        } else {
+            // TODO hasLong?
         }
-
-        uint256[] memory collateralsDecimals = vaultDetails.hasLong
-            ? new uint256[](1)
-            : new uint256[](vaultDetails.shortCollateralAssets.length);
-
-        uint256[] memory excessCollateralExternal = new uint256[](collateralsDecimals.length);
-
-        for (uint256 i = 0; i < collateralsDecimals.length; i++) {
-            // if is excess, truncate the tailing digits in excessCollateralExternal calculation
-            excessCollateralExternal[i] = excessCollaterals[i].toScaledUint(
-                vaultDetails.hasLong ? vaultDetails.longCollateralsDecimals[i] : vaultDetails.collateralsDecimals[i],
-                isExcess
-            );
-        }
-
-        return (excessCollateralExternal, isExcess);
     }
 
     /**
@@ -1157,8 +1162,10 @@ contract MarginCalculator is Ownable {
         returns (VaultDetails memory)
     {
         VaultDetails memory vaultDetails = VaultDetails(
+            address(0), // address oTokenAddress;
             address(0), // address shortUnderlyingAsset;
             address(0), // address shortStrikeAsset;
+            new address[](0), // address[] shortAmounts;
             new address[](0), // address[] shortCollateralAssets;
             address(0), // address longUnderlyingAsset;
             address(0), // address longStrikeAsset;
@@ -1169,6 +1176,7 @@ contract MarginCalculator is Ownable {
             0, // uint256 longStrikePrice;
             0, // uint256 longExpiryTimestamp;
             new uint256[](0), // uint256 longCollateralDecimals;
+            new uint256[](0) // uint256[] collateralAmounts;
             new uint256[](0), // uint256[] collateralsDecimals;
             0, // uint256 vaultType;
             false, // bool isShortPut;
@@ -1184,6 +1192,9 @@ contract MarginCalculator is Ownable {
         vaultDetails.hasCollateral = _isNotEmpty(_vault.collateralAssets);
 
         vaultDetails.vaultType = _vaultType;
+        vaultDetails.oTokenAddress = _vault.oTokenAddress;
+        vaultDetails.shortAmounts = _vault.shortAmounts;
+        vaultDetails.collateralAmounts = _vault.collateralAmounts;
 
         // get vault long otoken if available
         if (vaultDetails.hasLong) {
@@ -1464,9 +1475,6 @@ contract MarginCalculator is Ownable {
             FPI.FixedPointInt memory availableCollateralTotalValue;
             uint256[] memory collateralsDecimals = new uint256[](_vault.collateralAssets.length);
             FPI.FixedPointInt[] memory collateralsAmountsFPI = new FPI.FixedPointInt[](_vault.collateralAssets.length);
-            // TODO we assume here that collateral assets is the same assets addresses
-            // as oToken's but they can differ so we should restrict vault to have asset or filter by asssets from oToken
-            // it can have different length and different tokens in it
             for (uint256 i = 0; i < _vault.collateralAssets.length; i++) {
                 collateralsDecimals[i] = IERC20Metadata(_vault.collateralAssets[i]).decimals();
                 if (_vault.unusedCollateralAmounts[i] == 0) {

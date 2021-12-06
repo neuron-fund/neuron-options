@@ -18,6 +18,7 @@ import {WhitelistInterface} from "../interfaces/WhitelistInterface.sol";
 import {MarginPoolInterface} from "../interfaces/MarginPoolInterface.sol";
 import {CalleeInterface} from "../interfaces/CalleeInterface.sol";
 import {FixedPointInt256 as FPI} from "../libs/FixedPointInt256.sol";
+import {ArrayAddressUtils} from "../libs/ArrayAddressUtils.sol";
 
 /**
  * Controller Error Codes
@@ -67,6 +68,7 @@ import {FixedPointInt256 as FPI} from "../libs/FixedPointInt256.sol";
 contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     using MarginVault for MarginVault.Vault;
     using SafeMath for uint256;
+    using ArrayAddressUtils for address[];
 
     AddressBookInterface public addressbook;
     WhitelistInterface public whitelist;
@@ -525,13 +527,8 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
      * @return amount of collateral to pay out
      */
     function getPayout(address _otoken, uint256 _amount) public view returns (uint256[] memory) {
-        uint256[] memory payoutsRaw = calculator.getExpiredPayoutRate(_otoken);
-        uint256[] memory payouts = new uint256[](payoutsRaw.length);
-        for (uint256 i = 0; i < payoutsRaw.length; i++) {
-            payouts[i] = payoutsRaw[i].mul(_amount).div(10**8);
-        }
-
-        return payouts;
+        // payoutsRaw continats amounts of each of collateral asset in collateral asset decimals to be paid out for 1e8 of the oToken
+        return calculator.getPayout(_otoken, _amount);
     }
 
     /**
@@ -725,11 +722,15 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         uint256 vaultId = accountVaultCounter[_args.owner].add(1);
 
         require(_args.vaultId == vaultId, "C15");
+        // TODO add more checks on assets of vault are the same as oToken
         require(whitelist.isWhitelistedOtoken(_args.oTokenAddress), "C23");
+        OtokenInterface oToken = OtokenInterface(_args.oTokenAddress);
 
         // store new vault
         accountVaultCounter[_args.owner] = vaultId;
         vaultType[_args.owner][vaultId] = _args.vaultType;
+        vaults[_args.owner][vaultId].oTokenAddress = _args.oTokenAddress;
+        vaults[_args.owner][vaultId].collateralAssets = oToken.collateralAssets();
 
         emit VaultOpened(_args.owner, vaultId, _args.vaultType);
     }
@@ -799,19 +800,25 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         // only allow vault owner or vault operator to deposit collateral
         require((_args.from == msg.sender) || (_args.from == _args.owner), "C20");
 
-        uint256 collateralsLength = _args.assets.length;
-
         require(whitelist.isWhitelistedCollaterals(_args.assets), "C21");
+        // TODO since we can't create vault without specifying oToken should we omit this check?
+        require(vaults[_args.owner][_args.vaultId].oTokenAddress != address(0), "Vault is not associated with oToken");
+        require(
+            // TODO we can get rid of assets argument cause we have collateralAssets property in vault itself
+            _args.assets.isEqual(vaults[_args.owner][_args.vaultId].collateralAssets),
+            "Assets array should be the same as associated oToken collateralAssers array"
+        );
 
-        (, uint256 typeVault, ) = getVaultWithDetails(_args.owner, _args.vaultId);
+        // (, uint256 typeVault, ) = getVaultWithDetails(_args.owner, _args.vaultId);
 
+        uint256 collateralsLength = _args.assets.length;
         for (uint256 i = 0; i < collateralsLength; i++) {
             // TODO should exlude this case? partial collaterization
-            if (typeVault == 1) {
-                nakedPoolBalance[_args.assets[i]] = nakedPoolBalance[_args.assets[i]].add(_args.amounts[0]);
+            // if (typeVault == 1) {
+            //     nakedPoolBalance[_args.assets[i]] = nakedPoolBalance[_args.assets[i]].add(_args.amounts[0]);
 
-                require(nakedPoolBalance[_args.assets[i]] <= nakedCap[_args.assets[i]], "C37");
-            }
+            //     require(nakedPoolBalance[_args.assets[i]] <= nakedCap[_args.assets[i]], "C37");
+            // }
 
             pool.transferToPool(_args.assets[i], _args.from, _args.amounts[i]);
             emit CollateralAssetDeposited(_args.assets[i], _args.owner, _args.from, _args.vaultId, _args.amounts[i]);
@@ -862,11 +869,18 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     {
         require(_checkVaultId(_args.owner, _args.vaultId), "C35");
         require(whitelist.isWhitelistedOtoken(_args.otoken), "C23");
+        require(
+            vaults[_args.owner][_args.vaultId].oTokenAddress == _args.otoken,
+            "otoken is not associated with vault"
+        );
 
         OtokenInterface otoken = OtokenInterface(_args.otoken);
 
         require(block.timestamp < otoken.expiryTimestamp(), "C24");
+        // TODO we do not support collaterizing with long oTokens, either remove long support everywhere or add ability to collaterize with long
 
+        // usedCollateralsValues - is value of each collateral used for minting oToken in strike asset,
+        // in other words -  usedCollateralsAmounts[i] * collateralAssetPriceInStrike[i]
         (uint256[] memory usedCollateralsAmounts, uint256[] memory usedCollateralsValues) = calculator
             ._getCollateralRequired(vaults[_args.owner][_args.vaultId], _args.otoken, _args.amount);
         otoken.mintOtoken(_args.to, _args.amount, usedCollateralsAmounts, usedCollateralsValues);
@@ -933,6 +947,7 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         address[] memory otokenColalterals = otoken.collateralAssets();
         for (uint256 i = 0; i < payout.length; i++) {
             if (payout[i] > 0) {
+                // TODO unwrap here for redeemers
                 pool.transferToUser(otokenColalterals[i], _args.receiver, payout[i]);
             }
         }
@@ -980,20 +995,24 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         require(block.timestamp >= expiry, "C31");
         require(_canSettleAssets(underlying, strike, collaterals, expiry), "C29");
 
+        // TODO maybe would be easy to check if payouts is array with all zeros so we can have early return without loop. Will it save gas?
         (uint256[] memory payouts, bool isValidVault) = calculator.getExcessCollateral(vault, typeVault);
 
         // require that vault is valid (has excess collateral) before settling
         // to avoid allowing settling undercollateralized naked margin vault
+        // TODO since we removed undercollateralized naked margin vault from the system, this check is no longer needed
         require(isValidVault, "C32");
 
         delete vaults[_args.owner][_args.vaultId];
 
         for (uint256 i = 0; i < collaterals.length; i++) {
+            // TODO since we removed undercollateralized naked margin vault from the system, this check is no longer needed
             if (typeVault == 1) {
                 nakedPoolBalance[collaterals[i]] = nakedPoolBalance[collaterals[i]].sub(payouts[i]);
             }
-
-            pool.transferToUser(collaterals[i], _args.to, payouts[i]);
+            if (payouts[i] != 0) {
+                pool.transferToUser(collaterals[i], _args.to, payouts[i]);
+            }
         }
 
         uint256 vaultId = _args.vaultId;

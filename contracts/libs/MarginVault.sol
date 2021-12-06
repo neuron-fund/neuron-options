@@ -30,16 +30,19 @@ library MarginVault {
 
     // vault is a struct of 6 arrays that describe a position a user has, a user can have multiple vaults.
     struct Vault {
+        address oTokenAddress;
         // addresses of oTokens a user has shorted (i.e. written) against this vault
-        // TODO maybe make this non array since we alaways consider vault has only one oToken
+        // TODO maybe make this non array since we alaways consider vault has only one oToken. Remove and just leave oTokenAddress
         address[] shortOtokens;
         // addresses of oTokens a user has bought and deposited in this vault
         // user can be long oTokens without opening a vault (e.g. by buying on a DEX)
         // generally, long oTokens will be 'deposited' in vaults to act as collateral in order to write oTokens against (i.e. in spreads)
+        // TODO get rid of longOTokens since we dont use it anymore?
         address[] longOtokens;
         // addresses of other ERC-20s a user has deposited as collateral in this vault
         address[] collateralAssets;
         // quantity of oTokens minted/written for each oToken address in shortOtokens
+        // TODO replace with just uint256 cause we have only one oToken for each vault
         uint256[] shortAmounts;
         // quantity of oTokens owned and held in the vault for each oToken address in longOtokens
         uint256[] longAmounts;
@@ -199,30 +202,7 @@ library MarginVault {
 
         uint256 newCollateralAmount = _vault.collateralAmounts[_index].sub(_amount);
 
-        if (newCollateralAmount == 0) {
-            delete _vault.collateralAssets[_index];
-        }
         _vault.collateralAmounts[_index] = newCollateralAmount;
-    }
-
-    // TODO remove if useCollatralBulk only
-    function useCollateral(
-        Vault storage _vault,
-        address _collateralAsset,
-        uint256 _amount,
-        uint256 _index
-    ) external {
-        // check that the removed collateral exists in the vault at the specified index
-        require(_index < _vault.collateralAssets.length, "V10");
-        require(_vault.collateralAssets[_index] == _collateralAsset, "V11");
-
-        uint256 newUsedCollateralAmount = _vault.usedCollateralAmounts[_index].add(_amount);
-
-        if (newUsedCollateralAmount == 0) {
-            delete _vault.collateralAssets[_index];
-        }
-        _vault.usedCollateralAmounts[_index] = newUsedCollateralAmount;
-        _vault.collateralAmounts[_index] = _vault.collateralAmounts[_index].sub(_amount);
     }
 
     function useCollateralBulk(Vault storage _vault, uint256[] memory _amounts) external {
@@ -234,10 +214,11 @@ library MarginVault {
         for (uint256 i = 0; i < _amounts.length; i++) {
             uint256 newUsedCollateralAmount = _vault.usedCollateralAmounts[i].add(_amounts[i]);
 
-            if (newUsedCollateralAmount == 0) {
-                delete _vault.collateralAssets[i];
-            }
             _vault.usedCollateralAmounts[i] = newUsedCollateralAmount;
+            require(
+                _vault.usedCollateralAmounts[i] <= _vault.collateralAmounts[i],
+                "Trying to use collateral which exceeds vault's balance"
+            );
             _vault.unusedCollateralAmounts[i] = _vault.collateralAmounts[i].sub(newUsedCollateralAmount);
         }
     }
