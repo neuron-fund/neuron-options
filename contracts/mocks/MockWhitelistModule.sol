@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.10;
+pragma solidity 0.8.9;
 
 contract MockWhitelistModule {
     mapping(address => bool) public _isWhitelistedOtoken;
@@ -13,9 +13,7 @@ contract MockWhitelistModule {
         address _collateral,
         bool _isPut
     ) external returns (bytes32 id) {
-        id = keccak256(
-            abi.encodePacked(_underlying, _strike, _collateral, _isPut)
-        );
+        id = keccak256(abi.encodePacked(_underlying, _strike, _collateral, _isPut));
 
         _isWhitelistedProduct[id] = true;
     }
@@ -26,9 +24,7 @@ contract MockWhitelistModule {
         address[] calldata _collateral,
         bool _isPut
     ) external view returns (bool isValid) {
-        bytes32 id = keccak256(
-            abi.encodePacked(_underlying, _strike, _collateral, _isPut)
-        );
+        bytes32 id = keccak256(abi.encodePacked(_underlying, _strike, _collateral, _isPut));
         return _isWhitelistedProduct[id];
     }
 
@@ -40,19 +36,12 @@ contract MockWhitelistModule {
         return _isWhitelistedOtoken[_otoken];
     }
 
-    function isWhitelistedCollateral(address _collateral)
-        external
-        view
-        returns (bool)
-    {
+    function isWhitelistedCollateral(address _collateral) external view returns (bool) {
         return whitelistedCollateral[_collateral];
     }
 
     function whitelistCollateral(address _collateral) external {
-        require(
-            !whitelistedCollateral[_collateral],
-            "Whitelist: Collateral already whitelisted"
-        );
+        require(!whitelistedCollateral[_collateral], "Whitelist: Collateral already whitelisted");
 
         whitelistedCollateral[_collateral] = true;
     }

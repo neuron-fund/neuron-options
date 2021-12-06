@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // openzeppelin-contracts-upgradeable v3.0.0
 
-pragma solidity 0.8.10;
+pragma solidity 0.8.9;
 import "../Initializable.sol";
 
 /**
@@ -89,7 +89,7 @@ abstract contract EIP712Upgradeable is Initializable {
 
     function _getChainId() private view returns (uint256 chainId) {
         this; // silence state mutability warning without generating bytecode - see https://github.com/ethereum/solidity/issues/2691
-        
+
         assembly {
             chainId := chainid()
         }

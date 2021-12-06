@@ -1,13 +1,13 @@
 /**
  * SPDX-License-Identifier: UNLICENSED
  */
-pragma solidity 0.8.10;
+pragma solidity 0.8.9;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {OwnedUpgradeabilityProxy} from "../packages/oz/upgradeability/OwnedUpgradeabilityProxy.sol";
 
 /**
-  * @title AddressBook Module
+ * @title AddressBook Module
  */
 contract AddressBook is Ownable {
     /// @dev Otoken implementation key

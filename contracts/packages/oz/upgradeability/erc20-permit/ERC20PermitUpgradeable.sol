@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // openzeppelin-contracts-upgradeable v3.0.0
 
-pragma solidity 0.8.10;
+pragma solidity 0.8.9;
 
 import "../ERC20Upgradeable.sol";
 import "./IERC20PermitUpgradeable.sol";
@@ -28,7 +28,6 @@ abstract contract ERC20PermitUpgradeable is
 
     mapping(address => CountersUpgradeable.Counter) private _nonces;
 
-    
     bytes32 private _PERMIT_TYPEHASH;
 
     /**
@@ -60,7 +59,6 @@ abstract contract ERC20PermitUpgradeable is
         bytes32 r,
         bytes32 s
     ) public virtual override {
-        
         require(block.timestamp <= deadline, "ERC20Permit: expired deadline");
 
         bytes32 structHash = keccak256(
@@ -86,7 +84,7 @@ abstract contract ERC20PermitUpgradeable is
     /**
      * @dev See {IERC20Permit-DOMAIN_SEPARATOR}.
      */
-    
+
     function DOMAIN_SEPARATOR() external view override returns (bytes32) {
         return _domainSeparatorV4();
     }

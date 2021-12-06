@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 // openzeppelin-contracts-upgradeable v3.0.0
-pragma solidity 0.8.10;
+pragma solidity 0.8.9;
 
 /**
  * @dev Elliptic Curve Digital Signature Algorithm (ECDSA) operations.
@@ -36,7 +36,7 @@ library ECDSAUpgradeable {
 
         // ecrecover takes the signature parameters, and the only way to get them
         // currently is to use assembly.
-        
+
         assembly {
             r := mload(add(signature, 0x20))
             s := mload(add(signature, 0x40))

@@ -1,7 +1,7 @@
 /**
  * SPDX-License-Identifier: UNLICENSED
  */
-pragma solidity 0.8.10;
+pragma solidity 0.8.9;
 
 import {PricerInterface} from "../interfaces/PricerInterface.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";

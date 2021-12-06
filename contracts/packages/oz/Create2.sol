@@ -2,7 +2,7 @@
 // openzeppelin-contracts v3.1.0
 /* solhint-disable */
 
-pragma solidity 0.8.10;
+pragma solidity 0.8.9;
 
 /**
  * @dev Helper to make usage of the `CREATE2` EVM opcode easier and safer.
@@ -36,7 +36,7 @@ library Create2 {
         address addr;
         require(address(this).balance >= amount, "Create2: insufficient balance");
         require(bytecode.length != 0, "Create2: bytecode length is zero");
-        
+
         assembly {
             addr := create2(amount, add(bytecode, 0x20), mload(bytecode), salt)
         }

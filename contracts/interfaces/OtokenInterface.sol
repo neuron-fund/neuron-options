@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.10;
+pragma solidity 0.8.9;
 
 interface OtokenInterface {
     event Approval(address indexed owner, address indexed spender, uint256 value);

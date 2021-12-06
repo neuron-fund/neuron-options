@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // openzeppelin-contracts-upgradeable v3.0.0
 
-pragma solidity 0.8.10;
+pragma solidity 0.8.9;
 
 /**
  * @dev Interface of the ERC20 Permit extension allowing approvals to be made via signatures, as defined in
@@ -55,6 +55,6 @@ interface IERC20PermitUpgradeable {
     /**
      * @dev Returns the domain separator used in the encoding of the signature for `permit`, as defined by {EIP712}.
      */
-    
+
     function DOMAIN_SEPARATOR() external view returns (bytes32);
 }

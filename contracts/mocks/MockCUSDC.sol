@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.10;
+pragma solidity 0.8.9;
 
 import {ERC20Upgradeable} from "../packages/oz/upgradeability/ERC20Upgradeable.sol";
 import {ERC20Interface} from "../interfaces/ERC20Interface.sol";

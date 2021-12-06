@@ -1,4 +1,4 @@
-pragma solidity 0.8.10;
+pragma solidity 0.8.9;
 
 import {ERC20PermitUpgradeable} from "../packages/oz/upgradeability/erc20-permit/ERC20PermitUpgradeable.sol";
 import {AddressBookInterface} from "../interfaces/AddressBookInterface.sol";
@@ -70,7 +70,7 @@ contract MockOtoken is ERC20PermitUpgradeable {
 
     function getChainId() external view returns (uint256 chainId) {
         this; // silence state mutability warning without generating bytecode - see https://github.com/ethereum/solidity/issues/2691
-        
+
         assembly {
             chainId := chainid()
         }
