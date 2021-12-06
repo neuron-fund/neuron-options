@@ -5,7 +5,7 @@ pragma solidity 0.8.10;
 pragma experimental ABIEncoderV2;
 
 import {ERC20Interface} from "../interfaces/ERC20Interface.sol";
-import {SafeERC20} from "../packages/oz/SafeERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
  * @notice Mock 0x ERC20 Proxy

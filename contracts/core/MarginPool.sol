@@ -6,7 +6,7 @@ pragma solidity 0.8.10;
 import {ERC20Interface} from "../interfaces/ERC20Interface.sol";
 import {AddressBookInterface} from "../interfaces/AddressBookInterface.sol";
 import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import {SafeERC20} from "../packages/oz/SafeERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
