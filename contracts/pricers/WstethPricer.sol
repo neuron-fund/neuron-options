@@ -85,7 +85,7 @@ contract WstethPricer is PricerInterface {
         return stEthPerWsteth.mul(_underlyingPrice).div(1e18);
     }
 
-    function getHistoricalPrice(uint80) external view override returns (uint256, uint256) {
+    function getHistoricalPrice(uint80) external pure override returns (uint256, uint256) {
         revert("W6");
     }
 }

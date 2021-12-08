@@ -3,7 +3,7 @@
 pragma solidity 0.8.9;
 
 import {Spawn} from "../packages/Spawn.sol";
-import {Create2} from "../packages/oz/Create2.sol";
+import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 
 /**
  * @title OtokenSpawner

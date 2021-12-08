@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // openzeppelin-contracts v3.1.0
 
-pragma solidity ^0.6.2;
+pragma solidity 0.8.9;
 
 /**
  * @dev Collection of functions related to the address type
@@ -30,7 +30,7 @@ library Address {
         // constructor execution.
 
         uint256 size;
-        
+
         assembly {
             size := extcodesize(account)
         }
@@ -56,7 +56,6 @@ library Address {
     function sendValue(address payable recipient, uint256 amount) internal {
         require(address(this).balance >= amount, "Address: insufficient balance");
 
-        
         (bool success, ) = recipient.call{value: amount}("");
         require(success, "Address: unable to send value, recipient may have reverted");
     }
@@ -140,7 +139,6 @@ library Address {
     ) private returns (bytes memory) {
         require(isContract(target), "Address: call to non-contract");
 
-        
         (bool success, bytes memory returndata) = target.call{value: weiValue}(data);
         if (success) {
             return returndata;
@@ -149,7 +147,6 @@ library Address {
             if (returndata.length > 0) {
                 // The easiest way to bubble the revert reason is using memory via assembly
 
-                
                 assembly {
                     let returndata_size := mload(returndata)
                     revert(add(32, returndata), returndata_size)

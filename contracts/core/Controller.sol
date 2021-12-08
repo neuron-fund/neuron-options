@@ -17,7 +17,6 @@ import {OracleInterface} from "../interfaces/OracleInterface.sol";
 import {WhitelistInterface} from "../interfaces/WhitelistInterface.sol";
 import {MarginPoolInterface} from "../interfaces/MarginPoolInterface.sol";
 import {CalleeInterface} from "../interfaces/CalleeInterface.sol";
-import {FixedPointInt256 as FPI} from "../libs/FixedPointInt256.sol";
 import {ArrayAddressUtils} from "../libs/ArrayAddressUtils.sol";
 
 /**
@@ -513,10 +512,10 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         returns (
             bool,
             uint256,
-            uint256
+            uint256[] memory
         )
     {
-        (, bool isUnderCollat, uint256 price, uint256 dust) = _isLiquidatable(_owner, _vaultId, _roundId);
+        (, bool isUnderCollat, uint256 price, uint256[] memory dust) = _isLiquidatable(_owner, _vaultId, _roundId);
         return (isUnderCollat, price, dust);
     }
 
@@ -1032,11 +1031,12 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         // check if vault is undercollateralized
         // the price is the amount of collateral asset to pay per 1 repaid debt(otoken)
         // collateralDust is the minimum amount of collateral that can be left in the vault when a partial liquidation occurs
-        (MarginVault.Vault memory vault, bool isUnderCollat, uint256 price, uint256 collateralDust) = _isLiquidatable(
-            _args.owner,
-            _args.vaultId,
-            _args.roundId
-        );
+        (
+            MarginVault.Vault memory vault,
+            bool isUnderCollat,
+            uint256 price,
+            uint256[] memory collateralDust
+        ) = _isLiquidatable(_args.owner, _args.vaultId, _args.roundId);
 
         require(isUnderCollat, "C33");
 
@@ -1046,7 +1046,8 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         // if vault is partially liquidated (amount of short otoken is still greater than zero)
         // make sure remaining collateral amount is greater than dust amount
         if (vault.shortAmounts[0].sub(_args.amount) > 0) {
-            require(vault.collateralAmounts[0].sub(collateralToSell) >= collateralDust, "C34");
+            // TODO correct calculations for array
+            require(vault.collateralAmounts[0].sub(collateralToSell) >= collateralDust[0], "C34");
         }
 
         // burn short otoken from liquidator address, index of short otoken hardcoded at 0
@@ -1128,14 +1129,14 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             MarginVault.Vault memory,
             bool,
             uint256,
-            uint256
+            uint256[] memory
         )
     {
         (MarginVault.Vault memory vault, uint256 typeVault, uint256 latestUpdateTimestamp) = getVaultWithDetails(
             _owner,
             _vaultId
         );
-        (bool isUnderCollat, uint256 price, uint256 collateralDust) = calculator.isLiquidatable(
+        (bool isUnderCollat, uint256 price, uint256[] memory collateralDust) = calculator.isLiquidatable(
             vault,
             typeVault,
             latestUpdateTimestamp,

@@ -9,7 +9,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {OtokenInterface} from "../interfaces/OtokenInterface.sol";
 import {OracleInterface} from "../interfaces/OracleInterface.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import {FixedPointInt256 as FPI} from "../libs/FixedPointInt256.sol";
+import {FPI} from "../libs/FixedPointInt256.sol";
 import {MarginVault} from "../libs/MarginVault.sol";
 import {ArrayAddressUtils} from "../libs/ArrayAddressUtils.sol";
 import {Constants} from "./Constants.sol";
@@ -37,7 +37,7 @@ contract MarginCalculator is Ownable {
         address oTokenAddress;
         address shortUnderlyingAsset;
         address shortStrikeAsset;
-        address[] shortAmounts;
+        uint256[] shortAmounts;
         address[] shortCollateralAssets;
         address longUnderlyingAsset;
         address longStrikeAsset;
@@ -377,7 +377,7 @@ contract MarginCalculator is Ownable {
      */
     function getPayout(address _otoken, uint256 _amount) public view returns (uint256[] memory) {
         // payoutsRaw continats amounts of each of collateral asset in collateral asset decimals to be paid out for 1e8 of the oToken
-        uint256[] memory payoutsRaw = calculator.getExpiredPayoutRate(_otoken);
+        uint256[] memory payoutsRaw = getExpiredPayoutRate(_otoken);
         uint256[] memory payouts = new uint256[](payoutsRaw.length);
         for (uint256 i = 0; i < payoutsRaw.length; i++) {
             // TODO is it possible to have significant precision loss here?
@@ -394,7 +394,7 @@ contract MarginCalculator is Ownable {
      * @return how much collateral can be taken out by 1 otoken unit, scaled by 1e8,
      * or how much collateral can be taken out for 1 (1e8) oToken
      */
-    function getExpiredPayoutRate(address _otoken) external view returns (uint256[] memory) {
+    function getExpiredPayoutRate(address _otoken) public view returns (uint256[] memory) {
         require(_otoken != address(0), "MarginCalculator: Invalid token address");
 
         OTokenDetails memory oTokenDetails = OTokenDetails(
@@ -630,7 +630,7 @@ contract MarginCalculator is Ownable {
             uint256[] memory payoutForMintedOTokens = getPayout(_vault.oTokenAddress, _vault.shortAmounts[0]);
             uint256[] memory unusedCollateral = new uint256[](_vault.collateralAssets.length);
             for (uint256 i = 0; i < _vault.collateralAssets.length; i++) {
-                unusedCollateral[i] = _vault.collateralAmounts.sub(payoutForMintedOTokens[i]);
+                unusedCollateral[i] = _vault.collateralAmounts[i].sub(payoutForMintedOTokens[i]);
             }
             return (unusedCollateral, true);
         } else {
@@ -1165,7 +1165,7 @@ contract MarginCalculator is Ownable {
             address(0), // address oTokenAddress;
             address(0), // address shortUnderlyingAsset;
             address(0), // address shortStrikeAsset;
-            new address[](0), // address[] shortAmounts;
+            new uint256[](0), // uint256[] shortAmounts;
             new address[](0), // address[] shortCollateralAssets;
             address(0), // address longUnderlyingAsset;
             address(0), // address longStrikeAsset;
@@ -1176,7 +1176,7 @@ contract MarginCalculator is Ownable {
             0, // uint256 longStrikePrice;
             0, // uint256 longExpiryTimestamp;
             new uint256[](0), // uint256 longCollateralDecimals;
-            new uint256[](0) // uint256[] collateralAmounts;
+            new uint256[](0), // uint256[] collateralAmounts;
             new uint256[](0), // uint256[] collateralsDecimals;
             0, // uint256 vaultType;
             false, // bool isShortPut;

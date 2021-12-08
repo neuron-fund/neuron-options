@@ -11,7 +11,8 @@ import {SignedConverter} from "./SignedConverter.sol";
  * @title FixedPointInt256
  * @notice FixedPoint library
  */
-library FixedPointInt256 {
+//  TODO rename when fixed https://github.com/crytic/slither/issues/962
+library FPI {
     using SignedSafeMath for int256;
     using SignedConverter for int256;
     using SafeMath for uint256;
