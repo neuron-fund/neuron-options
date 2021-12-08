@@ -16,35 +16,19 @@ import 'hardhat-gas-reporter'
 import '@nomiclabs/hardhat-etherscan'
 import '@openzeppelin/hardhat-upgrades'
 import '@nomiclabs/hardhat-solhint'
+import 'hardhat-contract-sizer'
+import { getHardhatAccounts } from './utils/accounts'
 
 const config: HardhatUserConfig = {
   solidity: {
     compilers: [
-      {
-        version: '0.6.12',
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 200,
-          },
-        },
-      },
-      {
-        version: '0.8.2',
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 200,
-          },
-        },
-      },
       {
         version: '0.8.9',
         settings: {
           optimizer: {
             enabled: true,
             // TODO figure out best value
-            runs: 200,
+            runs: Number(process.env.OPTIMIZER) || 200,
           },
         },
       },
@@ -62,6 +46,7 @@ const config: HardhatUserConfig = {
       loggingEnabled: true,
       blockGasLimit: 0x1fffffffffffff,
       gas: 120e9,
+      accounts: getHardhatAccounts(20),
     },
     prodMainnet: {
       url: process.env.PROD_MAINNET_RPC,
