@@ -58,6 +58,10 @@ import {ArrayAddressUtils} from "../libs/ArrayAddressUtils.sol";
  * C35: invalid vault id
  * C36: cap amount should be greater than zero
  * C37: collateral exceed naked margin cap
+ * C38: assets and amounts length must be the same
+ * C39: vault is not associated with oToken
+ * C40: assets array should be the same as associated oToken collateralAssers array
+ * C41: otoken is not associated with vault
  */
 
 /**
@@ -647,7 +651,7 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             Actions.ActionType actionType = action.actionType;
 
             // Check to assets and amounts length to be the same
-            require(action.assets.length == action.amounts.length, "assets and amounts length must be the same");
+            require(action.assets.length == action.amounts.length, "C38");
 
             // actions except Settle, Redeem, Liquidate and Call are "Vault-updating actinos"
             // only allow update 1 vault in each operate call
@@ -801,11 +805,11 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
         require(whitelist.isWhitelistedCollaterals(_args.assets), "C21");
         // TODO since we can't create vault without specifying oToken should we omit this check?
-        require(vaults[_args.owner][_args.vaultId].oTokenAddress != address(0), "Vault is not associated with oToken");
+        require(vaults[_args.owner][_args.vaultId].oTokenAddress != address(0), "C39");
         require(
             // TODO we can get rid of assets argument cause we have collateralAssets property in vault itself
             _args.assets.isEqual(vaults[_args.owner][_args.vaultId].collateralAssets),
-            "Assets array should be the same as associated oToken collateralAssers array"
+            "C40"
         );
 
         // (, uint256 typeVault, ) = getVaultWithDetails(_args.owner, _args.vaultId);
@@ -868,10 +872,7 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     {
         require(_checkVaultId(_args.owner, _args.vaultId), "C35");
         require(whitelist.isWhitelistedOtoken(_args.otoken), "C23");
-        require(
-            vaults[_args.owner][_args.vaultId].oTokenAddress == _args.otoken,
-            "otoken is not associated with vault"
-        );
+        require(vaults[_args.owner][_args.vaultId].oTokenAddress == _args.otoken, "C41");
 
         OtokenInterface otoken = OtokenInterface(_args.otoken);
 
