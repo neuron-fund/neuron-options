@@ -33,6 +33,7 @@ export type { WhitelistInterface } from "./WhitelistInterface";
 export type { WSTETHInterface } from "./WSTETHInterface";
 export type { YearnVaultInterface } from "./YearnVaultInterface";
 export type { ZeroXExchangeInterface } from "./ZeroXExchangeInterface";
+export type { ArrayAddressUtils } from "./ArrayAddressUtils";
 export type { Migrations } from "./Migrations";
 export type { ReentrancyGuard } from "./ReentrancyGuard";
 export type { OwnableUpgradeSafe } from "./OwnableUpgradeSafe";
@@ -77,6 +78,7 @@ export { WhitelistInterface__factory } from "./factories/WhitelistInterface__fac
 export { WSTETHInterface__factory } from "./factories/WSTETHInterface__factory";
 export { YearnVaultInterface__factory } from "./factories/YearnVaultInterface__factory";
 export { ZeroXExchangeInterface__factory } from "./factories/ZeroXExchangeInterface__factory";
+export { ArrayAddressUtils__factory } from "./factories/ArrayAddressUtils__factory";
 export { Migrations__factory } from "./factories/Migrations__factory";
 export { ReentrancyGuard__factory } from "./factories/ReentrancyGuard__factory";
 export { OwnableUpgradeSafe__factory } from "./factories/OwnableUpgradeSafe__factory";
