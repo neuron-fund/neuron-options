@@ -53,17 +53,17 @@ interface MarginCalculatorInterface {
         uint256 _timeToExpiry
     ) external view returns (uint256);
 
-    function getNakedMarginRequired(
-        address _underlying,
-        address _strike,
-        address[] memory _collaterals,
-        uint256 _shortAmount,
-        uint256 _strikePrice,
-        uint256 _underlyingPrice,
-        uint256 _shortExpiryTimestamp,
-        uint256 _collateralDecimals,
-        bool _isPut
-    ) external view returns (uint256);
+    // function getNakedMarginRequired(
+    //     address _underlying,
+    //     address _strike,
+    //     address[] memory _collaterals,
+    //     uint256 _shortAmount,
+    //     uint256 _strikePrice,
+    //     uint256 _underlyingPrice,
+    //     uint256 _shortExpiryTimestamp,
+    //     uint256 _collateralDecimals,
+    //     bool _isPut
+    // ) external view returns (uint256);
 
     function getOracleDeviation() external view returns (uint256);
 

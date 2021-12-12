@@ -3,8 +3,6 @@
  */
 pragma solidity 0.8.9;
 
-import {MarginVault} from "./MarginVault.sol";
-
 /**
  * @title Actions
   * @notice A library that provides a ActionArgs struct, sub types of Action structs, and functions to parse ActionArgs into specific Actions.
@@ -105,7 +103,7 @@ library Actions {
         // address of the account owner
         address owner;
         // We restrict vault to be specific for existing oToken so it's collaterals assets will be the same as oToken's
-        address oTokenAddress;
+        address shortOtoken;
         // vault id to create
         uint256 vaultId;
         // TODO we do not use this, our vaults are always fully collaterized
@@ -204,7 +202,7 @@ library Actions {
         require(vaultType < 2, "A3");
 
         return OpenVaultArgs({
-            oTokenAddress: _args.secondAddress,
+            shortOtoken: _args.secondAddress,
             owner: _args.owner, 
             vaultId: _args.vaultId, 
             vaultType: vaultType

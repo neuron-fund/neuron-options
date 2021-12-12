@@ -18,6 +18,7 @@ import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
  * V7: invalid collateral amount
  * V8: invalid collateral token index
  * V9: collateral token address mismatch
+ * v10: shortOtoken should be empty when performing addShort or the same as vault already have
  */
 
 /**
@@ -30,10 +31,8 @@ library MarginVault {
 
     // vault is a struct of 6 arrays that describe a position a user has, a user can have multiple vaults.
     struct Vault {
-        address oTokenAddress;
+        address shortOtoken;
         // addresses of oTokens a user has shorted (i.e. written) against this vault
-        // TODO maybe make this non array since we alaways consider vault has only one oToken. Remove and just leave oTokenAddress
-        address[] shortOtokens;
         // addresses of oTokens a user has bought and deposited in this vault
         // user can be long oTokens without opening a vault (e.g. by buying on a DEX)
         // generally, long oTokens will be 'deposited' in vaults to act as collateral in order to write oTokens against (i.e. in spreads)
@@ -41,15 +40,15 @@ library MarginVault {
         address[] longOtokens;
         // addresses of other ERC-20s a user has deposited as collateral in this vault
         address[] collateralAssets;
-        // quantity of oTokens minted/written for each oToken address in shortOtokens
+        // quantity of oTokens minted/written for each oToken address in oTokenAddress
         // TODO replace with just uint256 cause we have only one oToken for each vault
-        uint256[] shortAmounts;
+        uint256 shortAmount;
         // quantity of oTokens owned and held in the vault for each oToken address in longOtokens
         uint256[] longAmounts;
         // quantity of ERC-20 deposited as collateral in the vault for each ERC-20 address in collateralAssets
         uint256[] collateralAmounts;
         // Collateral which is currently used for minting oTokens and can't be used until expiry
-        // TODO on expiry of shortOtokens update this variable
+        // TODO on expiry of oTokenAddress update this variable
         // TODO should we use this new variable or maybe sub from collaeralAmounts when using collateral?
         uint256[] usedCollateralAmounts;
         uint256[] unusedCollateralAmounts;
@@ -60,28 +59,20 @@ library MarginVault {
      * @param _vault vault to add or increase the short position in
      * @param _shortOtoken address of the _shortOtoken being minted from the user's vault
      * @param _amount number of _shortOtoken being minted from the user's vault
-     * @param _index index of _shortOtoken in the user's vault.shortOtokens array
      */
     function addShort(
         Vault storage _vault,
         address _shortOtoken,
-        uint256 _amount,
-        uint256 _index
+        uint256 _amount
     ) external {
         require(_amount > 0, "V1");
+        require(_vault.shortOtoken == address(0) || _vault.shortOtoken == _shortOtoken, "V10");
 
-        // valid indexes in any array are between 0 and array.length - 1.
-        // if adding an amount to an preexisting short oToken, check that _index is in the range of 0->length-1
-        if ((_index == _vault.shortOtokens.length) && (_index == _vault.shortAmounts.length)) {
-            _vault.shortOtokens.push(_shortOtoken);
-            _vault.shortAmounts.push(_amount);
+        if (_vault.shortOtoken == _shortOtoken) {
+            _vault.shortAmount = _vault.shortAmount.add(_amount);
         } else {
-            require((_index < _vault.shortOtokens.length) && (_index < _vault.shortAmounts.length), "V2");
-            address existingShort = _vault.shortOtokens[_index];
-            require((existingShort == _shortOtoken) || (existingShort == address(0)), "V3");
-
-            _vault.shortAmounts[_index] = _vault.shortAmounts[_index].add(_amount);
-            _vault.shortOtokens[_index] = _shortOtoken;
+            _vault.shortOtoken = _shortOtoken;
+            _vault.shortAmount = _amount;
         }
     }
 
@@ -90,24 +81,21 @@ library MarginVault {
      * @param _vault vault to decrease short position in
      * @param _shortOtoken address of the _shortOtoken being reduced in the user's vault
      * @param _amount number of _shortOtoken being reduced in the user's vault
-     * @param _index index of _shortOtoken in the user's vault.shortOtokens array
      */
     function removeShort(
         Vault storage _vault,
         address _shortOtoken,
-        uint256 _amount,
-        uint256 _index
+        uint256 _amount
     ) external {
         // check that the removed short oToken exists in the vault at the specified index
-        require(_index < _vault.shortOtokens.length, "V2");
-        require(_vault.shortOtokens[_index] == _shortOtoken, "V3");
+        require(_vault.shortOtoken == _shortOtoken, "V3");
 
-        uint256 newShortAmount = _vault.shortAmounts[_index].sub(_amount);
+        uint256 newShortAmount = _vault.shortAmount.sub(_amount);
 
         if (newShortAmount == 0) {
-            delete _vault.shortOtokens[_index];
+            _vault.shortOtoken = address(0);
         }
-        _vault.shortAmounts[_index] = newShortAmount;
+        _vault.shortAmount = newShortAmount;
     }
 
     /**

@@ -99,9 +99,9 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     bool public callRestricted;
 
     /// @dev mapping between an owner address and the number of owner address vaults
-    mapping(address => uint256) internal accountVaultCounter;
+    mapping(address => uint256) public accountVaultCounter;
     /// @dev mapping between an owner address and a specific vault using a vault id
-    mapping(address => mapping(uint256 => MarginVault.Vault)) internal vaults;
+    mapping(address => mapping(uint256 => MarginVault.Vault)) public vaults;
     /// @dev mapping between an account owner and their approved or unapproved account operators
     mapping(address => mapping(address => bool)) internal operators;
 
@@ -113,10 +113,10 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     mapping(address => mapping(uint256 => uint256)) internal vaultLatestUpdate;
 
     /// @dev mapping to store cap amount for naked margin vault per options collateral asset (scaled by collateral asset decimals)
-    mapping(address => uint256) internal nakedCap;
+    // mapping(address => uint256) internal nakedCap;
 
     /// @dev mapping to store amount of naked margin vaults in pool
-    mapping(address => uint256) internal nakedPoolBalance;
+    // mapping(address => uint256) internal nakedPoolBalance;
 
     /// @notice emits an event when an account operator is updated for a specific account owner
     event AccountOperatorUpdated(address indexed accountOwner, address indexed operator, bool isSet);
@@ -182,7 +182,7 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     /// @notice emits an event when a vault is settled
     event VaultSettled(
         address indexed accountOwner,
-        address indexed oTokenAddress,
+        address indexed shortOtoken,
         address to,
         uint256[] payouts,
         uint256 vaultId,
@@ -214,7 +214,7 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     /// @notice emits an event when a donation transfer executed
     event Donated(address indexed donator, address indexed asset, uint256 amount);
     /// @notice emits an event when naked cap is updated
-    event NakedCapUpdated(address indexed collateral, uint256 cap);
+    // event NakedCapUpdated(address indexed collateral, uint256 cap);
 
     /**
      * @notice modifier to check if the system is not partially paused, where only redeem and settleVault is allowed
@@ -269,7 +269,8 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
      */
     modifier onlyWhitelistedCallee(address _callee) {
         if (callRestricted) {
-            require(_isCalleeWhitelisted(_callee), "C3");
+            // require(_isCalleeWhitelisted(_callee), "C3");
+            require(whitelist.isWhitelistedCallee(_callee), "C3");
         }
 
         _;
@@ -420,13 +421,13 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
      * @param _collateral collateral asset address
      * @param _cap cap amount, should be scaled by collateral asset decimals
      */
-    function setNakedCap(address _collateral, uint256 _cap) external onlyOwner {
-        require(_cap > 0, "C36");
+    // function setNakedCap(address _collateral, uint256 _cap) external onlyOwner {
+    //     require(_cap > 0, "C36");
 
-        nakedCap[_collateral] = _cap;
+    //     nakedCap[_collateral] = _cap;
 
-        emit NakedCapUpdated(_collateral, _cap);
-    }
+    //     emit NakedCapUpdated(_collateral, _cap);
+    // }
 
     /**
      * @notice execute a number of actions on specific vaults
@@ -459,9 +460,9 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
      * @param _operator account operator address
      * @return True if the _operator is an approved operator for the _owner account
      */
-    function isOperator(address _owner, address _operator) external view returns (bool) {
-        return operators[_owner][_operator];
-    }
+    // function isOperator(address _owner, address _operator) external view returns (bool) {
+    //     return operators[_owner][_operator];
+    // }
 
     /**
      * @notice returns the current controller configuration
@@ -470,18 +471,18 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
      * @return calculator, the address of the calculator module
      * @return pool, the address of the pool module
      */
-    function getConfiguration()
-        external
-        view
-        returns (
-            address,
-            address,
-            address,
-            address
-        )
-    {
-        return (address(whitelist), address(oracle), address(calculator), address(pool));
-    }
+    // function getConfiguration()
+    //     external
+    //     view
+    //     returns (
+    //         address,
+    //         address,
+    //         address,
+    //         address
+    //     )
+    // {
+    //     return (address(whitelist), address(oracle), address(calculator), address(pool));
+    // }
 
     /**
      * @notice return a vault's proceeds pre or post expiry, the amount of collateral that can be removed from a vault
@@ -506,22 +507,23 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
      * @param _roundId chainlink round id to check vault status at
      * @return isUnderCollat, true if vault is undercollateralized, the price of 1 repaid otoken and the otoken collateral dust amount
      */
-    function isLiquidatable(
-        address _owner,
-        uint256 _vaultId,
-        uint256 _roundId
-    )
-        external
-        view
-        returns (
-            bool,
-            uint256,
-            uint256[] memory
-        )
-    {
-        (, bool isUnderCollat, uint256 price, uint256[] memory dust) = _isLiquidatable(_owner, _vaultId, _roundId);
-        return (isUnderCollat, price, dust);
-    }
+    //  TODO commented for now to make contract fit size restrictions mb enable later
+    // function isLiquidatable(
+    //     address _owner,
+    //     uint256 _vaultId,
+    //     uint256 _roundId
+    // )
+    //     external
+    //     view
+    //     returns (
+    //         bool,
+    //         uint256,
+    //         uint256[] memory
+    //     )
+    // {
+    //     (, bool isUnderCollat, uint256 price, uint256[] memory dust) = _isLiquidatable(_owner, _vaultId, _roundId);
+    //     return (isUnderCollat, price, dust);
+    // }
 
     /**
      * @notice get an oToken's payout/cash value after expiry, in the collateral asset
@@ -529,20 +531,20 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
      * @param _amount amount of the oToken to calculate the payout for, always represented in 1e8
      * @return amount of collateral to pay out
      */
-    function getPayout(address _otoken, uint256 _amount) public view returns (uint256[] memory) {
-        // payoutsRaw continats amounts of each of collateral asset in collateral asset decimals to be paid out for 1e8 of the oToken
-        return calculator.getPayout(_otoken, _amount);
-    }
+    // function getPayout(address _otoken, uint256 _amount) public view returns (uint256[] memory) {
+    //     // payoutsRaw continats amounts of each of collateral asset in collateral asset decimals to be paid out for 1e8 of the oToken
+    //     return calculator.getPayout(_otoken, _amount);
+    // }
 
     /**
      * @dev return if an expired oToken is ready to be settled, only true when price for underlying,
      * strike and collateral assets at this specific expiry is available in our Oracle module
      * @param _otoken oToken
      */
-    function isSettlementAllowed(address _otoken) external view returns (bool) {
-        (address[] memory collaterals, address underlying, address strike, uint256 expiry) = _getOtokenDetails(_otoken);
-        return _canSettleAssets(underlying, strike, collaterals, expiry);
-    }
+    // function isSettlementAllowed(address _otoken) external view returns (bool) {
+    //     (address[] memory collaterals, address underlying, address strike, uint256 expiry) = _getOtokenDetails(_otoken);
+    //     return _canSettleAssets(underlying, strike, collaterals, expiry);
+    // }
 
     /**
      * @dev return if underlying, strike, collateral are all allowed to be settled
@@ -566,18 +568,18 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
      * @param _accountOwner account owner address
      * @return number of vaults
      */
-    function getAccountVaultCounter(address _accountOwner) external view returns (uint256) {
-        return accountVaultCounter[_accountOwner];
-    }
+    // function getAccountVaultCounter(address _accountOwner) external view returns (uint256) {
+    //     return accountVaultCounter[_accountOwner];
+    // }
 
     /**
      * @notice check if an oToken has expired
      * @param _otoken oToken address
      * @return True if the otoken has expired, False if not
      */
-    function hasExpired(address _otoken) external view returns (bool) {
-        return block.timestamp >= OtokenInterface(_otoken).expiryTimestamp();
-    }
+    // function hasExpired(address _otoken) external view returns (bool) {
+    //     return block.timestamp >= OtokenInterface(_otoken).expiryTimestamp();
+    // }
 
     /**
      * @notice return a specific vault
@@ -585,9 +587,9 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
      * @param _vaultId vault id of vault to return
      * @return Vault struct that corresponds to the _vaultId of _owner
      */
-    function getVault(address _owner, uint256 _vaultId) external view returns (MarginVault.Vault memory) {
-        return (vaults[_owner][_vaultId]);
-    }
+    // function getVault(address _owner, uint256 _vaultId) external view returns (MarginVault.Vault memory) {
+    //     return (vaults[_owner][_vaultId]);
+    // }
 
     /**
      * @notice return a specific vault
@@ -612,18 +614,18 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
      * @param _asset collateral asset address
      * @return cap amount
      */
-    function getNakedCap(address _asset) external view returns (uint256) {
-        return nakedCap[_asset];
-    }
+    // function getNakedCap(address _asset) external view returns (uint256) {
+    //     return nakedCap[_asset];
+    // }
 
     /**
      * @notice get amount of collateral deposited in all naked margin vaults
      * @param _asset collateral asset address
      * @return naked pool balance
      */
-    function getNakedPoolBalance(address _asset) external view returns (uint256) {
-        return nakedPoolBalance[_asset];
-    }
+    // function getNakedPoolBalance(address _asset) external view returns (uint256) {
+    //     return nakedPoolBalance[_asset];
+    // }
 
     /**
      * @notice execute a variety of actions
@@ -726,13 +728,13 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
         require(_args.vaultId == vaultId, "C15");
         // TODO add more checks on assets of vault are the same as oToken
-        require(whitelist.isWhitelistedOtoken(_args.oTokenAddress), "C23");
-        OtokenInterface oToken = OtokenInterface(_args.oTokenAddress);
+        require(whitelist.isWhitelistedOtoken(_args.shortOtoken), "C23");
+        OtokenInterface oToken = OtokenInterface(_args.shortOtoken);
 
         // store new vault
         accountVaultCounter[_args.owner] = vaultId;
         vaultType[_args.owner][vaultId] = _args.vaultType;
-        vaults[_args.owner][vaultId].oTokenAddress = _args.oTokenAddress;
+        vaults[_args.owner][vaultId].shortOtoken = _args.shortOtoken;
         vaults[_args.owner][vaultId].collateralAssets = oToken.collateralAssets();
 
         emit VaultOpened(_args.owner, vaultId, _args.vaultType);
@@ -804,8 +806,9 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         require((_args.from == msg.sender) || (_args.from == _args.owner), "C20");
 
         require(whitelist.isWhitelistedCollaterals(_args.assets), "C21");
+
         // TODO since we can't create vault without specifying oToken should we omit this check?
-        require(vaults[_args.owner][_args.vaultId].oTokenAddress != address(0), "C39");
+        require(vaults[_args.owner][_args.vaultId].shortOtoken != address(0), "C39");
         require(
             // TODO we can get rid of assets argument cause we have collateralAssets property in vault itself
             _args.assets.isEqual(vaults[_args.owner][_args.vaultId].collateralAssets),
@@ -841,17 +844,17 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     {
         require(_checkVaultId(_args.owner, _args.vaultId), "C35");
 
-        (MarginVault.Vault memory vault, uint256 typeVault, ) = getVaultWithDetails(_args.owner, _args.vaultId);
+        (MarginVault.Vault memory vault, , ) = getVaultWithDetails(_args.owner, _args.vaultId);
 
-        if (_isNotEmpty(vault.shortOtokens)) {
-            OtokenInterface otoken = OtokenInterface(vault.shortOtokens[0]);
+        if (vault.shortOtoken != address(0)) {
+            OtokenInterface otoken = OtokenInterface(vault.shortOtoken);
 
             require(block.timestamp < otoken.expiryTimestamp(), "C22");
         }
 
-        if (typeVault == 1) {
-            nakedPoolBalance[_args.asset] = nakedPoolBalance[_args.asset].sub(_args.amount);
-        }
+        // if (typeVault == 1) {
+        //     nakedPoolBalance[_args.asset] = nakedPoolBalance[_args.asset].sub(_args.amount);
+        // }
 
         vaults[_args.owner][_args.vaultId].removeCollateral(_args.asset, _args.amount, _args.index);
 
@@ -872,7 +875,7 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     {
         require(_checkVaultId(_args.owner, _args.vaultId), "C35");
         require(whitelist.isWhitelistedOtoken(_args.otoken), "C23");
-        require(vaults[_args.owner][_args.vaultId].oTokenAddress == _args.otoken, "C41");
+        require(vaults[_args.owner][_args.vaultId].shortOtoken == _args.otoken, "C41");
 
         OtokenInterface otoken = OtokenInterface(_args.otoken);
 
@@ -885,7 +888,7 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             ._getCollateralRequired(vaults[_args.owner][_args.vaultId], _args.otoken, _args.amount);
         otoken.mintOtoken(_args.to, _args.amount, usedCollateralsAmounts, usedCollateralsValues);
 
-        vaults[_args.owner][_args.vaultId].addShort(_args.otoken, _args.amount, _args.index);
+        vaults[_args.owner][_args.vaultId].addShort(_args.otoken, _args.amount);
         vaults[_args.owner][_args.vaultId].useCollateralBulk(usedCollateralsAmounts);
 
         emit ShortOtokenMinted(_args.otoken, _args.owner, _args.to, _args.vaultId, _args.amount);
@@ -912,7 +915,7 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         require(block.timestamp < otoken.expiryTimestamp(), "C26");
 
         // remove otoken from vault
-        vaults[_args.owner][_args.vaultId].removeShort(_args.otoken, _args.amount, _args.index);
+        vaults[_args.owner][_args.vaultId].removeShort(_args.otoken, _args.amount);
 
         // burn otoken
         otoken.burnOtoken(_args.from, _args.amount);
@@ -940,7 +943,7 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
         require(_canSettleAssets(underlying, strike, collaterals, expiry), "C29");
 
-        uint256[] memory payout = getPayout(_args.otoken, _args.amount);
+        uint256[] memory payout = calculator.getPayout(_args.otoken, _args.amount);
 
         otoken.burnOtoken(msg.sender, _args.amount);
 
@@ -948,6 +951,7 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         for (uint256 i = 0; i < payout.length; i++) {
             if (payout[i] > 0) {
                 // TODO unwrap here for redeemers
+                // TODO pool bulk transfer to user
                 pool.transferToUser(otokenColalterals[i], _args.receiver, payout[i]);
             }
         }
@@ -973,18 +977,18 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         // if there is a long otoken, burn it
         // store otoken address outside of this scope
         {
-            bool hasShort = _isNotEmpty(vault.shortOtokens);
-            bool hasLong = _isNotEmpty(vault.longOtokens);
+            bool hasShort = vault.shortOtoken != address(0);
+            bool hasLong = vault.longOtokens._isNotEmpty();
 
             require(hasShort || hasLong, "C30");
 
-            otoken = hasShort ? OtokenInterface(vault.shortOtokens[0]) : OtokenInterface(vault.longOtokens[0]);
+            otoken = hasShort ? OtokenInterface(vault.shortOtoken) : OtokenInterface(vault.longOtokens[0]);
 
-            if (hasLong) {
-                OtokenInterface longOtoken = OtokenInterface(vault.longOtokens[0]);
+            // if (hasLong) {
+            //     OtokenInterface longOtoken = OtokenInterface(vault.longOtokens[0]);
 
-                longOtoken.burnOtoken(address(pool), vault.longAmounts[0]);
-            }
+            //     longOtoken.burnOtoken(address(pool), vault.longAmounts[0]);
+            // }
         }
 
         (address[] memory collaterals, address underlying, address strike, uint256 expiry) = _getOtokenDetails(
@@ -1007,9 +1011,9 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
         for (uint256 i = 0; i < collaterals.length; i++) {
             // TODO since we removed undercollateralized naked margin vault from the system, this check is no longer needed
-            if (typeVault == 1) {
-                nakedPoolBalance[collaterals[i]] = nakedPoolBalance[collaterals[i]].sub(payouts[i]);
-            }
+            // if (typeVault == 1) {
+            //     nakedPoolBalance[collaterals[i]] = nakedPoolBalance[collaterals[i]].sub(payouts[i]);
+            // }
             if (payouts[i] != 0) {
                 pool.transferToUser(collaterals[i], _args.to, payouts[i]);
             }
@@ -1046,23 +1050,23 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
         // if vault is partially liquidated (amount of short otoken is still greater than zero)
         // make sure remaining collateral amount is greater than dust amount
-        if (vault.shortAmounts[0].sub(_args.amount) > 0) {
+        if (vault.shortAmount.sub(_args.amount) > 0) {
             // TODO correct calculations for array
             require(vault.collateralAmounts[0].sub(collateralToSell) >= collateralDust[0], "C34");
         }
 
         // burn short otoken from liquidator address, index of short otoken hardcoded at 0
         // this should always work, if vault have no short otoken, it will not reach this step
-        OtokenInterface(vault.shortOtokens[0]).burnOtoken(msg.sender, _args.amount);
+        OtokenInterface(vault.shortOtoken).burnOtoken(msg.sender, _args.amount);
 
         // decrease amount of collateral in liquidated vault, index of collateral to decrease is hardcoded at 0
         vaults[_args.owner][_args.vaultId].removeCollateral(vault.collateralAssets[0], collateralToSell, 0);
 
         // decrease amount of short otoken in liquidated vault, index of short otoken to decrease is hardcoded at 0
-        vaults[_args.owner][_args.vaultId].removeShort(vault.shortOtokens[0], _args.amount, 0);
+        vaults[_args.owner][_args.vaultId].removeShort(vault.shortOtoken, _args.amount);
 
         // decrease internal naked margin collateral amount
-        nakedPoolBalance[vault.collateralAssets[0]] = nakedPoolBalance[vault.collateralAssets[0]].sub(collateralToSell);
+        // nakedPoolBalance[vault.collateralAssets[0]] = nakedPoolBalance[vault.collateralAssets[0]].sub(collateralToSell);
 
         pool.transferToUser(vault.collateralAssets[0], _args.receiver, collateralToSell);
 
@@ -1099,18 +1103,14 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         return ((_vaultId > 0) && (_vaultId <= accountVaultCounter[_accountOwner]));
     }
 
-    function _isNotEmpty(address[] memory _array) internal pure returns (bool) {
-        return (_array.length > 0) && (_array[0] != address(0));
-    }
-
     /**
      * @notice return if a callee address is whitelisted or not
      * @param _callee callee address
      * @return True if callee address is whitelisted, False if not
      */
-    function _isCalleeWhitelisted(address _callee) internal view returns (bool) {
-        return whitelist.isWhitelistedCallee(_callee);
-    }
+    // function _isCalleeWhitelisted(address _callee) internal view returns (bool) {
+    //     return whitelist.isWhitelistedCallee(_callee);
+    // }
 
     /**
      * @notice check if a vault is liquidatable in a specific round id
@@ -1161,23 +1161,9 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         )
     {
         OtokenInterface otoken = OtokenInterface(_otoken);
-        try otoken.getOtokenDetails() returns (
-            address[] memory collaterals,
-            address underlying,
-            address strike,
-            uint256,
-            uint256 expiry,
-            bool
-        ) {
-            return (collaterals, underlying, strike, expiry);
-        } catch {
-            return (
-                otoken.collateralAssets(),
-                otoken.underlyingAsset(),
-                otoken.strikeAsset(),
-                otoken.expiryTimestamp()
-            );
-        }
+        (address[] memory collaterals, address underlying, address strike, , uint256 expiry, ) = otoken
+            .getOtokenDetails();
+        return (collaterals, underlying, strike, expiry);
     }
 
     /**
@@ -1194,6 +1180,7 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         bool canSettle = true;
         for (uint256 i = 0; i < _collaterals.length; i++) {
             canSettle = canSettle && oracle.isDisputePeriodOver(_collaterals[i], _expiry);
+            // TODO early return if canSettle false?
         }
         return
             canSettle &&

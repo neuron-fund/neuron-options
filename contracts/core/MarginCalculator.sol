@@ -34,10 +34,10 @@ contract MarginCalculator is Ownable {
 
     /// @dev struct to store all needed vault details
     struct VaultDetails {
-        address oTokenAddress;
+        address shortOtoken;
         address shortUnderlyingAsset;
         address shortStrikeAsset;
-        uint256[] shortAmounts;
+        uint256 shortAmount;
         address[] shortCollateralAssets;
         address longUnderlyingAsset;
         address longStrikeAsset;
@@ -333,41 +333,41 @@ contract MarginCalculator is Ownable {
      * @param _isPut otoken type
      * @return collateral required for a naked margin vault, in collateral asset decimals
      */
-    function getNakedMarginRequired(
-        address _underlying,
-        address _strike,
-        address[] calldata _collaterals,
-        uint256 _shortAmount,
-        uint256 _strikePrice,
-        uint256 _underlyingPrice,
-        uint256 _shortExpiryTimestamp,
-        uint256 _collateralDecimals,
-        bool _isPut
-    ) external view returns (uint256) {
-        bytes32 productHash = _getProductHash(_underlying, _strike, _collaterals, _isPut);
+    // function getNakedMarginRequired(
+    //     address _underlying,
+    //     address _strike,
+    //     address[] calldata _collaterals,
+    //     uint256 _shortAmount,
+    //     uint256 _strikePrice,
+    //     uint256 _underlyingPrice,
+    //     uint256 _shortExpiryTimestamp,
+    //     uint256 _collateralDecimals,
+    //     bool _isPut
+    // ) external view returns (uint256) {
+    //     bytes32 productHash = _getProductHash(_underlying, _strike, _collaterals, _isPut);
 
-        // scale short amount from 1e8 to 1e27 (oToken is always in 1e8)
-        FPI.FixedPointInt memory shortAmount = FPI.fromScaledUint(_shortAmount, BASE);
-        // scale short strike from 1e8 to 1e27
-        FPI.FixedPointInt memory shortStrike = FPI.fromScaledUint(_strikePrice, BASE);
-        // scale short underlying price from 1e8 to 1e27
-        FPI.FixedPointInt memory shortUnderlyingPrice = FPI.fromScaledUint(_underlyingPrice, BASE);
+    //     // scale short amount from 1e8 to 1e27 (oToken is always in 1e8)
+    //     FPI.FixedPointInt memory shortAmount = FPI.fromScaledUint(_shortAmount, BASE);
+    //     // scale short strike from 1e8 to 1e27
+    //     FPI.FixedPointInt memory shortStrike = FPI.fromScaledUint(_strikePrice, BASE);
+    //     // scale short underlying price from 1e8 to 1e27
+    //     FPI.FixedPointInt memory shortUnderlyingPrice = FPI.fromScaledUint(_underlyingPrice, BASE);
 
-        // return required margin, scaled by collateral asset decimals, explicitly rounded up
-        return
-            FPI.toScaledUint(
-                _getNakedMarginRequired(
-                    productHash,
-                    shortAmount,
-                    shortUnderlyingPrice,
-                    shortStrike,
-                    _shortExpiryTimestamp,
-                    _isPut
-                ),
-                _collateralDecimals,
-                false
-            );
-    }
+    //     // return required margin, scaled by collateral asset decimals, explicitly rounded up
+    //     return
+    //         FPI.toScaledUint(
+    //             _getNakedMarginRequired(
+    //                 productHash,
+    //                 shortAmount,
+    //                 shortUnderlyingPrice,
+    //                 shortStrike,
+    //                 _shortExpiryTimestamp,
+    //                 _isPut
+    //             ),
+    //             _collateralDecimals,
+    //             false
+    //         );
+    // }
 
     /**
      * @notice get an oToken's payout/cash value after expiry, in the collateral asset
@@ -519,7 +519,7 @@ contract MarginCalculator is Ownable {
 
         // another struct to store some useful short otoken details, to avoid stack to deep error
         ShortScaledDetails memory shortDetails = ShortScaledDetails({
-            shortAmount: FPI.fromScaledUint(_vault.shortAmounts[0], BASE),
+            shortAmount: FPI.fromScaledUint(_vault.shortAmount, BASE),
             shortStrike: FPI.fromScaledUint(vaultDetails.shortStrikePrice, BASE),
             shortUnderlyingPrice: FPI.fromScaledUint(price, BASE)
         });
@@ -627,7 +627,7 @@ contract MarginCalculator is Ownable {
         }
 
         if (vaultDetails.hasShort) {
-            uint256[] memory payoutForMintedOTokens = getPayout(_vault.oTokenAddress, _vault.shortAmounts[0]);
+            uint256[] memory payoutForMintedOTokens = getPayout(_vault.shortOtoken, _vault.shortAmount);
             uint256[] memory unusedCollateral = new uint256[](_vault.collateralAssets.length);
             for (uint256 i = 0; i < _vault.collateralAssets.length; i++) {
                 unusedCollateral[i] = _vault.collateralAmounts[i].sub(payoutForMintedOTokens[i]);
@@ -698,7 +698,7 @@ contract MarginCalculator is Ownable {
         )
     {
         FPI.FixedPointInt memory shortAmount = _vaultDetails.hasShort
-            ? FPI.fromScaledUint(_vault.shortAmounts[0], BASE)
+            ? FPI.fromScaledUint(_vault.shortAmount, BASE)
             : ZERO;
         FPI.FixedPointInt memory longAmount = _vaultDetails.hasLong
             ? FPI.fromScaledUint(_vault.longAmounts[0], BASE)
@@ -1162,10 +1162,10 @@ contract MarginCalculator is Ownable {
         returns (VaultDetails memory)
     {
         VaultDetails memory vaultDetails = VaultDetails(
-            address(0), // address oTokenAddress;
+            address(0), // address shortOtoken;
             address(0), // address shortUnderlyingAsset;
             address(0), // address shortStrikeAsset;
-            new uint256[](0), // uint256[] shortAmounts;
+            0, // uint256[] shortAmount;
             new address[](0), // address[] shortCollateralAssets;
             address(0), // address longUnderlyingAsset;
             address(0), // address longStrikeAsset;
@@ -1188,12 +1188,12 @@ contract MarginCalculator is Ownable {
 
         // check if vault has long, short otoken and collateral asset
         vaultDetails.hasLong = _isNotEmpty(_vault.longOtokens);
-        vaultDetails.hasShort = _isNotEmpty(_vault.shortOtokens);
+        vaultDetails.hasShort = _vault.shortOtoken != address(0);
         vaultDetails.hasCollateral = _isNotEmpty(_vault.collateralAssets);
 
         vaultDetails.vaultType = _vaultType;
-        vaultDetails.oTokenAddress = _vault.oTokenAddress;
-        vaultDetails.shortAmounts = _vault.shortAmounts;
+        vaultDetails.shortOtoken = _vault.shortOtoken;
+        vaultDetails.shortAmount = _vault.shortAmount;
         vaultDetails.collateralAmounts = _vault.collateralAmounts;
 
         // get vault long otoken if available
@@ -1216,7 +1216,7 @@ contract MarginCalculator is Ownable {
 
         // get vault short otoken if available
         if (vaultDetails.hasShort) {
-            OtokenInterface short = OtokenInterface(_vault.shortOtokens[0]);
+            OtokenInterface short = OtokenInterface(_vault.shortOtoken);
             (
                 vaultDetails.shortCollateralAssets,
                 vaultDetails.shortUnderlyingAsset,
@@ -1277,17 +1277,12 @@ contract MarginCalculator is Ownable {
      */
     function _checkIsValidVault(MarginVault.Vault memory _vault, VaultDetails memory _vaultDetails) internal pure {
         // ensure all the arrays in the vault are valid
-        require(_vault.shortOtokens.length <= 1, "MarginCalculator: Too many short otokens in the vault");
         require(_vault.longOtokens.length <= 1, "MarginCalculator: Too many long otokens in the vault");
         require(
             _vault.collateralAssets.length <= Constants.MAX_COLLATERAL_ASSETS,
             "MarginCalculator: Too many collateral assets in the vault"
         );
 
-        require(
-            _vault.shortOtokens.length == _vault.shortAmounts.length,
-            "MarginCalculator: Short asset and amount mismatch"
-        );
         require(
             _vault.longOtokens.length == _vault.longAmounts.length,
             "MarginCalculator: Long asset and amount mismatch"
@@ -1338,7 +1333,7 @@ contract MarginCalculator is Ownable {
         }
 
         return
-            _vault.longOtokens[0] != _vault.shortOtokens[0] &&
+            _vault.longOtokens[0] != _vault.shortOtoken &&
             _vaultDetails.longUnderlyingAsset == _vaultDetails.shortUnderlyingAsset &&
             _vaultDetails.longStrikeAsset == _vaultDetails.shortStrikeAsset &&
             _vaultDetails.longExpiryTimestamp == _vaultDetails.shortExpiryTimestamp &&
