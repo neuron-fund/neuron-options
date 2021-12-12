@@ -28,6 +28,12 @@ const config: HardhatUserConfig = {
           optimizer: {
             enabled: true,
             // TODO figure out best value
+            // If the smart contract is only of one-time use as a smart contract for vesting or locking of tokens,
+            // you can set the runs value to 1 so that the compiler will produce the smallest possible bytecode
+            // but it may cost slightly more gas to call the function(s).
+            // If you are deploying a contract that will be used a lot (like an ERC20 token), you should set the runs to a high number like 1337
+            //  so that initial bytecode will be slightly larger but calls made to that contract will be cheaper.
+            //  Commonly used functions like transfer will be cheaper.
             runs: Number(process.env.OPTIMIZER) || 200,
           },
         },
