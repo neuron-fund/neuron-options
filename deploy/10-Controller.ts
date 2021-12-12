@@ -9,18 +9,21 @@ const deploy: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const signer = (await ethers.getSigners())[0]
 
   const MarginVault = await get('MarginVault')
+  const ArrayAddressUtils = await get('ArrayAddressUtils')
+  const AddressBook = await get('AddressBook')
 
+  // TODO Deploy as proxy
   const ControllerDeployResult = await deploy<DeployArgs<Controller__factory>>('Controller', {
     from: signer.address,
     libraries: {
       MarginVault: MarginVault.address,
+      ArrayAddressUtils: ArrayAddressUtils.address,
     },
   })
-  const AddressBook = await get('AddressBook')
   const addressBook = (await ethers.getContractAt('AddressBook', AddressBook.address, signer)) as AddressBook
   await addressBook.setController(ControllerDeployResult.address)
 }
 
 deploy.tags = ['Controller']
-deploy.dependencies = ['MarginVault', 'AddressBook']
+deploy.dependencies = ['MarginVault', 'AddressBook', 'ArrayAddressUtils']
 export default deploy
