@@ -35,7 +35,6 @@ export type { YearnVaultInterface } from "./YearnVaultInterface";
 export type { ZeroXExchangeInterface } from "./ZeroXExchangeInterface";
 export type { ArrayAddressUtils } from "./ArrayAddressUtils";
 export type { Migrations } from "./Migrations";
-export type { ReentrancyGuard } from "./ReentrancyGuard";
 export type { OwnableUpgradeSafe } from "./OwnableUpgradeSafe";
 export type { OwnedUpgradeabilityProxy } from "./OwnedUpgradeabilityProxy";
 export type { Proxy } from "./Proxy";
@@ -80,7 +79,6 @@ export { YearnVaultInterface__factory } from "./factories/YearnVaultInterface__f
 export { ZeroXExchangeInterface__factory } from "./factories/ZeroXExchangeInterface__factory";
 export { ArrayAddressUtils__factory } from "./factories/ArrayAddressUtils__factory";
 export { Migrations__factory } from "./factories/Migrations__factory";
-export { ReentrancyGuard__factory } from "./factories/ReentrancyGuard__factory";
 export { OwnableUpgradeSafe__factory } from "./factories/OwnableUpgradeSafe__factory";
 export { OwnedUpgradeabilityProxy__factory } from "./factories/OwnedUpgradeabilityProxy__factory";
 export { Proxy__factory } from "./factories/Proxy__factory";

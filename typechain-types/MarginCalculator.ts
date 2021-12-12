@@ -18,11 +18,10 @@ import { Listener, Provider } from "@ethersproject/providers";
 import { TypedEventFilter, TypedEvent, TypedListener, OnEvent } from "./common";
 
 export type VaultStruct = {
-  oTokenAddress: string;
-  shortOtokens: string[];
+  shortOtoken: string;
   longOtokens: string[];
   collateralAssets: string[];
-  shortAmounts: BigNumberish[];
+  shortAmount: BigNumberish;
   longAmounts: BigNumberish[];
   collateralAmounts: BigNumberish[];
   usedCollateralAmounts: BigNumberish[];
@@ -33,18 +32,16 @@ export type VaultStructOutput = [
   string,
   string[],
   string[],
-  string[],
-  BigNumber[],
+  BigNumber,
   BigNumber[],
   BigNumber[],
   BigNumber[],
   BigNumber[]
 ] & {
-  oTokenAddress: string;
-  shortOtokens: string[];
+  shortOtoken: string;
   longOtokens: string[];
   collateralAssets: string[];
-  shortAmounts: BigNumber[];
+  shortAmount: BigNumber;
   longAmounts: BigNumber[];
   collateralAmounts: BigNumber[];
   usedCollateralAmounts: BigNumber[];
@@ -58,19 +55,18 @@ export type FixedPointIntStructOutput = [BigNumber] & { value: BigNumber };
 export interface MarginCalculatorInterface extends utils.Interface {
   functions: {
     "AUCTION_TIME()": FunctionFragment;
-    "_getCollateralRequired((address,address[],address[],address[],uint256[],uint256[],uint256[],uint256[],uint256[]),address,uint256)": FunctionFragment;
+    "_getCollateralRequired((address,address[],address[],uint256,uint256[],uint256[],uint256[],uint256[]),address,uint256)": FunctionFragment;
     "_getCollateralizationRatio(address,address)": FunctionFragment;
     "getCollateralDust(address)": FunctionFragment;
-    "getExcessCollateral((address,address[],address[],address[],uint256[],uint256[],uint256[],uint256[],uint256[]),uint256)": FunctionFragment;
+    "getExcessCollateral((address,address[],address[],uint256,uint256[],uint256[],uint256[],uint256[]),uint256)": FunctionFragment;
     "getExpiredPayoutRate(address)": FunctionFragment;
-    "getMarginRequired((address,address[],address[],address[],uint256[],uint256[],uint256[],uint256[],uint256[]),uint256)": FunctionFragment;
+    "getMarginRequired((address,address[],address[],uint256,uint256[],uint256[],uint256[],uint256[]),uint256)": FunctionFragment;
     "getMaxPrice(address,address,address[],bool,uint256)": FunctionFragment;
-    "getNakedMarginRequired(address,address,address[],uint256,uint256,uint256,uint256,uint256,bool)": FunctionFragment;
     "getOracleDeviation()": FunctionFragment;
     "getPayout(address,uint256)": FunctionFragment;
     "getSpotShock(address,address,address[],bool)": FunctionFragment;
     "getTimesToExpiry(address,address,address[],bool)": FunctionFragment;
-    "isLiquidatable((address,address[],address[],address[],uint256[],uint256[],uint256[],uint256[],uint256[]),uint256,uint256,uint256)": FunctionFragment;
+    "isLiquidatable((address,address[],address[],uint256,uint256[],uint256[],uint256[],uint256[]),uint256,uint256,uint256)": FunctionFragment;
     "oracle()": FunctionFragment;
     "owner()": FunctionFragment;
     "renounceOwnership()": FunctionFragment;
@@ -113,20 +109,6 @@ export interface MarginCalculatorInterface extends utils.Interface {
   encodeFunctionData(
     functionFragment: "getMaxPrice",
     values: [string, string, string[], boolean, BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getNakedMarginRequired",
-    values: [
-      string,
-      string,
-      string[],
-      BigNumberish,
-      BigNumberish,
-      BigNumberish,
-      BigNumberish,
-      BigNumberish,
-      boolean
-    ]
   ): string;
   encodeFunctionData(
     functionFragment: "getOracleDeviation",
@@ -209,10 +191,6 @@ export interface MarginCalculatorInterface extends utils.Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "getMaxPrice",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getNakedMarginRequired",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -421,19 +399,6 @@ export interface MarginCalculator extends BaseContract {
       overrides?: CallOverrides
     ): Promise<[BigNumber]>;
 
-    getNakedMarginRequired(
-      _underlying: string,
-      _strike: string,
-      _collaterals: string[],
-      _shortAmount: BigNumberish,
-      _strikePrice: BigNumberish,
-      _underlyingPrice: BigNumberish,
-      _shortExpiryTimestamp: BigNumberish,
-      _collateralDecimals: BigNumberish,
-      _isPut: boolean,
-      overrides?: CallOverrides
-    ): Promise<[BigNumber]>;
-
     getOracleDeviation(overrides?: CallOverrides): Promise<[BigNumber]>;
 
     getPayout(
@@ -573,19 +538,6 @@ export interface MarginCalculator extends BaseContract {
     overrides?: CallOverrides
   ): Promise<BigNumber>;
 
-  getNakedMarginRequired(
-    _underlying: string,
-    _strike: string,
-    _collaterals: string[],
-    _shortAmount: BigNumberish,
-    _strikePrice: BigNumberish,
-    _underlyingPrice: BigNumberish,
-    _shortExpiryTimestamp: BigNumberish,
-    _collateralDecimals: BigNumberish,
-    _isPut: boolean,
-    overrides?: CallOverrides
-  ): Promise<BigNumber>;
-
   getOracleDeviation(overrides?: CallOverrides): Promise<BigNumber>;
 
   getPayout(
@@ -722,19 +674,6 @@ export interface MarginCalculator extends BaseContract {
       _collaterals: string[],
       _isPut: boolean,
       _timeToExpiry: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
-    getNakedMarginRequired(
-      _underlying: string,
-      _strike: string,
-      _collaterals: string[],
-      _shortAmount: BigNumberish,
-      _strikePrice: BigNumberish,
-      _underlyingPrice: BigNumberish,
-      _shortExpiryTimestamp: BigNumberish,
-      _collateralDecimals: BigNumberish,
-      _isPut: boolean,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
@@ -938,19 +877,6 @@ export interface MarginCalculator extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
-    getNakedMarginRequired(
-      _underlying: string,
-      _strike: string,
-      _collaterals: string[],
-      _shortAmount: BigNumberish,
-      _strikePrice: BigNumberish,
-      _underlyingPrice: BigNumberish,
-      _shortExpiryTimestamp: BigNumberish,
-      _collateralDecimals: BigNumberish,
-      _isPut: boolean,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
     getOracleDeviation(overrides?: CallOverrides): Promise<BigNumber>;
 
     getPayout(
@@ -1081,19 +1007,6 @@ export interface MarginCalculator extends BaseContract {
       _collaterals: string[],
       _isPut: boolean,
       _timeToExpiry: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
-    getNakedMarginRequired(
-      _underlying: string,
-      _strike: string,
-      _collaterals: string[],
-      _shortAmount: BigNumberish,
-      _strikePrice: BigNumberish,
-      _underlyingPrice: BigNumberish,
-      _shortExpiryTimestamp: BigNumberish,
-      _collateralDecimals: BigNumberish,
-      _isPut: boolean,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 

@@ -18,11 +18,10 @@ import { Listener, Provider } from "@ethersproject/providers";
 import { TypedEventFilter, TypedEvent, TypedListener, OnEvent } from "./common";
 
 export type VaultStruct = {
-  oTokenAddress: string;
-  shortOtokens: string[];
+  shortOtoken: string;
   longOtokens: string[];
   collateralAssets: string[];
-  shortAmounts: BigNumberish[];
+  shortAmount: BigNumberish;
   longAmounts: BigNumberish[];
   collateralAmounts: BigNumberish[];
   usedCollateralAmounts: BigNumberish[];
@@ -33,18 +32,16 @@ export type VaultStructOutput = [
   string,
   string[],
   string[],
-  string[],
-  BigNumber[],
+  BigNumber,
   BigNumber[],
   BigNumber[],
   BigNumber[],
   BigNumber[]
 ] & {
-  oTokenAddress: string;
-  shortOtokens: string[];
+  shortOtoken: string;
   longOtokens: string[];
   collateralAssets: string[];
-  shortAmounts: BigNumber[];
+  shortAmount: BigNumber;
   longAmounts: BigNumber[];
   collateralAmounts: BigNumber[];
   usedCollateralAmounts: BigNumber[];
@@ -84,25 +81,16 @@ export type ActionArgsStructOutput = [
 
 export interface ControllerInterface extends utils.Interface {
   functions: {
+    "accountVaultCounter(address)": FunctionFragment;
     "addressbook()": FunctionFragment;
     "calculator()": FunctionFragment;
     "callRestricted()": FunctionFragment;
     "canSettleAssets(address,address,address[],uint256)": FunctionFragment;
     "donate(address,uint256)": FunctionFragment;
     "fullPauser()": FunctionFragment;
-    "getAccountVaultCounter(address)": FunctionFragment;
-    "getConfiguration()": FunctionFragment;
-    "getNakedCap(address)": FunctionFragment;
-    "getNakedPoolBalance(address)": FunctionFragment;
-    "getPayout(address,uint256)": FunctionFragment;
     "getProceed(address,uint256)": FunctionFragment;
-    "getVault(address,uint256)": FunctionFragment;
     "getVaultWithDetails(address,uint256)": FunctionFragment;
-    "hasExpired(address)": FunctionFragment;
     "initialize(address,address)": FunctionFragment;
-    "isLiquidatable(address,uint256,uint256)": FunctionFragment;
-    "isOperator(address,address)": FunctionFragment;
-    "isSettlementAllowed(address)": FunctionFragment;
     "operate((uint8,address,address,address[],uint256,uint256[],uint256,bytes)[])": FunctionFragment;
     "oracle()": FunctionFragment;
     "owner()": FunctionFragment;
@@ -112,7 +100,6 @@ export interface ControllerInterface extends utils.Interface {
     "renounceOwnership()": FunctionFragment;
     "setCallRestriction(bool)": FunctionFragment;
     "setFullPauser(address)": FunctionFragment;
-    "setNakedCap(address,uint256)": FunctionFragment;
     "setOperator(address,bool)": FunctionFragment;
     "setPartialPauser(address)": FunctionFragment;
     "setSystemFullyPaused(bool)": FunctionFragment;
@@ -121,9 +108,14 @@ export interface ControllerInterface extends utils.Interface {
     "systemFullyPaused()": FunctionFragment;
     "systemPartiallyPaused()": FunctionFragment;
     "transferOwnership(address)": FunctionFragment;
+    "vaults(address,uint256)": FunctionFragment;
     "whitelist()": FunctionFragment;
   };
 
+  encodeFunctionData(
+    functionFragment: "accountVaultCounter",
+    values: [string]
+  ): string;
   encodeFunctionData(
     functionFragment: "addressbook",
     values?: undefined
@@ -149,50 +141,16 @@ export interface ControllerInterface extends utils.Interface {
     values?: undefined
   ): string;
   encodeFunctionData(
-    functionFragment: "getAccountVaultCounter",
-    values: [string]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getConfiguration",
-    values?: undefined
-  ): string;
-  encodeFunctionData(functionFragment: "getNakedCap", values: [string]): string;
-  encodeFunctionData(
-    functionFragment: "getNakedPoolBalance",
-    values: [string]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getPayout",
-    values: [string, BigNumberish]
-  ): string;
-  encodeFunctionData(
     functionFragment: "getProceed",
-    values: [string, BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getVault",
     values: [string, BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "getVaultWithDetails",
     values: [string, BigNumberish]
   ): string;
-  encodeFunctionData(functionFragment: "hasExpired", values: [string]): string;
   encodeFunctionData(
     functionFragment: "initialize",
     values: [string, string]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "isLiquidatable",
-    values: [string, BigNumberish, BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "isOperator",
-    values: [string, string]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "isSettlementAllowed",
-    values: [string]
   ): string;
   encodeFunctionData(
     functionFragment: "operate",
@@ -220,10 +178,6 @@ export interface ControllerInterface extends utils.Interface {
   encodeFunctionData(
     functionFragment: "setFullPauser",
     values: [string]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "setNakedCap",
-    values: [string, BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "setOperator",
@@ -257,8 +211,16 @@ export interface ControllerInterface extends utils.Interface {
     functionFragment: "transferOwnership",
     values: [string]
   ): string;
+  encodeFunctionData(
+    functionFragment: "vaults",
+    values: [string, BigNumberish]
+  ): string;
   encodeFunctionData(functionFragment: "whitelist", values?: undefined): string;
 
+  decodeFunctionResult(
+    functionFragment: "accountVaultCounter",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "addressbook",
     data: BytesLike
@@ -274,40 +236,12 @@ export interface ControllerInterface extends utils.Interface {
   ): Result;
   decodeFunctionResult(functionFragment: "donate", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "fullPauser", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "getAccountVaultCounter",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getConfiguration",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getNakedCap",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getNakedPoolBalance",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(functionFragment: "getPayout", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "getProceed", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "getVault", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "getVaultWithDetails",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "hasExpired", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "initialize", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "isLiquidatable",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(functionFragment: "isOperator", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "isSettlementAllowed",
-    data: BytesLike
-  ): Result;
   decodeFunctionResult(functionFragment: "operate", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "oracle", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
@@ -330,10 +264,6 @@ export interface ControllerInterface extends utils.Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "setFullPauser",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "setNakedCap",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -365,6 +295,7 @@ export interface ControllerInterface extends utils.Interface {
     functionFragment: "transferOwnership",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "vaults", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "whitelist", data: BytesLike): Result;
 
   events: {
@@ -377,7 +308,6 @@ export interface ControllerInterface extends utils.Interface {
     "FullPauserUpdated(address,address)": EventFragment;
     "LongOtokenDeposited(address,address,address,uint256,uint256)": EventFragment;
     "LongOtokenWithdrawed(address,address,address,uint256,uint256)": EventFragment;
-    "NakedCapUpdated(address,uint256)": EventFragment;
     "OwnershipTransferred(address,address)": EventFragment;
     "PartialPauserUpdated(address,address)": EventFragment;
     "Redeem(address,address,address,address[],uint256,uint256[])": EventFragment;
@@ -399,7 +329,6 @@ export interface ControllerInterface extends utils.Interface {
   getEvent(nameOrSignatureOrTopic: "FullPauserUpdated"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "LongOtokenDeposited"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "LongOtokenWithdrawed"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "NakedCapUpdated"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "OwnershipTransferred"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "PartialPauserUpdated"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Redeem"): EventFragment;
@@ -504,13 +433,6 @@ export type LongOtokenWithdrawedEvent = TypedEvent<
 
 export type LongOtokenWithdrawedEventFilter =
   TypedEventFilter<LongOtokenWithdrawedEvent>;
-
-export type NakedCapUpdatedEvent = TypedEvent<
-  [string, BigNumber],
-  { collateral: string; cap: BigNumber }
->;
-
-export type NakedCapUpdatedEventFilter = TypedEventFilter<NakedCapUpdatedEvent>;
 
 export type OwnershipTransferredEvent = TypedEvent<
   [string, string],
@@ -622,7 +544,7 @@ export type VaultSettledEvent = TypedEvent<
   [string, string, string, BigNumber[], BigNumber, BigNumber],
   {
     accountOwner: string;
-    oTokenAddress: string;
+    shortOtoken: string;
     to: string;
     payouts: BigNumber[];
     vaultId: BigNumber;
@@ -659,6 +581,11 @@ export interface Controller extends BaseContract {
   removeListener: OnEvent<this>;
 
   functions: {
+    accountVaultCounter(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<[BigNumber]>;
+
     addressbook(overrides?: CallOverrides): Promise<[string]>;
 
     calculator(overrides?: CallOverrides): Promise<[string]>;
@@ -681,42 +608,11 @@ export interface Controller extends BaseContract {
 
     fullPauser(overrides?: CallOverrides): Promise<[string]>;
 
-    getAccountVaultCounter(
-      _accountOwner: string,
-      overrides?: CallOverrides
-    ): Promise<[BigNumber]>;
-
-    getConfiguration(
-      overrides?: CallOverrides
-    ): Promise<[string, string, string, string]>;
-
-    getNakedCap(
-      _asset: string,
-      overrides?: CallOverrides
-    ): Promise<[BigNumber]>;
-
-    getNakedPoolBalance(
-      _asset: string,
-      overrides?: CallOverrides
-    ): Promise<[BigNumber]>;
-
-    getPayout(
-      _otoken: string,
-      _amount: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<[BigNumber[]]>;
-
     getProceed(
       _owner: string,
       _vaultId: BigNumberish,
       overrides?: CallOverrides
     ): Promise<[BigNumber[]]>;
-
-    getVault(
-      _owner: string,
-      _vaultId: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<[VaultStructOutput]>;
 
     getVaultWithDetails(
       _owner: string,
@@ -724,31 +620,11 @@ export interface Controller extends BaseContract {
       overrides?: CallOverrides
     ): Promise<[VaultStructOutput, BigNumber, BigNumber]>;
 
-    hasExpired(_otoken: string, overrides?: CallOverrides): Promise<[boolean]>;
-
     initialize(
       _addressBook: string,
       _owner: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
-
-    isLiquidatable(
-      _owner: string,
-      _vaultId: BigNumberish,
-      _roundId: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<[boolean, BigNumber, BigNumber[]]>;
-
-    isOperator(
-      _owner: string,
-      _operator: string,
-      overrides?: CallOverrides
-    ): Promise<[boolean]>;
-
-    isSettlementAllowed(
-      _otoken: string,
-      overrides?: CallOverrides
-    ): Promise<[boolean]>;
 
     operate(
       _actions: ActionArgsStruct[],
@@ -778,12 +654,6 @@ export interface Controller extends BaseContract {
 
     setFullPauser(
       _fullPauser: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<ContractTransaction>;
-
-    setNakedCap(
-      _collateral: string,
-      _cap: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -823,8 +693,21 @@ export interface Controller extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
+    vaults(
+      arg0: string,
+      arg1: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<
+      [string, BigNumber] & { shortOtoken: string; shortAmount: BigNumber }
+    >;
+
     whitelist(overrides?: CallOverrides): Promise<[string]>;
   };
+
+  accountVaultCounter(
+    arg0: string,
+    overrides?: CallOverrides
+  ): Promise<BigNumber>;
 
   addressbook(overrides?: CallOverrides): Promise<string>;
 
@@ -848,39 +731,11 @@ export interface Controller extends BaseContract {
 
   fullPauser(overrides?: CallOverrides): Promise<string>;
 
-  getAccountVaultCounter(
-    _accountOwner: string,
-    overrides?: CallOverrides
-  ): Promise<BigNumber>;
-
-  getConfiguration(
-    overrides?: CallOverrides
-  ): Promise<[string, string, string, string]>;
-
-  getNakedCap(_asset: string, overrides?: CallOverrides): Promise<BigNumber>;
-
-  getNakedPoolBalance(
-    _asset: string,
-    overrides?: CallOverrides
-  ): Promise<BigNumber>;
-
-  getPayout(
-    _otoken: string,
-    _amount: BigNumberish,
-    overrides?: CallOverrides
-  ): Promise<BigNumber[]>;
-
   getProceed(
     _owner: string,
     _vaultId: BigNumberish,
     overrides?: CallOverrides
   ): Promise<BigNumber[]>;
-
-  getVault(
-    _owner: string,
-    _vaultId: BigNumberish,
-    overrides?: CallOverrides
-  ): Promise<VaultStructOutput>;
 
   getVaultWithDetails(
     _owner: string,
@@ -888,31 +743,11 @@ export interface Controller extends BaseContract {
     overrides?: CallOverrides
   ): Promise<[VaultStructOutput, BigNumber, BigNumber]>;
 
-  hasExpired(_otoken: string, overrides?: CallOverrides): Promise<boolean>;
-
   initialize(
     _addressBook: string,
     _owner: string,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
-
-  isLiquidatable(
-    _owner: string,
-    _vaultId: BigNumberish,
-    _roundId: BigNumberish,
-    overrides?: CallOverrides
-  ): Promise<[boolean, BigNumber, BigNumber[]]>;
-
-  isOperator(
-    _owner: string,
-    _operator: string,
-    overrides?: CallOverrides
-  ): Promise<boolean>;
-
-  isSettlementAllowed(
-    _otoken: string,
-    overrides?: CallOverrides
-  ): Promise<boolean>;
 
   operate(
     _actions: ActionArgsStruct[],
@@ -942,12 +777,6 @@ export interface Controller extends BaseContract {
 
   setFullPauser(
     _fullPauser: string,
-    overrides?: Overrides & { from?: string | Promise<string> }
-  ): Promise<ContractTransaction>;
-
-  setNakedCap(
-    _collateral: string,
-    _cap: BigNumberish,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -987,9 +816,22 @@ export interface Controller extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
+  vaults(
+    arg0: string,
+    arg1: BigNumberish,
+    overrides?: CallOverrides
+  ): Promise<
+    [string, BigNumber] & { shortOtoken: string; shortAmount: BigNumber }
+  >;
+
   whitelist(overrides?: CallOverrides): Promise<string>;
 
   callStatic: {
+    accountVaultCounter(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
     addressbook(overrides?: CallOverrides): Promise<string>;
 
     calculator(overrides?: CallOverrides): Promise<string>;
@@ -1012,39 +854,11 @@ export interface Controller extends BaseContract {
 
     fullPauser(overrides?: CallOverrides): Promise<string>;
 
-    getAccountVaultCounter(
-      _accountOwner: string,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
-    getConfiguration(
-      overrides?: CallOverrides
-    ): Promise<[string, string, string, string]>;
-
-    getNakedCap(_asset: string, overrides?: CallOverrides): Promise<BigNumber>;
-
-    getNakedPoolBalance(
-      _asset: string,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
-    getPayout(
-      _otoken: string,
-      _amount: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<BigNumber[]>;
-
     getProceed(
       _owner: string,
       _vaultId: BigNumberish,
       overrides?: CallOverrides
     ): Promise<BigNumber[]>;
-
-    getVault(
-      _owner: string,
-      _vaultId: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<VaultStructOutput>;
 
     getVaultWithDetails(
       _owner: string,
@@ -1052,31 +866,11 @@ export interface Controller extends BaseContract {
       overrides?: CallOverrides
     ): Promise<[VaultStructOutput, BigNumber, BigNumber]>;
 
-    hasExpired(_otoken: string, overrides?: CallOverrides): Promise<boolean>;
-
     initialize(
       _addressBook: string,
       _owner: string,
       overrides?: CallOverrides
     ): Promise<void>;
-
-    isLiquidatable(
-      _owner: string,
-      _vaultId: BigNumberish,
-      _roundId: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<[boolean, BigNumber, BigNumber[]]>;
-
-    isOperator(
-      _owner: string,
-      _operator: string,
-      overrides?: CallOverrides
-    ): Promise<boolean>;
-
-    isSettlementAllowed(
-      _otoken: string,
-      overrides?: CallOverrides
-    ): Promise<boolean>;
 
     operate(
       _actions: ActionArgsStruct[],
@@ -1102,12 +896,6 @@ export interface Controller extends BaseContract {
 
     setFullPauser(
       _fullPauser: string,
-      overrides?: CallOverrides
-    ): Promise<void>;
-
-    setNakedCap(
-      _collateral: string,
-      _cap: BigNumberish,
       overrides?: CallOverrides
     ): Promise<void>;
 
@@ -1146,6 +934,14 @@ export interface Controller extends BaseContract {
       newOwner: string,
       overrides?: CallOverrides
     ): Promise<void>;
+
+    vaults(
+      arg0: string,
+      arg1: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<
+      [string, BigNumber] & { shortOtoken: string; shortAmount: BigNumber }
+    >;
 
     whitelist(overrides?: CallOverrides): Promise<string>;
   };
@@ -1256,15 +1052,6 @@ export interface Controller extends BaseContract {
       amount?: null
     ): LongOtokenWithdrawedEventFilter;
 
-    "NakedCapUpdated(address,uint256)"(
-      collateral?: string | null,
-      cap?: null
-    ): NakedCapUpdatedEventFilter;
-    NakedCapUpdated(
-      collateral?: string | null,
-      cap?: null
-    ): NakedCapUpdatedEventFilter;
-
     "OwnershipTransferred(address,address)"(
       previousOwner?: string | null,
       newOwner?: string | null
@@ -1372,7 +1159,7 @@ export interface Controller extends BaseContract {
 
     "VaultSettled(address,address,address,uint256[],uint256,uint256)"(
       accountOwner?: string | null,
-      oTokenAddress?: string | null,
+      shortOtoken?: string | null,
       to?: null,
       payouts?: null,
       vaultId?: null,
@@ -1380,7 +1167,7 @@ export interface Controller extends BaseContract {
     ): VaultSettledEventFilter;
     VaultSettled(
       accountOwner?: string | null,
-      oTokenAddress?: string | null,
+      shortOtoken?: string | null,
       to?: null,
       payouts?: null,
       vaultId?: null,
@@ -1389,6 +1176,11 @@ export interface Controller extends BaseContract {
   };
 
   estimateGas: {
+    accountVaultCounter(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
     addressbook(overrides?: CallOverrides): Promise<BigNumber>;
 
     calculator(overrides?: CallOverrides): Promise<BigNumber>;
@@ -1411,33 +1203,7 @@ export interface Controller extends BaseContract {
 
     fullPauser(overrides?: CallOverrides): Promise<BigNumber>;
 
-    getAccountVaultCounter(
-      _accountOwner: string,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
-    getConfiguration(overrides?: CallOverrides): Promise<BigNumber>;
-
-    getNakedCap(_asset: string, overrides?: CallOverrides): Promise<BigNumber>;
-
-    getNakedPoolBalance(
-      _asset: string,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
-    getPayout(
-      _otoken: string,
-      _amount: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
     getProceed(
-      _owner: string,
-      _vaultId: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
-    getVault(
       _owner: string,
       _vaultId: BigNumberish,
       overrides?: CallOverrides
@@ -1449,30 +1215,10 @@ export interface Controller extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
-    hasExpired(_otoken: string, overrides?: CallOverrides): Promise<BigNumber>;
-
     initialize(
       _addressBook: string,
       _owner: string,
       overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<BigNumber>;
-
-    isLiquidatable(
-      _owner: string,
-      _vaultId: BigNumberish,
-      _roundId: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
-    isOperator(
-      _owner: string,
-      _operator: string,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
-    isSettlementAllowed(
-      _otoken: string,
-      overrides?: CallOverrides
     ): Promise<BigNumber>;
 
     operate(
@@ -1503,12 +1249,6 @@ export interface Controller extends BaseContract {
 
     setFullPauser(
       _fullPauser: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<BigNumber>;
-
-    setNakedCap(
-      _collateral: string,
-      _cap: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -1548,10 +1288,21 @@ export interface Controller extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
+    vaults(
+      arg0: string,
+      arg1: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
     whitelist(overrides?: CallOverrides): Promise<BigNumber>;
   };
 
   populateTransaction: {
+    accountVaultCounter(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
     addressbook(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     calculator(overrides?: CallOverrides): Promise<PopulatedTransaction>;
@@ -1574,36 +1325,7 @@ export interface Controller extends BaseContract {
 
     fullPauser(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
-    getAccountVaultCounter(
-      _accountOwner: string,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
-    getConfiguration(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    getNakedCap(
-      _asset: string,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
-    getNakedPoolBalance(
-      _asset: string,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
-    getPayout(
-      _otoken: string,
-      _amount: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
     getProceed(
-      _owner: string,
-      _vaultId: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
-    getVault(
       _owner: string,
       _vaultId: BigNumberish,
       overrides?: CallOverrides
@@ -1615,33 +1337,10 @@ export interface Controller extends BaseContract {
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
-    hasExpired(
-      _otoken: string,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
     initialize(
       _addressBook: string,
       _owner: string,
       overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<PopulatedTransaction>;
-
-    isLiquidatable(
-      _owner: string,
-      _vaultId: BigNumberish,
-      _roundId: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
-    isOperator(
-      _owner: string,
-      _operator: string,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
-    isSettlementAllowed(
-      _otoken: string,
-      overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
     operate(
@@ -1672,12 +1371,6 @@ export interface Controller extends BaseContract {
 
     setFullPauser(
       _fullPauser: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<PopulatedTransaction>;
-
-    setNakedCap(
-      _collateral: string,
-      _cap: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
@@ -1717,6 +1410,12 @@ export interface Controller extends BaseContract {
     transferOwnership(
       newOwner: string,
       overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    vaults(
+      arg0: string,
+      arg1: BigNumberish,
+      overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
     whitelist(overrides?: CallOverrides): Promise<PopulatedTransaction>;

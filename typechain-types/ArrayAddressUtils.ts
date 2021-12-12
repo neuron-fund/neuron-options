@@ -57,22 +57,22 @@ export interface ArrayAddressUtils extends BaseContract {
 
   functions: {
     isEqual(
-      self: string[],
-      arr: string[],
+      arr1: string[],
+      arr2: string[],
       overrides?: CallOverrides
     ): Promise<[boolean]>;
   };
 
   isEqual(
-    self: string[],
-    arr: string[],
+    arr1: string[],
+    arr2: string[],
     overrides?: CallOverrides
   ): Promise<boolean>;
 
   callStatic: {
     isEqual(
-      self: string[],
-      arr: string[],
+      arr1: string[],
+      arr2: string[],
       overrides?: CallOverrides
     ): Promise<boolean>;
   };
@@ -81,16 +81,16 @@ export interface ArrayAddressUtils extends BaseContract {
 
   estimateGas: {
     isEqual(
-      self: string[],
-      arr: string[],
+      arr1: string[],
+      arr2: string[],
       overrides?: CallOverrides
     ): Promise<BigNumber>;
   };
 
   populateTransaction: {
     isEqual(
-      self: string[],
-      arr: string[],
+      arr1: string[],
+      arr2: string[],
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
   };
