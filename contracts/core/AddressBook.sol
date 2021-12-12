@@ -4,6 +4,7 @@
 pragma solidity 0.8.9;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+// TODO use from @openzeppelin package
 import {OwnedUpgradeabilityProxy} from "../packages/oz/upgradeability/OwnedUpgradeabilityProxy.sol";
 
 /**
