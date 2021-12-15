@@ -1,13 +1,14 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types'
 import { DeployFunction } from 'hardhat-deploy/types'
+import { namedAccountsSigners } from '../utils/hardhat'
 
 const deploy: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { ethers, deployments } = hre
+  const { deployments, getNamedAccounts } = hre
   const { deploy } = deployments
-  const signer = (await ethers.getSigners())[0]
+  const { deployer } = await namedAccountsSigners(getNamedAccounts)
 
   await deploy('ArrayAddressUtils', {
-    from: signer.address,
+    from: deployer.address,
   })
 }
 
