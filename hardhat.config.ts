@@ -6,7 +6,6 @@ dotenvExpand(env)
 import { HardhatUserConfig } from 'hardhat/config'
 import '@nomiclabs/hardhat-ethers'
 import '@nomiclabs/hardhat-waffle'
-import '@nomiclabs/hardhat-vyper'
 import 'hardhat-deploy-ethers'
 import 'hardhat-deploy'
 import '@nomiclabs/hardhat-web3'
