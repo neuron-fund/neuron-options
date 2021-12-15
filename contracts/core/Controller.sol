@@ -676,7 +676,7 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             if (actionType == Actions.ActionType.OpenVault) {
                 _openVault(Actions._parseOpenVaultArgs(action));
             } else if (actionType == Actions.ActionType.DepositLongOption) {
-                _depositLong(Actions._parseDepositArgs(action));
+                // _depositLong(Actions._parseDepositArgs(action));
             } else if (actionType == Actions.ActionType.WithdrawLongOption) {
                 _withdrawLong(Actions._parseWithdrawArgs(action));
             } else if (actionType == Actions.ActionType.DepositCollateral) {
@@ -735,7 +735,17 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         accountVaultCounter[_args.owner] = vaultId;
         vaultType[_args.owner][vaultId] = _args.vaultType;
         vaults[_args.owner][vaultId].shortOtoken = _args.shortOtoken;
-        vaults[_args.owner][vaultId].collateralAssets = oToken.collateralAssets();
+        vaults[_args.owner][vaultId].collateralAssets = oToken.getCollateralAssets();
+        // TODO 3 times reading length from struct. Possibly can be optimized by initializing uint with length
+        vaults[_args.owner][vaultId].collateralAmounts = new uint256[](
+            vaults[_args.owner][vaultId].collateralAssets.length
+        );
+        vaults[_args.owner][vaultId].usedCollateralAmounts = new uint256[](
+            vaults[_args.owner][vaultId].collateralAssets.length
+        );
+        vaults[_args.owner][vaultId].unusedCollateralAmounts = new uint256[](
+            vaults[_args.owner][vaultId].collateralAssets.length
+        );
 
         emit VaultOpened(_args.owner, vaultId, _args.vaultType);
     }
@@ -746,27 +756,27 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
      * @param _args DepositArgs structure
      */
     // TODO special depositLong args to get rid off assets array, it's not required for longs
-    function _depositLong(Actions.DepositArgs memory _args)
-        internal
-        notPartiallyPaused
-        onlyAuthorized(msg.sender, _args.owner)
-    {
-        // TODO for long restrict actions to 1 length amounts and 1 length assets
-        require(_checkVaultId(_args.owner, _args.vaultId), "C35");
-        // only allow vault owner or vault operator to deposit long otoken
-        require((_args.from == msg.sender) || (_args.from == _args.owner), "C16");
+    // function _depositLong(Actions.DepositArgs memory _args)
+    //     internal
+    //     notPartiallyPaused
+    //     onlyAuthorized(msg.sender, _args.owner)
+    // {
+    //     // TODO for long restrict actions to 1 length amounts and 1 length assets
+    //     require(_checkVaultId(_args.owner, _args.vaultId), "C35");
+    //     // only allow vault owner or vault operator to deposit long otoken
+    //     require((_args.from == msg.sender) || (_args.from == _args.owner), "C16");
 
-        require(whitelist.isWhitelistedOtoken(_args.assets[0]), "C17");
+    //     require(whitelist.isWhitelistedOtoken(_args.assets[0]), "C17");
 
-        OtokenInterface otoken = OtokenInterface(_args.assets[0]);
+    //     OtokenInterface otoken = OtokenInterface(_args.assets[0]);
 
-        require(block.timestamp < otoken.expiryTimestamp(), "C18");
+    //     require(block.timestamp < otoken.expiryTimestamp(), "C18");
 
-        vaults[_args.owner][_args.vaultId].addLong(_args.assets[0], _args.amounts[0], _args.index);
-        pool.transferToPool(_args.assets[0], _args.from, _args.amounts[0]);
+    //     vaults[_args.owner][_args.vaultId].addLong(_args.assets[0], _args.amounts[0], _args.index);
+    //     pool.transferToPool(_args.assets[0], _args.from, _args.amounts[0]);
 
-        emit LongOtokenDeposited(_args.assets[0], _args.owner, _args.from, _args.vaultId, _args.amounts[0]);
-    }
+    //     emit LongOtokenDeposited(_args.assets[0], _args.owner, _args.from, _args.vaultId, _args.amounts[0]);
+    // }
 
     /**
      * @notice withdraw a long oToken from a vault
@@ -818,6 +828,7 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         // (, uint256 typeVault, ) = getVaultWithDetails(_args.owner, _args.vaultId);
 
         uint256 collateralsLength = _args.assets.length;
+        // TODO use batch transfer to pool
         for (uint256 i = 0; i < collateralsLength; i++) {
             // TODO should exlude this case? partial collaterization
             // if (typeVault == 1) {
@@ -868,6 +879,7 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
      * @dev only the account owner or operator can mint an oToken, cannot be called when system is partiallyPaused or fullyPaused
      * @param _args MintArgs structure
      */
+    // TODO special arg for minting on full collateral in vault, sine its anyway strictly connected to one oToken
     function _mintOtoken(Actions.MintArgs memory _args)
         internal
         notPartiallyPaused
@@ -887,7 +899,6 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         (uint256[] memory usedCollateralsAmounts, uint256[] memory usedCollateralsValues) = calculator
             ._getCollateralRequired(vaults[_args.owner][_args.vaultId], _args.otoken, _args.amount);
         otoken.mintOtoken(_args.to, _args.amount, usedCollateralsAmounts, usedCollateralsValues);
-
         vaults[_args.owner][_args.vaultId].addShort(_args.otoken, _args.amount);
         vaults[_args.owner][_args.vaultId].useCollateralBulk(usedCollateralsAmounts);
 
@@ -943,11 +954,13 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
         require(_canSettleAssets(underlying, strike, collaterals, expiry), "C29");
 
+        // TODO redeemers payOut is just taken from MarginPool and possibly can overflow used for mint amounts
+        // which is not desired behaviour. It can take some elses collateral or unused collateral
         uint256[] memory payout = calculator.getPayout(_args.otoken, _args.amount);
 
         otoken.burnOtoken(msg.sender, _args.amount);
 
-        address[] memory otokenColalterals = otoken.collateralAssets();
+        address[] memory otokenColalterals = otoken.getCollateralAssets();
         for (uint256 i = 0; i < payout.length; i++) {
             if (payout[i] > 0) {
                 // TODO unwrap here for redeemers
