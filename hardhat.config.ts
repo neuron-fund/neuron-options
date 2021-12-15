@@ -77,19 +77,21 @@ const config: HardhatUserConfig = {
   etherscan: {
     apiKey: process.env.ETHERSCAN_API,
   },
-  vyper: {
-    version: '0.2.12',
-  },
   mocha: {
     reporter: 'eth-gas-reporter',
     timeout: 300000,
   },
-  // namedAccounts: {
-  //   default: {
-  //     default: 0,
-
-  //   }
-  // }
+  namedAccounts: {
+    deployer: {
+      default: 0,
+    },
+    pricerBot: {
+      default: 1,
+    },
+    user: {
+      default: 2,
+    },
+  },
 }
 
 export default config
