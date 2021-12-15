@@ -31,6 +31,7 @@ export interface OtokenInterface extends utils.Interface {
     "decimals()": FunctionFragment;
     "decreaseAllowance(address,uint256)": FunctionFragment;
     "expiryTimestamp()": FunctionFragment;
+    "getCollateralAssets()": FunctionFragment;
     "getOtokenDetails()": FunctionFragment;
     "increaseAllowance(address,uint256)": FunctionFragment;
     "init(address,address,address,address[],uint256,uint256,bool)": FunctionFragment;
@@ -89,6 +90,10 @@ export interface OtokenInterface extends utils.Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "expiryTimestamp",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getCollateralAssets",
     values?: undefined
   ): string;
   encodeFunctionData(
@@ -188,6 +193,10 @@ export interface OtokenInterface extends utils.Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "expiryTimestamp",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "getCollateralAssets",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -330,6 +339,8 @@ export interface Otoken extends BaseContract {
 
     expiryTimestamp(overrides?: CallOverrides): Promise<[BigNumber]>;
 
+    getCollateralAssets(overrides?: CallOverrides): Promise<[string[]]>;
+
     getOtokenDetails(
       overrides?: CallOverrides
     ): Promise<[string[], string, string, BigNumber, BigNumber, boolean]>;
@@ -451,6 +462,8 @@ export interface Otoken extends BaseContract {
 
   expiryTimestamp(overrides?: CallOverrides): Promise<BigNumber>;
 
+  getCollateralAssets(overrides?: CallOverrides): Promise<string[]>;
+
   getOtokenDetails(
     overrides?: CallOverrides
   ): Promise<[string[], string, string, BigNumber, BigNumber, boolean]>;
@@ -571,6 +584,8 @@ export interface Otoken extends BaseContract {
     ): Promise<boolean>;
 
     expiryTimestamp(overrides?: CallOverrides): Promise<BigNumber>;
+
+    getCollateralAssets(overrides?: CallOverrides): Promise<string[]>;
 
     getOtokenDetails(
       overrides?: CallOverrides
@@ -718,6 +733,8 @@ export interface Otoken extends BaseContract {
 
     expiryTimestamp(overrides?: CallOverrides): Promise<BigNumber>;
 
+    getCollateralAssets(overrides?: CallOverrides): Promise<BigNumber>;
+
     getOtokenDetails(overrides?: CallOverrides): Promise<BigNumber>;
 
     increaseAllowance(
@@ -840,6 +857,10 @@ export interface Otoken extends BaseContract {
     ): Promise<PopulatedTransaction>;
 
     expiryTimestamp(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    getCollateralAssets(
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
 
     getOtokenDetails(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
