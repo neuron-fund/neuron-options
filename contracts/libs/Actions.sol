@@ -30,6 +30,8 @@ pragma solidity 0.8.9;
  * A21 cannot parse liquidate action with no round id
  * A22 can only parse arguments for call actions
  * A23 target address cannot be address(0)
+ * A24 amounts for minting oToken should be array with 1 element
+ * A24 assets for minting oToken should be array with 1 element and represent addres of the oToken to mint
  */
 library Actions {
     // possible actions that can be performed
@@ -76,9 +78,6 @@ library Actions {
         address to;
         // oToken that is to be minted
         address otoken;
-        // each vault can hold multiple short / long / collateral assets but we are restricting the scope to only 1 of each in this version
-        // in future versions this would be the index of the short / long / collateral asset that needs to be modified
-        uint256 index;
         // amount of oTokens that is to be minted
         uint256 amount;
     }
@@ -120,9 +119,6 @@ library Actions {
         address from;
         // asset that is to be deposited
         address[] assets;
-        // each vault can hold multiple short / long / collateral assets but we are restricting the scope to only 1 of each in this version
-        // in future versions this would be the index of the short / long / collateral asset that needs to be modified
-        uint256 index;
         // amount of asset that is to be deposited
         uint256[] amounts;
     }
@@ -217,6 +213,8 @@ library Actions {
     function _parseMintArgs(ActionArgs memory _args) internal pure returns (MintArgs memory) {
         require(_args.actionType == ActionType.MintShortOption, "A4");
         require(_args.owner != address(0), "A5");
+        require(_args.amounts.length == 1, "A24");
+        require(_args.assets.length == 1, "A25");
 
         return
             MintArgs({
@@ -224,7 +222,6 @@ library Actions {
                 vaultId: _args.vaultId,
                 to: _args.secondAddress,
                 otoken: _args.assets[0],
-                index: _args.index,
                 amount: _args.amounts[0]
             });
     }
@@ -267,7 +264,6 @@ library Actions {
                 vaultId: _args.vaultId,
                 from: _args.secondAddress,
                 assets: _args.assets,
-                index: _args.index,
                 amounts: _args.amounts
             });
     }

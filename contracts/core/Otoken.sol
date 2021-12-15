@@ -111,6 +111,10 @@ contract Otoken is ERC20PermitUpgradeable {
         return (collateralAssets, underlyingAsset, strikeAsset, strikePrice, expiryTimestamp, isPut);
     }
 
+    function getCollateralAssets() external view returns (address[] memory) {
+        return collateralAssets;
+    }
+
     /**
      * @notice mint oToken for an account
      * @dev Controller only method where access control is taken care of by _beforeTokenTransfer hook

@@ -19,6 +19,8 @@ import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
  * V8: invalid collateral token index
  * V9: collateral token address mismatch
  * v10: shortOtoken should be empty when performing addShort or the same as vault already have
+ * V11: _collateralAssets and _amounts length mismatch
+ * V12: _collateralAssets and vault.collateralAssets length mismatch
  */
 
 /**
@@ -164,7 +166,8 @@ library MarginVault {
         address[] calldata _collateralAssets,
         uint256[] calldata _amounts
     ) external {
-        require(_collateralAssets.length == _amounts.length, "_collateralAssets and _amounts length mismatch");
+        require(_collateralAssets.length == _amounts.length, "V11");
+        require(_collateralAssets.length == _vault.collateralAssets.length, "V12");
         for (uint256 i = 0; i < _collateralAssets.length; i++) {
             _vault.collateralAmounts[i] = _vault.collateralAmounts[i].add(_amounts[i]);
             _vault.unusedCollateralAmounts[i] = _vault.unusedCollateralAmounts[i].add(_amounts[i]);
@@ -195,7 +198,7 @@ library MarginVault {
 
     function useCollateralBulk(Vault storage _vault, uint256[] memory _amounts) external {
         require(
-            _amounts.length != _vault.collateralAssets.length,
+            _amounts.length == _vault.collateralAssets.length,
             "Amounts for collateral is not same length as collateral assets"
         );
 

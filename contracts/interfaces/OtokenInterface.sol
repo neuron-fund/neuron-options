@@ -15,7 +15,7 @@ interface OtokenInterface {
 
     function burnOtoken(address account, uint256 amount) external;
 
-    function collateralAssets() external view returns (address[] memory);
+    function getCollateralAssets() external view returns (address[] memory);
 
     function collateralAssetsValues(address) external view returns (uint256);
 

@@ -44,7 +44,6 @@ contract MarginCalculator is Ownable {
         address[] longCollateralAssets;
         uint256 shortStrikePrice;
         uint256 shortExpiryTimestamp;
-        uint256[] shortCollateralsDecimals;
         uint256 longStrikePrice;
         uint256 longExpiryTimestamp;
         uint256[] longCollateralsDecimals;
@@ -373,12 +372,13 @@ contract MarginCalculator is Ownable {
      * @notice get an oToken's payout/cash value after expiry, in the collateral asset
      * @param _otoken oToken address
      * @param _amount amount of the oToken to calculate the payout for, always represented in 1e8
-     * @return amount of collateral to pay out
+     * @return amount of collateral to pay out for provided amount rate
      */
     function getPayout(address _otoken, uint256 _amount) public view returns (uint256[] memory) {
-        // payoutsRaw continats amounts of each of collateral asset in collateral asset decimals to be paid out for 1e8 of the oToken
+        // payoutsRaw is amounts of each of collateral asset in collateral asset decimals to be paid out for 1e8 of the oToken
         uint256[] memory payoutsRaw = getExpiredPayoutRate(_otoken);
         uint256[] memory payouts = new uint256[](payoutsRaw.length);
+
         for (uint256 i = 0; i < payoutsRaw.length; i++) {
             // TODO is it possible to have significant precision loss here?
             // TODO can it overflow uint256 on multiplication?
@@ -619,20 +619,45 @@ contract MarginCalculator is Ownable {
         // include all the checks for to ensure the vault is valid
         _checkIsValidVault(_vault, vaultDetails);
 
+        bool hasExpiredShort = vaultDetails.hasShort &&
+            OtokenInterface(vaultDetails.shortOtoken).expiryTimestamp() <= block.timestamp;
+
         // if the vault contains no oTokens, return the amount of collateral
-        // TODO do we even need this check?
-        if (!vaultDetails.hasShort && !vaultDetails.hasLong) {
+        if (!hasExpiredShort) {
             // TODO check hasCollateral everywhere used it or not
-            return (_vault.collateralAmounts, true);
+            return (_vault.unusedCollateralAmounts, true);
         }
 
         if (vaultDetails.hasShort) {
-            uint256[] memory payoutForMintedOTokens = getPayout(_vault.shortOtoken, _vault.shortAmount);
-            uint256[] memory unusedCollateral = new uint256[](_vault.collateralAssets.length);
+            // This payout represents how much redeemer will get for each 1e8 of oToken. But from the vault side we should also calculate ratio
+            // of amounts of each collateral provided by vault  to same collateral total amount used for mint total number of oTokens
+            // For example: one vault provided [200 USDC, 0 DAI], and another vault [0 USDC, 200 DAI]
+            // and get payout returns [100 USDC, 100 DAI] first vault pays all the 100 USDC and the second one all the 100 DAI
+            uint256[] memory payoutsRaw = getExpiredPayoutRate(vaultDetails.shortOtoken);
+
+            uint256[] memory excessCollateral = _vault.unusedCollateralAmounts;
             for (uint256 i = 0; i < _vault.collateralAssets.length; i++) {
-                unusedCollateral[i] = _vault.collateralAmounts[i].sub(payoutForMintedOTokens[i]);
+                uint256 oTokenTotalCollateralAmount = OtokenInterface(vaultDetails.shortOtoken).collateralsAmounts(
+                    _vault.collateralAssets[i]
+                );
+                uint256 collateralProvidedByVault = _vault.usedCollateralAmounts[i];
+
+                // Formula is:
+                // R = (collateralProvidedByVault / oTokenTotalCollateralAmount) - ratio of payout for specific collateral for this vault
+                // P = shortAmount * (payoutsRaw[i] / 10**BASE) - redeem payout for shortAmount of oTokens
+                // U = unusedcollateral by vault
+                // excesscollateral[i] = P * R + u
+                excessCollateral[i] = excessCollateral[i].add(
+                    // TODO is it possible to have significant precision loss here?
+                    // TODO can it overflow uint256 on multiplication?
+                    payoutsRaw[i]
+                        .mul(vaultDetails.shortAmount)
+                        .mul(collateralProvidedByVault)
+                        .div(oTokenTotalCollateralAmount)
+                        .div(10**BASE)
+                );
             }
-            return (unusedCollateral, true);
+            return (excessCollateral, true);
         } else {
             // TODO hasLong?
         }
@@ -1225,17 +1250,11 @@ contract MarginCalculator is Ownable {
                 vaultDetails.shortExpiryTimestamp,
                 vaultDetails.isShortPut
             ) = _getOtokenDetails(address(short));
-            vaultDetails.shortCollateralsDecimals = new uint256[](vaultDetails.shortCollateralAssets.length);
-            for (uint256 i = 0; i < vaultDetails.shortCollateralAssets.length; i++) {
-                vaultDetails.shortCollateralsDecimals[i] = IERC20Metadata(vaultDetails.shortCollateralAssets[i])
-                    .decimals();
-            }
         }
 
-        if (vaultDetails.hasCollateral) {
-            for (uint256 i = 0; i < _vault.collateralAssets.length; i++) {
-                vaultDetails.collateralsDecimals[i] = uint256(IERC20Metadata(_vault.collateralAssets[i]).decimals());
-            }
+        vaultDetails.collateralsDecimals = new uint256[](_vault.collateralAssets.length);
+        for (uint256 i = 0; i < _vault.collateralAssets.length; i++) {
+            vaultDetails.collateralsDecimals[i] = uint256(IERC20Metadata(_vault.collateralAssets[i]).decimals());
         }
 
         return vaultDetails;
@@ -1485,7 +1504,7 @@ contract MarginCalculator is Ownable {
                     _vault.collateralAssets[i],
                     strikeAsset
                 );
-                availableCollateralTotalValue.add(availableCollateralsValues[i]);
+                availableCollateralTotalValue = availableCollateralTotalValue.add(availableCollateralsValues[i]);
             }
 
             require(
@@ -1503,10 +1522,13 @@ contract MarginCalculator is Ownable {
                 "Vault value is not enough to collaterize the amount"
             );
             FPI.FixedPointInt memory requiredRatio = strikeRequired.div(availableCollateralTotalValue);
+            collateralsValuesRequired = new uint256[](_vault.collateralAssets.length);
+            collateralsAmountsRequired = new uint256[](_vault.collateralAssets.length);
             // TODO can we avoid second loop?
             for (uint256 i = 0; i < _vault.collateralAssets.length; i++) {
                 if (availableCollateralsValues[i].isGreaterThan(ZERO)) {
                     // TODO decide which rounding should we use down or up, now we use down (toScaledUint last argument true)
+                    // TODO we use dynamic zero length array here initialized in function returns maybe save gas and value by initilizing inside
                     collateralsValuesRequired[i] = availableCollateralsValues[i].mul(requiredRatio).toScaledUint(
                         collateralsDecimals[i],
                         true
@@ -1520,8 +1542,6 @@ contract MarginCalculator is Ownable {
                     collateralsValuesRequired[i] = 0;
                 }
             }
-
-            return (collateralsAmountsRequired, collateralsValuesRequired);
         } else {
             // TODO calc call option case
             return (new uint256[](_vault.collateralAssets.length), new uint256[](_vault.collateralAssets.length));
