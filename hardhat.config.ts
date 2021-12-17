@@ -81,6 +81,7 @@ const config: HardhatUserConfig = {
     reporter: 'eth-gas-reporter',
     timeout: 300000,
   },
+  // TODO typed named accounts
   namedAccounts: {
     deployer: {
       default: 0,
@@ -90,6 +91,9 @@ const config: HardhatUserConfig = {
     },
     user: {
       default: 2,
+    },
+    redeemer: {
+      default: 3,
     },
   },
 }
