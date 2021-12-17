@@ -39,7 +39,7 @@ contract ChainLinkPricer is PricerInterface {
         address _asset,
         address _aggregator,
         address _oracle
-    ) public {
+    ) {
         require(_bot != address(0), "ChainLinkPricer: Cannot set 0 address as bot");
         require(_oracle != address(0), "ChainLinkPricer: Cannot set 0 address as oracle");
         require(_aggregator != address(0), "ChainLinkPricer: Cannot set 0 address as aggregator");
