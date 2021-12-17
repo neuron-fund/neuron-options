@@ -19,8 +19,6 @@ import {MarginPoolInterface} from "../interfaces/MarginPoolInterface.sol";
 import {CalleeInterface} from "../interfaces/CalleeInterface.sol";
 import {ArrayAddressUtils} from "../libs/ArrayAddressUtils.sol";
 
-import "hardhat/console.sol";
-
 /**
  * Controller Error Codes
  * C1: sender is not full pauser

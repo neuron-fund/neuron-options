@@ -14,8 +14,6 @@ import {MarginVault} from "../libs/MarginVault.sol";
 import {ArrayAddressUtils} from "../libs/ArrayAddressUtils.sol";
 import {Constants} from "./Constants.sol";
 
-import "hardhat/console.sol";
-
 /**
  * @title MarginCalculator
  * @notice Calculator module that checks if a given vault is valid, calculates margin requirements, and settlement proceeds
@@ -381,7 +379,6 @@ contract MarginCalculator is Ownable {
         uint256[] memory payouts = new uint256[](payoutsRaw.length);
 
         for (uint256 i = 0; i < payoutsRaw.length; i++) {
-            console.log("payoutsRaw[i] PAYOUT FOR 1 O TOKEN OF ASSET", i, payoutsRaw[i]);
             // TODO is it possible to have significant precision loss here?
             // TODO can it overflow uint256 on multiplication?
             payouts[i] = payoutsRaw[i].mul(_amount).div(10**BASE);
@@ -544,7 +541,6 @@ contract MarginCalculator is Ownable {
                             .div(10**BASE)
                     )
                 );
-                console.log("excessCollateral[i] AFTER ADD UNREDEEMED", excessCollateral[i]);
             }
             return (excessCollateral, true);
         } else {
@@ -572,7 +568,6 @@ contract MarginCalculator is Ownable {
     ) internal view returns (FPI.FixedPointInt memory) {
         // strike price is denominated in strike asset
         FPI.FixedPointInt memory strikePrice = FPI.fromScaledUint(_strikePrice, BASE);
-        console.log("strikePrice", _strikePrice);
         FPI.FixedPointInt memory one = FPI.fromScaledUint(1, 0);
 
         // calculate the value of the underlying asset in terms of the strike asset
@@ -936,9 +931,7 @@ contract MarginCalculator is Ownable {
             return _amount;
         }
         (uint256 priceA, bool priceAFinalized) = oracle.getExpiryPrice(_assetA, _expiry);
-        console.log("_assetA", _assetA, priceA);
         (uint256 priceB, bool priceBFinalized) = oracle.getExpiryPrice(_assetB, _expiry);
-        console.log("_assetB", _assetB, priceB);
         require(priceAFinalized && priceBFinalized, "MarginCalculator: price at expiry not finalized yet");
         // amount A * price A in USD = amount B * price B in USD
         // amount B = amount A * price A / price B
@@ -1291,8 +1284,6 @@ contract MarginCalculator is Ownable {
         require(_collateralAsset != address(0), "collateral asset address cannot be 0");
         OtokenInterface otoken = OtokenInterface(_otoken);
         uint256 value = otoken.collateralAssetsValues(_collateralAsset);
-        console.log("_getCollateralizationRatio _collateralAsset", _collateralAsset);
-        console.log("_getCollateralizationRatio value", value);
         // TODO Possible gas optimization: totalCollateralValue is called several times for each collateral when this function called
         uint256 totalCollateralValue = otoken.totalCollateralValue();
         // TODO Possible gas optimization: strikeAsset is called several times for each collateral when this function called
@@ -1348,8 +1339,6 @@ contract MarginCalculator is Ownable {
                 availableCollateralTotalValue = availableCollateralTotalValue.add(availableCollateralsValues[i]);
             }
 
-            console.log("availableCollateralTotalValue", availableCollateralTotalValue.toScaledUint(BASE, true));
-
             require(
                 availableCollateralTotalValue.isGreaterThan(ZERO),
                 "Cant calculate collateral required for zero vault"
@@ -1358,7 +1347,6 @@ contract MarginCalculator is Ownable {
             FPI.FixedPointInt memory strikeRequired = FPI.fromScaledUint(_amount, BASE).mul(
                 FPI.fromScaledUint(otoken.strikePrice(), BASE)
             );
-            console.log("strikeRequired", strikeRequired.toScaledUint(BASE, true));
 
             require(
                 availableCollateralTotalValue.isGreaterThanOrEqual(strikeRequired),
