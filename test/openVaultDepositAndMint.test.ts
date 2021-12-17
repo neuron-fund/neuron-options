@@ -37,8 +37,7 @@ describe('Open Vault, Deposit collateral, Mint Otoken', function () {
       oTokenParams
     )
 
-    const oTokenAddress = await findOToken(user, oTokenFactory, oTokenParams)
-    const oToken = (await ethers.getContractAt('Otoken', oTokenAddress)) as Otoken
+    const oToken = await findOToken(user, oTokenFactory, oTokenParams)
     const collateralAmountsNoDecimals = [3800, 3800]
     const collateralAmounts = await Promise.all(
       collateralAmountsNoDecimals.map(async (amount, i) =>
@@ -63,13 +62,13 @@ describe('Open Vault, Deposit collateral, Mint Otoken', function () {
     const actions: ActionArgsStruct[] = [
       getAction(ActionType.OpenVault, {
         owner: user.address,
-        shortOtoken: oTokenAddress,
+        shortOtoken: oToken.address,
         vaultId,
       }),
       getAction(ActionType.DepositCollateral, {
         owner: user.address,
         amounts: collateralAmounts,
-        assets: oTokenParams.collateralAssets,
+        assets: [...oTokenParams.collateralAssets],
         vaultId,
         from: user.address,
       }),
@@ -77,7 +76,7 @@ describe('Open Vault, Deposit collateral, Mint Otoken', function () {
         owner: user.address,
         amount: [amountOfOTokensToMint],
         vaultId,
-        otoken: [oTokenAddress],
+        otoken: [oToken.address],
         to: user.address,
       }),
     ]
