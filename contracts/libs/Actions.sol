@@ -32,6 +32,10 @@ pragma solidity 0.8.9;
  * A23 target address cannot be address(0)
  * A24 amounts for minting oToken should be array with 1 element
  * A24 assets for minting oToken should be array with 1 element and represent addres of the oToken to mint
+ * A25 param "assets" should have 1 element for redeem action
+ * A26 param "assets" first element should not be zero address for redeem action
+ * A25 param "amounts" should have 1 element for redeem action
+ * A26 param "amounts" first element should not be zero, cant redeem zero amount
  */
 library Actions {
     // possible actions that can be performed
@@ -301,6 +305,10 @@ library Actions {
     function _parseRedeemArgs(ActionArgs memory _args) internal pure returns (RedeemArgs memory) {
         require(_args.actionType == ActionType.Redeem, "A13");
         require(_args.secondAddress != address(0), "A14");
+        require(_args.assets.length == 1, "A25");
+        require(_args.assets[0] != address(0), "A26");
+        require(_args.amounts.length == 1, "A27");
+        require(_args.amounts[0] != 0, "A28");
 
         return RedeemArgs({receiver: _args.secondAddress, otoken: _args.assets[0], amount: _args.amounts[0]});
     }

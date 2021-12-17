@@ -1197,7 +1197,6 @@ contract MarginCalculator is Ownable {
             new address[](0), // address longCollateralAsset;
             0, // uint256 shortStrikePrice;
             0, // uint256 shortExpiryTimestamp;
-            new uint256[](0), // uint256[] shortCollateralsDecimals;
             0, // uint256 longStrikePrice;
             0, // uint256 longExpiryTimestamp;
             new uint256[](0), // uint256 longCollateralDecimals;
@@ -1480,7 +1479,6 @@ contract MarginCalculator is Ownable {
         // TODO should be better to get all details at once with getOtokenDetails?
         OtokenInterface otoken = OtokenInterface(_otoken);
         address strikeAsset = otoken.strikeAsset();
-        uint256 strikeDecimals = IERC20Metadata(strikeAsset).decimals();
 
         if (otoken.isPut()) {
             FPI.FixedPointInt[] memory availableCollateralsValues = new FPI.FixedPointInt[](
@@ -1489,6 +1487,7 @@ contract MarginCalculator is Ownable {
             FPI.FixedPointInt memory availableCollateralTotalValue;
             uint256[] memory collateralsDecimals = new uint256[](_vault.collateralAssets.length);
             FPI.FixedPointInt[] memory collateralsAmountsFPI = new FPI.FixedPointInt[](_vault.collateralAssets.length);
+
             for (uint256 i = 0; i < _vault.collateralAssets.length; i++) {
                 collateralsDecimals[i] = IERC20Metadata(_vault.collateralAssets[i]).decimals();
                 if (_vault.unusedCollateralAmounts[i] == 0) {
@@ -1512,9 +1511,8 @@ contract MarginCalculator is Ownable {
                 "Cant calculate collateral required for zero vault"
             );
 
-            // TODO check calculations mul strikeRequiredForOneOToken to _amountFPI is for 1.0 oToken
             FPI.FixedPointInt memory strikeRequired = FPI.fromScaledUint(_amount, BASE).mul(
-                FPI.fromScaledUint(otoken.strikePrice(), strikeDecimals)
+                FPI.fromScaledUint(otoken.strikePrice(), BASE)
             );
 
             require(
@@ -1528,9 +1526,10 @@ contract MarginCalculator is Ownable {
             for (uint256 i = 0; i < _vault.collateralAssets.length; i++) {
                 if (availableCollateralsValues[i].isGreaterThan(ZERO)) {
                     // TODO decide which rounding should we use down or up, now we use down (toScaledUint last argument true)
-                    // TODO we use dynamic zero length array here initialized in function returns maybe save gas and value by initilizing inside
+                    // TODO we use dynamic zero length array for collateralsValuesRequired and collateralsAmountsRequired
+                    // initialized in function returns maybe save gas and value by initilizing inside
                     collateralsValuesRequired[i] = availableCollateralsValues[i].mul(requiredRatio).toScaledUint(
-                        collateralsDecimals[i],
+                        BASE,
                         true
                     );
                     collateralsAmountsRequired[i] = collateralsAmountsFPI[i].mul(requiredRatio).toScaledUint(
