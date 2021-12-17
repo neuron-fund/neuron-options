@@ -91,10 +91,24 @@ export const MintShortOptionArgsMappings = {
   amount: 'amounts',
 } as const
 
+export const RedeemArgsMappings = {
+  receiver: 'secondAddress',
+  otoken: 'assets',
+  amount: 'amounts',
+} as const
+
+export const SettleVaultsArgsMappings = {
+  owner: 'owner',
+  vaultId: 'vaultId',
+  to: 'secondAddress',
+} as const
+
 export const ActionTypeToMappings = {
   [ActionType.OpenVault]: OpenVaultArgsMappings,
   [ActionType.DepositCollateral]: DepositCollateralArgsMappings,
   [ActionType.MintShortOption]: MintShortOptionArgsMappings,
+  [ActionType.Redeem]: RedeemArgsMappings,
+  [ActionType.SettleVault]: SettleVaultsArgsMappings,
 } as const
 
 export type DefinedActionsMappings = typeof ActionTypeToMappings
