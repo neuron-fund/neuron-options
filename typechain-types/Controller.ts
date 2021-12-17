@@ -91,6 +91,7 @@ export interface ControllerInterface extends utils.Interface {
     "getProceed(address,uint256)": FunctionFragment;
     "getVaultWithDetails(address,uint256)": FunctionFragment;
     "initialize(address,address)": FunctionFragment;
+    "isOperator(address,address)": FunctionFragment;
     "operate((uint8,address,address,address[],uint256,uint256[],uint256,bytes)[])": FunctionFragment;
     "oracle()": FunctionFragment;
     "owner()": FunctionFragment;
@@ -150,6 +151,10 @@ export interface ControllerInterface extends utils.Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "initialize",
+    values: [string, string]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "isOperator",
     values: [string, string]
   ): string;
   encodeFunctionData(
@@ -242,6 +247,7 @@ export interface ControllerInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "initialize", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "isOperator", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "operate", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "oracle", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
@@ -316,8 +322,8 @@ export interface ControllerInterface extends utils.Interface {
     "SystemFullyPaused(bool)": EventFragment;
     "SystemPartiallyPaused(bool)": EventFragment;
     "VaultLiquidated(address,address,address,uint256,uint256,uint256,uint256,uint256)": EventFragment;
-    "VaultOpened(address,uint256,uint256)": EventFragment;
-    "VaultSettled(address,address,address,uint256[],uint256,uint256)": EventFragment;
+    "VaultOpened(address,uint256)": EventFragment;
+    "VaultSettled(address,address,address,uint256[],uint256)": EventFragment;
   };
 
   getEvent(nameOrSignatureOrTopic: "AccountOperatorUpdated"): EventFragment;
@@ -534,21 +540,20 @@ export type VaultLiquidatedEvent = TypedEvent<
 export type VaultLiquidatedEventFilter = TypedEventFilter<VaultLiquidatedEvent>;
 
 export type VaultOpenedEvent = TypedEvent<
-  [string, BigNumber, BigNumber],
-  { accountOwner: string; vaultId: BigNumber; vaultType: BigNumber }
+  [string, BigNumber],
+  { accountOwner: string; vaultId: BigNumber }
 >;
 
 export type VaultOpenedEventFilter = TypedEventFilter<VaultOpenedEvent>;
 
 export type VaultSettledEvent = TypedEvent<
-  [string, string, string, BigNumber[], BigNumber, BigNumber],
+  [string, string, string, BigNumber[], BigNumber],
   {
     accountOwner: string;
     shortOtoken: string;
     to: string;
     payouts: BigNumber[];
     vaultId: BigNumber;
-    vaultType: BigNumber;
   }
 >;
 
@@ -618,13 +623,19 @@ export interface Controller extends BaseContract {
       _owner: string,
       _vaultId: BigNumberish,
       overrides?: CallOverrides
-    ): Promise<[VaultStructOutput, BigNumber, BigNumber]>;
+    ): Promise<[VaultStructOutput, BigNumber]>;
 
     initialize(
       _addressBook: string,
       _owner: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
+
+    isOperator(
+      _owner: string,
+      _operator: string,
+      overrides?: CallOverrides
+    ): Promise<[boolean]>;
 
     operate(
       _actions: ActionArgsStruct[],
@@ -741,13 +752,19 @@ export interface Controller extends BaseContract {
     _owner: string,
     _vaultId: BigNumberish,
     overrides?: CallOverrides
-  ): Promise<[VaultStructOutput, BigNumber, BigNumber]>;
+  ): Promise<[VaultStructOutput, BigNumber]>;
 
   initialize(
     _addressBook: string,
     _owner: string,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
+
+  isOperator(
+    _owner: string,
+    _operator: string,
+    overrides?: CallOverrides
+  ): Promise<boolean>;
 
   operate(
     _actions: ActionArgsStruct[],
@@ -864,13 +881,19 @@ export interface Controller extends BaseContract {
       _owner: string,
       _vaultId: BigNumberish,
       overrides?: CallOverrides
-    ): Promise<[VaultStructOutput, BigNumber, BigNumber]>;
+    ): Promise<[VaultStructOutput, BigNumber]>;
 
     initialize(
       _addressBook: string,
       _owner: string,
       overrides?: CallOverrides
     ): Promise<void>;
+
+    isOperator(
+      _owner: string,
+      _operator: string,
+      overrides?: CallOverrides
+    ): Promise<boolean>;
 
     operate(
       _actions: ActionArgsStruct[],
@@ -1146,32 +1169,28 @@ export interface Controller extends BaseContract {
       vaultId?: null
     ): VaultLiquidatedEventFilter;
 
-    "VaultOpened(address,uint256,uint256)"(
+    "VaultOpened(address,uint256)"(
       accountOwner?: string | null,
-      vaultId?: null,
-      vaultType?: BigNumberish | null
+      vaultId?: null
     ): VaultOpenedEventFilter;
     VaultOpened(
       accountOwner?: string | null,
-      vaultId?: null,
-      vaultType?: BigNumberish | null
+      vaultId?: null
     ): VaultOpenedEventFilter;
 
-    "VaultSettled(address,address,address,uint256[],uint256,uint256)"(
+    "VaultSettled(address,address,address,uint256[],uint256)"(
       accountOwner?: string | null,
       shortOtoken?: string | null,
       to?: null,
       payouts?: null,
-      vaultId?: null,
-      vaultType?: BigNumberish | null
+      vaultId?: null
     ): VaultSettledEventFilter;
     VaultSettled(
       accountOwner?: string | null,
       shortOtoken?: string | null,
       to?: null,
       payouts?: null,
-      vaultId?: null,
-      vaultType?: BigNumberish | null
+      vaultId?: null
     ): VaultSettledEventFilter;
   };
 
@@ -1219,6 +1238,12 @@ export interface Controller extends BaseContract {
       _addressBook: string,
       _owner: string,
       overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    isOperator(
+      _owner: string,
+      _operator: string,
+      overrides?: CallOverrides
     ): Promise<BigNumber>;
 
     operate(
@@ -1341,6 +1366,12 @@ export interface Controller extends BaseContract {
       _addressBook: string,
       _owner: string,
       overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    isOperator(
+      _owner: string,
+      _operator: string,
+      overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
     operate(

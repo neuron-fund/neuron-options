@@ -12,7 +12,6 @@ export enum ActionType {
   SettleVault,
   Redeem,
   Call,
-  Liquidate,
 }
 
 export type ActionArgsKeys = keyof ActionArgsStruct

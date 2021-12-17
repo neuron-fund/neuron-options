@@ -58,15 +58,14 @@ export interface MarginCalculatorInterfaceInterface extends utils.Interface {
     "_getCollateralRequired((address,address[],address[],uint256,uint256[],uint256[],uint256[],uint256[]),address,uint256)": FunctionFragment;
     "_getCollateralizationRatio(address,address)": FunctionFragment;
     "getCollateralDust(address)": FunctionFragment;
-    "getExcessCollateral((address,address[],address[],uint256,uint256[],uint256[],uint256[],uint256[]),uint256)": FunctionFragment;
+    "getExcessCollateral((address,address[],address[],uint256,uint256[],uint256[],uint256[],uint256[]))": FunctionFragment;
     "getExpiredPayoutRate(address)": FunctionFragment;
-    "getMarginRequired((address,address[],address[],uint256,uint256[],uint256[],uint256[],uint256[]),uint256)": FunctionFragment;
+    "getMarginRequired((address,address[],address[],uint256,uint256[],uint256[],uint256[],uint256[]))": FunctionFragment;
     "getMaxPrice(address,address,address[],bool,uint256)": FunctionFragment;
     "getOracleDeviation()": FunctionFragment;
     "getPayout(address,uint256)": FunctionFragment;
     "getSpotShock(address,address,address[],bool)": FunctionFragment;
     "getTimesToExpiry(address,address,address[],bool)": FunctionFragment;
-    "isLiquidatable((address,address[],address[],uint256,uint256[],uint256[],uint256[],uint256[]),uint256,uint256,uint256)": FunctionFragment;
     "oracle()": FunctionFragment;
     "owner()": FunctionFragment;
     "renounceOwnership()": FunctionFragment;
@@ -96,7 +95,7 @@ export interface MarginCalculatorInterfaceInterface extends utils.Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "getExcessCollateral",
-    values: [VaultStruct, BigNumberish]
+    values: [VaultStruct]
   ): string;
   encodeFunctionData(
     functionFragment: "getExpiredPayoutRate",
@@ -104,7 +103,7 @@ export interface MarginCalculatorInterfaceInterface extends utils.Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "getMarginRequired",
-    values: [VaultStruct, BigNumberish]
+    values: [VaultStruct]
   ): string;
   encodeFunctionData(
     functionFragment: "getMaxPrice",
@@ -125,10 +124,6 @@ export interface MarginCalculatorInterfaceInterface extends utils.Interface {
   encodeFunctionData(
     functionFragment: "getTimesToExpiry",
     values: [string, string, string[], boolean]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "isLiquidatable",
-    values: [VaultStruct, BigNumberish, BigNumberish, BigNumberish]
   ): string;
   encodeFunctionData(functionFragment: "oracle", values?: undefined): string;
   encodeFunctionData(functionFragment: "owner", values?: undefined): string;
@@ -204,10 +199,6 @@ export interface MarginCalculatorInterfaceInterface extends utils.Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "getTimesToExpiry",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "isLiquidatable",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "oracle", data: BytesLike): Result;
@@ -373,7 +364,6 @@ export interface MarginCalculatorInterface extends BaseContract {
 
     getExcessCollateral(
       _vault: VaultStruct,
-      _vaultType: BigNumberish,
       overrides?: CallOverrides
     ): Promise<[BigNumber[], boolean]>;
 
@@ -384,7 +374,6 @@ export interface MarginCalculatorInterface extends BaseContract {
 
     getMarginRequired(
       _vault: VaultStruct,
-      _vaultType: BigNumberish,
       overrides?: CallOverrides
     ): Promise<
       [boolean, FixedPointIntStructOutput[], FixedPointIntStructOutput[]]
@@ -422,14 +411,6 @@ export interface MarginCalculatorInterface extends BaseContract {
       _isPut: boolean,
       overrides?: CallOverrides
     ): Promise<[BigNumber[]]>;
-
-    isLiquidatable(
-      _vault: VaultStruct,
-      _vaultType: BigNumberish,
-      _vaultLatestUpdate: BigNumberish,
-      _roundId: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<[boolean, BigNumber, BigNumber[]]>;
 
     oracle(overrides?: CallOverrides): Promise<[string]>;
 
@@ -512,7 +493,6 @@ export interface MarginCalculatorInterface extends BaseContract {
 
   getExcessCollateral(
     _vault: VaultStruct,
-    _vaultType: BigNumberish,
     overrides?: CallOverrides
   ): Promise<[BigNumber[], boolean]>;
 
@@ -523,7 +503,6 @@ export interface MarginCalculatorInterface extends BaseContract {
 
   getMarginRequired(
     _vault: VaultStruct,
-    _vaultType: BigNumberish,
     overrides?: CallOverrides
   ): Promise<
     [boolean, FixedPointIntStructOutput[], FixedPointIntStructOutput[]]
@@ -561,14 +540,6 @@ export interface MarginCalculatorInterface extends BaseContract {
     _isPut: boolean,
     overrides?: CallOverrides
   ): Promise<BigNumber[]>;
-
-  isLiquidatable(
-    _vault: VaultStruct,
-    _vaultType: BigNumberish,
-    _vaultLatestUpdate: BigNumberish,
-    _roundId: BigNumberish,
-    overrides?: CallOverrides
-  ): Promise<[boolean, BigNumber, BigNumber[]]>;
 
   oracle(overrides?: CallOverrides): Promise<string>;
 
@@ -651,7 +622,6 @@ export interface MarginCalculatorInterface extends BaseContract {
 
     getExcessCollateral(
       _vault: VaultStruct,
-      _vaultType: BigNumberish,
       overrides?: CallOverrides
     ): Promise<[BigNumber[], boolean]>;
 
@@ -662,7 +632,6 @@ export interface MarginCalculatorInterface extends BaseContract {
 
     getMarginRequired(
       _vault: VaultStruct,
-      _vaultType: BigNumberish,
       overrides?: CallOverrides
     ): Promise<
       [boolean, FixedPointIntStructOutput[], FixedPointIntStructOutput[]]
@@ -700,14 +669,6 @@ export interface MarginCalculatorInterface extends BaseContract {
       _isPut: boolean,
       overrides?: CallOverrides
     ): Promise<BigNumber[]>;
-
-    isLiquidatable(
-      _vault: VaultStruct,
-      _vaultType: BigNumberish,
-      _vaultLatestUpdate: BigNumberish,
-      _roundId: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<[boolean, BigNumber, BigNumber[]]>;
 
     oracle(overrides?: CallOverrides): Promise<string>;
 
@@ -853,7 +814,6 @@ export interface MarginCalculatorInterface extends BaseContract {
 
     getExcessCollateral(
       _vault: VaultStruct,
-      _vaultType: BigNumberish,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
@@ -864,7 +824,6 @@ export interface MarginCalculatorInterface extends BaseContract {
 
     getMarginRequired(
       _vault: VaultStruct,
-      _vaultType: BigNumberish,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
@@ -898,14 +857,6 @@ export interface MarginCalculatorInterface extends BaseContract {
       _strike: string,
       _collaterals: string[],
       _isPut: boolean,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
-    isLiquidatable(
-      _vault: VaultStruct,
-      _vaultType: BigNumberish,
-      _vaultLatestUpdate: BigNumberish,
-      _roundId: BigNumberish,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
@@ -986,7 +937,6 @@ export interface MarginCalculatorInterface extends BaseContract {
 
     getExcessCollateral(
       _vault: VaultStruct,
-      _vaultType: BigNumberish,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
@@ -997,7 +947,6 @@ export interface MarginCalculatorInterface extends BaseContract {
 
     getMarginRequired(
       _vault: VaultStruct,
-      _vaultType: BigNumberish,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
@@ -1033,14 +982,6 @@ export interface MarginCalculatorInterface extends BaseContract {
       _strike: string,
       _collaterals: string[],
       _isPut: boolean,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
-    isLiquidatable(
-      _vault: VaultStruct,
-      _vaultType: BigNumberish,
-      _vaultLatestUpdate: BigNumberish,
-      _roundId: BigNumberish,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 

@@ -6,6 +6,7 @@ pragma solidity 0.8.9;
 import {PricerInterface} from "../interfaces/PricerInterface.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "hardhat/console.sol";
 
 /**
  * @title Oracle Module
@@ -213,6 +214,7 @@ contract Oracle is Ownable {
      * e.g. 17568900000 => 175.689 USD
      */
     function getPrice(address _asset) external view returns (uint256) {
+        console.log("ORACLE GET PRICE ASSET", _asset);
         uint256 price = stablePrice[_asset];
 
         if (price == 0) {

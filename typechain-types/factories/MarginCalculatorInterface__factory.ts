@@ -343,11 +343,6 @@ const _abi = [
         name: "_vault",
         type: "tuple",
       },
-      {
-        internalType: "uint256",
-        name: "_vaultType",
-        type: "uint256",
-      },
     ],
     name: "getExcessCollateral",
     outputs: [
@@ -432,11 +427,6 @@ const _abi = [
         internalType: "struct MarginVault.Vault",
         name: "_vault",
         type: "tuple",
-      },
-      {
-        internalType: "uint256",
-        name: "_vaultType",
-        type: "uint256",
       },
     ],
     name: "getMarginRequired",
@@ -609,92 +599,6 @@ const _abi = [
     ],
     name: "getTimesToExpiry",
     outputs: [
-      {
-        internalType: "uint256[]",
-        name: "",
-        type: "uint256[]",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        components: [
-          {
-            internalType: "address",
-            name: "shortOtoken",
-            type: "address",
-          },
-          {
-            internalType: "address[]",
-            name: "longOtokens",
-            type: "address[]",
-          },
-          {
-            internalType: "address[]",
-            name: "collateralAssets",
-            type: "address[]",
-          },
-          {
-            internalType: "uint256",
-            name: "shortAmount",
-            type: "uint256",
-          },
-          {
-            internalType: "uint256[]",
-            name: "longAmounts",
-            type: "uint256[]",
-          },
-          {
-            internalType: "uint256[]",
-            name: "collateralAmounts",
-            type: "uint256[]",
-          },
-          {
-            internalType: "uint256[]",
-            name: "usedCollateralAmounts",
-            type: "uint256[]",
-          },
-          {
-            internalType: "uint256[]",
-            name: "unusedCollateralAmounts",
-            type: "uint256[]",
-          },
-        ],
-        internalType: "struct MarginVault.Vault",
-        name: "_vault",
-        type: "tuple",
-      },
-      {
-        internalType: "uint256",
-        name: "_vaultType",
-        type: "uint256",
-      },
-      {
-        internalType: "uint256",
-        name: "_vaultLatestUpdate",
-        type: "uint256",
-      },
-      {
-        internalType: "uint256",
-        name: "_roundId",
-        type: "uint256",
-      },
-    ],
-    name: "isLiquidatable",
-    outputs: [
-      {
-        internalType: "bool",
-        name: "",
-        type: "bool",
-      },
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
       {
         internalType: "uint256[]",
         name: "",

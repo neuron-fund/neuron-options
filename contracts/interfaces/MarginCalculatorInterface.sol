@@ -29,14 +29,11 @@ interface MarginCalculatorInterface {
 
     function getCollateralDust(address _collateral) external view returns (uint256);
 
-    function getExcessCollateral(MarginVault.Vault memory _vault, uint256 _vaultType)
-        external
-        view
-        returns (uint256[] memory, bool);
+    function getExcessCollateral(MarginVault.Vault memory _vault) external view returns (uint256[] memory, bool);
 
     function getExpiredPayoutRate(address _otoken) external view returns (uint256[] memory);
 
-    function getMarginRequired(MarginVault.Vault memory _vault, uint256 _vaultType)
+    function getMarginRequired(MarginVault.Vault memory _vault)
         external
         view
         returns (
@@ -82,20 +79,6 @@ interface MarginCalculatorInterface {
         address[] memory _collaterals,
         bool _isPut
     ) external view returns (uint256[] memory);
-
-    function isLiquidatable(
-        MarginVault.Vault memory _vault,
-        uint256 _vaultType,
-        uint256 _vaultLatestUpdate,
-        uint256 _roundId
-    )
-        external
-        view
-        returns (
-            bool,
-            uint256,
-            uint256[] memory
-        );
 
     function oracle() external view returns (address);
 

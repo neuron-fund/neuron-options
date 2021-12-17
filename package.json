@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "start": "npx hardhat node --hostname 0.0.0.0",
-    "test": "FORK_BLOCK_NUMBER=13719189 npx hardhat test"
+    "test": "FORK_BLOCK_NUMBER=13719189 npx hardhat test",
+    "size-contracts": "OPTIMIZER=200 npx hardhat compile --quiet --no-typechain && npx hardhat size-contracts",
+    "watch-size": "watch 'npm run size-contracts' ./contracts"
   },
   "author": "",
   "license": "ISC",
@@ -46,6 +48,7 @@
     "dotenv": "^10.0.0",
     "dotenv-expand": "^5.1.0",
     "hardhat-contract-sizer": "^2.1.1",
-    "prettier-plugin-solidity": "*"
+    "prettier-plugin-solidity": "*",
+    "watch": "^1.0.2"
   }
 }

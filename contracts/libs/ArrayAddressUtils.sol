@@ -17,6 +17,7 @@ library ArrayAddressUtils {
         return keccak256(abi.encodePacked(arr1)) == keccak256(abi.encodePacked(arr2));
     }
 
+    // For some reason making this function external results in bigger contract size
     function _isNotEmpty(address[] memory _array) internal pure returns (bool) {
         return (_array.length > 0) && (_array[0] != address(0));
     }

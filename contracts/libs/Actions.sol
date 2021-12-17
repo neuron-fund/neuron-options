@@ -49,8 +49,7 @@ library Actions {
         WithdrawCollateral,
         SettleVault,
         Redeem,
-        Call,
-        Liquidate
+        Call
     }
 
     struct ActionArgs {
@@ -109,9 +108,6 @@ library Actions {
         address shortOtoken;
         // vault id to create
         uint256 vaultId;
-        // TODO we do not use this, our vaults are always fully collaterized
-        // vault type, 0 for spread/max loss and 1 for naked margin vault
-        uint256 vaultType;
     }
 
     struct DepositArgs {
@@ -161,19 +157,6 @@ library Actions {
         address to;
     }
 
-    struct LiquidateArgs {
-        // address of the vault owner to liquidate
-        address owner;
-        // address of the liquidated collateral receiver
-        address receiver;
-        // vault id to liquidate
-        uint256 vaultId;
-        // amount of debt(otoken) to repay
-        uint256 amount;
-        // chainlink round id
-        uint256 roundId;
-    }
-
     struct CallArgs {
         // address of the callee contract
         address callee;
@@ -190,22 +173,10 @@ library Actions {
         require(_args.actionType == ActionType.OpenVault, "A1");
         require(_args.owner != address(0), "A2");
 
-        // if not _args.data included, vault type will be 0 by default
-        uint256 vaultType;
-
-        if (_args.data.length == 32) {
-            // decode vault type from _args.data
-            vaultType = abi.decode(_args.data, (uint256));
-        }
-
-        // for block.timestamp we only have 2 vault types
-        require(vaultType < 2, "A3");
-
         return OpenVaultArgs({
             shortOtoken: _args.secondAddress,
             owner: _args.owner, 
-            vaultId: _args.vaultId, 
-            vaultType: vaultType
+            vaultId: _args.vaultId
         });
     }
 
@@ -324,28 +295,6 @@ library Actions {
         require(_args.secondAddress != address(0), "A17");
 
         return SettleVaultArgs({owner: _args.owner, vaultId: _args.vaultId, to: _args.secondAddress});
-    }
-
-    function _parseLiquidateArgs(ActionArgs memory _args) internal pure returns (LiquidateArgs memory) {
-        require(_args.actionType == ActionType.Liquidate, "A18");
-        require(_args.owner != address(0), "A19");
-        require(_args.secondAddress != address(0), "A20");
-        require(_args.data.length == 32, "A21");
-
-        // decode chainlink round id from _args.data
-        uint256 roundId = abi.decode(_args.data, (uint256));
-
-        return
-            LiquidateArgs({
-                owner: _args.owner,
-                receiver: _args.secondAddress,
-                vaultId: _args.vaultId,
-                // TODO require amounts and assets to be equal
-                // TODO require amounts to be greater than 0
-                // TODO require assets and amounts to be 1 when necessary
-                amount: _args.amounts[0],
-                roundId: roundId
-            });
     }
 
     /**
