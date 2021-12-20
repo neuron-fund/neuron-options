@@ -3,12 +3,12 @@ import { deployments, ethers, getNamedAccounts } from 'hardhat'
 import { ActionArgsStruct } from '../typechain-types/Controller'
 import { namedAccountsSigners } from '../utils/hardhat'
 import { ActionType, getAction } from './helpers/actions'
-import { deploy } from './helpers/fixtures'
+import { testDeploy } from './helpers/fixtures'
 
 describe('Open Vault', function () {
   it('open vault without non whitelisted oToken', async () => {
     const { user } = await namedAccountsSigners(getNamedAccounts)
-    const { controller } = await deploy()
+    const { controller } = await testDeploy()
 
     const actions: ActionArgsStruct[] = [
       getAction(ActionType.OpenVault, {
@@ -21,7 +21,7 @@ describe('Open Vault', function () {
   })
   it('open vault with wrong vaultId', async () => {
     const { user } = await namedAccountsSigners(getNamedAccounts)
-    const { controller } = await deploy()
+    const { controller } = await testDeploy()
     const actions: ActionArgsStruct[] = [
       getAction(ActionType.OpenVault, {
         owner: user.address,

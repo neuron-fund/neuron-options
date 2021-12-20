@@ -5,19 +5,19 @@ import { DAI, USDC, WETH } from '../constants/externalAddresses'
 import { ERC20Interface__factory } from '../typechain-types'
 import { namedAccountsSigners } from '../utils/hardhat'
 import { createValidExpiry } from '../utils/time'
-import { deploy } from './helpers/fixtures'
+import { testDeploy } from './helpers/fixtures'
 import { CreateOtokenParamsObject, whitelistAndCreateOtoken } from './helpers/otoken'
 
 describe('Mint Otoken', function () {
   it('Whitelist and create oToken', async () => {
-    const { user } = await namedAccountsSigners(getNamedAccounts)
-    const { oTokenFactory, whitelist } = await deploy()
+    const { user, deployer } = await namedAccountsSigners(getNamedAccounts)
+    const { oTokenFactory, whitelist } = await testDeploy()
 
     const oTokenParams: CreateOtokenParamsObject = {
       collateralAssets: [USDC, DAI],
       underlyingAsset: WETH,
       strikeAsset: USDC,
-      strikePriceReadable: 3800,
+      strikePriceFormatted: 3800,
       expiry: createValidExpiry(7),
       isPut: true,
     }

@@ -1,8 +1,7 @@
-import { Signer } from '@ethersproject/abstract-signer'
 import { parseUnits } from '@ethersproject/units'
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { ethers } from 'hardhat'
-import { Whitelist, OtokenFactory, ERC20Interface__factory, Otoken } from '../../typechain-types'
-import { addTokenDecimalsToAmount } from './erc20'
+import { Whitelist, OtokenFactory, Otoken } from '../../typechain-types'
 import { chainlinkUsdPriceFeedDecimals } from './oracle'
 
 export const oTokenDecimals = 8
@@ -12,12 +11,17 @@ export type CreateOtokenParamsObject = {
   underlyingAsset: CreateOtokenParams[0]
   strikeAsset: CreateOtokenParams[1]
   collateralAssets: Readonly<CreateOtokenParams[2]>
-  strikePriceReadable: number
+  strikePriceFormatted: number
   expiry: CreateOtokenParams[4]
   isPut: CreateOtokenParams[5]
 }
 
-export type OTokenPrices<T extends CreateOtokenParamsObject = CreateOtokenParamsObject> = {
+export type CreateOtokenAssetsParams = Pick<
+  CreateOtokenParamsObject,
+  'collateralAssets' | 'strikeAsset' | 'underlyingAsset'
+>
+
+export type OTokenPrices<T extends CreateOtokenAssetsParams = CreateOtokenAssetsParams> = {
   [key in T['collateralAssets'][number] | T['strikeAsset'] | T['underlyingAsset']]: number
 }
 
@@ -30,14 +34,14 @@ export const whitelistAndCreateOtoken = async (
   }: {
     oTokenFactory: OtokenFactory
     whitelist: Whitelist
-    protocolOwner: Signer
-    oTokenCreator: Signer
+    protocolOwner: SignerWithAddress
+    oTokenCreator: SignerWithAddress
   },
   params: CreateOtokenParamsObject
 ) => {
-  const { underlyingAsset, strikeAsset, collateralAssets, strikePriceReadable, expiry, isPut } = params
+  const { underlyingAsset, strikeAsset, collateralAssets, strikePriceFormatted, expiry, isPut } = params
 
-  const strikePrice = parseUnits(strikePriceReadable.toString(), chainlinkUsdPriceFeedDecimals)
+  const strikePrice = parseUnits(strikePriceFormatted.toString(), chainlinkUsdPriceFeedDecimals)
   const collateralAssetsMutable = [...collateralAssets]
 
   const oTokenParams = [underlyingAsset, strikeAsset, collateralAssetsMutable, strikePrice, expiry, isPut] as const
@@ -48,9 +52,13 @@ export const whitelistAndCreateOtoken = async (
   return oTokenFactory.connect(oTokenCreator).createOtoken(...oTokenParams)
 }
 
-export const findOToken = async (signer: Signer, oTokenFactory: OtokenFactory, params: CreateOtokenParamsObject) => {
-  const { underlyingAsset, strikeAsset, collateralAssets, strikePriceReadable, expiry, isPut } = params
-  const strikePrice = parseUnits(strikePriceReadable.toString(), chainlinkUsdPriceFeedDecimals)
+export const findOToken = async (
+  signer: SignerWithAddress,
+  oTokenFactory: OtokenFactory,
+  params: CreateOtokenParamsObject
+) => {
+  const { underlyingAsset, strikeAsset, collateralAssets, strikePriceFormatted, expiry, isPut } = params
+  const strikePrice = parseUnits(strikePriceFormatted.toString(), chainlinkUsdPriceFeedDecimals)
   const collateralAssetsMutable = [...collateralAssets]
   const oTokenParams = [underlyingAsset, strikeAsset, collateralAssetsMutable, strikePrice, expiry, isPut] as const
   const oTokenAddress = await oTokenFactory.connect(signer).getOtoken(...oTokenParams)

@@ -11,7 +11,7 @@ import {
   Whitelist,
 } from '../../typechain-types'
 
-export const deploy = deployments.createFixture(async ({ deployments }) => {
+export const testDeploy = deployments.createFixture(async ({ deployments }) => {
   const { get } = deployments
 
   await deployments.fixture(['Controller', 'PricerUSDC_USD', 'PricerETH_USD', 'PricerDAI_USD'], {
@@ -49,3 +49,5 @@ export const deploy = deployments.createFixture(async ({ deployments }) => {
     oTokenImplementation,
   }
 })
+
+export type TestDeployResult = Awaited<ReturnType<typeof testDeploy>>

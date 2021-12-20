@@ -57,7 +57,7 @@ const config: HardhatUserConfig = {
       loggingEnabled: true,
       blockGasLimit: 0x1fffffffffffff,
       gas: 120e9,
-      accounts: getHardhatAccounts(20),
+      accounts: getHardhatAccounts(),
     },
     prodMainnet: {
       url: process.env.PROD_MAINNET_RPC,

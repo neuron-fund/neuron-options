@@ -1,15 +1,20 @@
-import { Signer } from '@ethersproject/abstract-signer'
 import { parseUnits, formatUnits } from '@ethersproject/units'
 import { ERC20Interface__factory } from '../../typechain-types'
 import { AddressZero, MaxUint256 } from '@ethersproject/constants'
 import { BigNumber } from '@ethersproject/bignumber'
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
+import { Wallet } from '@ethersproject/wallet'
 
-export const addTokenDecimalsToAmount = async (token: string, amount: number, signer: Signer) => {
+export const addTokenDecimalsToAmount = async (token: string, amount: number, signer: SignerWithAddress | Wallet) => {
   const stirkePriceAssetDecimals = await ERC20Interface__factory.connect(token, signer).decimals()
   return parseUnits(amount.toString(), stirkePriceAssetDecimals)
 }
 
-export const getERC20BalanceOf = async (signer: Signer, tokenAddress: string, holderAddress?: string) => {
+export const getERC20BalanceOf = async (
+  signer: SignerWithAddress | Wallet,
+  tokenAddress: string,
+  holderAddress?: string
+) => {
   try {
     return ERC20Interface__factory.connect(tokenAddress, signer).balanceOf(holderAddress || (await signer.getAddress()))
   } catch (e) {
@@ -17,12 +22,12 @@ export const getERC20BalanceOf = async (signer: Signer, tokenAddress: string, ho
   }
 }
 
-export const getERC20Decimals = async (signer: Signer, tokenAddress: string) => {
+export const getERC20Decimals = async (signer: SignerWithAddress | Wallet, tokenAddress: string) => {
   return ERC20Interface__factory.connect(tokenAddress, signer).decimals()
 }
 
 export const getERC20Allowance = async (
-  signer: Signer,
+  signer: SignerWithAddress | Wallet,
   tokenAddress: string,
   ownerAddress: string,
   spenderAdress: string
@@ -36,7 +41,7 @@ export const checkIsFullBalanceERC20Allowance = async ({
   owner,
   spender,
 }: {
-  signer: Signer
+  signer: SignerWithAddress | Wallet
   tokenAddress: string
   owner?: string
   spender: string
@@ -53,7 +58,7 @@ export const checkIsMaxERC20Allowance = async ({
   owner,
   spender,
 }: {
-  signer: Signer
+  signer: SignerWithAddress | Wallet
   tokenAddress: string
   owner?: string
   spender: string
@@ -63,7 +68,7 @@ export const checkIsMaxERC20Allowance = async ({
   return allowance.eq(MaxUint256)
 }
 
-export const getEthOrERC20BalanceFormatted = async (signer: Signer, tokenAddress: string) => {
+export const getEthOrERC20BalanceFormatted = async (signer: SignerWithAddress | Wallet, tokenAddress: string) => {
   const isETH = tokenAddress === AddressZero
   const signerAddress = await signer.getAddress()
   const balance = isETH ? await signer.getBalance() : await getERC20BalanceOf(signer, tokenAddress, signerAddress)
@@ -72,5 +77,9 @@ export const getEthOrERC20BalanceFormatted = async (signer: Signer, tokenAddress
   return Number(formatUnits(balance, decimals))
 }
 
-export const approveERC20 = async (tokenAddress: string, amount: BigNumber, signer: Signer, spenderAddress: string) =>
-  ERC20Interface__factory.connect(tokenAddress, signer).approve(spenderAddress, amount)
+export const approveERC20 = async (
+  tokenAddress: string,
+  amount: BigNumber,
+  signer: SignerWithAddress | Wallet,
+  spenderAddress: string
+) => ERC20Interface__factory.connect(tokenAddress, signer).approve(spenderAddress, amount)

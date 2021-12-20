@@ -9,20 +9,20 @@ import { namedAccountsSigners } from '../utils/hardhat'
 import { createValidExpiry } from '../utils/time'
 import { ActionType, getAction } from './helpers/actions'
 import { addTokenDecimalsToAmount, approveERC20 } from './helpers/erc20'
-import { deploy } from './helpers/fixtures'
+import { testDeploy } from './helpers/fixtures'
 import { getAssetFromWhale } from './helpers/funds'
 import { CreateOtokenParamsObject, findOToken, whitelistAndCreateOtoken } from './helpers/otoken'
 
 describe('Open Vault, Deposit collateral, Mint Otoken', function () {
   it('Open Vault, Deposit collateral, Mint Otoken', async () => {
     const { user, deployer } = await namedAccountsSigners(getNamedAccounts)
-    const { controller, whitelist, oTokenFactory, marginPool } = await deploy()
+    const { controller, whitelist, oTokenFactory, marginPool } = await testDeploy()
 
     const oTokenParams: CreateOtokenParamsObject = {
       collateralAssets: [USDC, DAI],
       underlyingAsset: WETH,
       strikeAsset: USDC,
-      strikePriceReadable: 3800,
+      strikePriceFormatted: 3800,
       expiry: createValidExpiry(7),
       isPut: true,
     }

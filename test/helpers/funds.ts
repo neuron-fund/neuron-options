@@ -1,7 +1,5 @@
 import { ethers, network } from 'hardhat'
-import { Signer } from '@ethersproject/abstract-signer'
 import { BigNumber } from '@ethersproject/bignumber'
-import { string } from 'hardhat/internal/core/params/argumentTypes'
 import { DAI, USDC } from '../../constants/externalAddresses'
 import { IERC20__factory } from '../../typechain-types'
 
