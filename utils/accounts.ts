@@ -1,3 +1,5 @@
+import { parseUnits } from '@ethersproject/units'
+
 export const testPrivateKeys = [
   '0x27f64677f87074404da76c1dd2530c3491322d13a19b8195f1a6b2af3b0e633f',
   '0xaa5128d076bb1c37995dd1a29f41eb0827a81197c050fc9ef48b68b48858e421',
@@ -45,7 +47,7 @@ export const testVaultOwnersPrivateKeys = [
 ]
 
 export const getHardhatAccounts = () => {
-  const A_LOT_OF_ETH = '1000000000000000000'
+  const A_LOT_OF_ETH = parseUnits('3000').toString()
   return [...testPrivateKeys, ...testVaultOwnersPrivateKeys].map(x => {
     return {
       privateKey: x,
