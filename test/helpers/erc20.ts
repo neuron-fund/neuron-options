@@ -6,8 +6,8 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { Wallet } from '@ethersproject/wallet'
 
 export const addTokenDecimalsToAmount = async (token: string, amount: number, signer: SignerWithAddress | Wallet) => {
-  const stirkePriceAssetDecimals = await ERC20Interface__factory.connect(token, signer).decimals()
-  return parseUnits(amount.toString(), stirkePriceAssetDecimals)
+  const decimals = await ERC20Interface__factory.connect(token, signer).decimals()
+  return parseUnits(amount.toString(), decimals)
 }
 
 export const getERC20BalanceOf = async (
