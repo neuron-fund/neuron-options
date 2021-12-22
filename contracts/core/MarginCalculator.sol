@@ -435,20 +435,26 @@ contract MarginCalculator is Ownable {
             uint256 collateralDecimals = uint256(IERC20Metadata(oTokenDetails.collaterals[i]).decimals());
 
             // TODO should we calculate this ratio right in oToken on mint?
-            FPI.FixedPointInt memory collateralRatio = _getCollateralizationRatio(
-                _otoken,
-                oTokenDetails.collaterals[i]
-            );
-            // How much cash of total cash paid for 1 oToken should be payed by this collateral
-            FPI.FixedPointInt memory cashValueInStrikeForCollateral = cashValueInStrike.mul(collateralRatio);
+            // We return numerator and denominator from _getCollateralizationRatio for more precision
+            // Returning calculated ratio results in lose of precision for cashValueInStrikeForCollateral calculation
+            (
+                FPI.FixedPointInt memory collateralRatioNumerator,
+                FPI.FixedPointInt memory collateralRatioDenominator
+            ) = _getCollateralizationRatio(_otoken, oTokenDetails.collaterals[i]);
 
+            // How much cash of total cash paid for 1 oToken should be payed by this collateral
+            FPI.FixedPointInt memory cashValueInStrikeForCollateral = cashValueInStrike
+                .mul(collateralRatioNumerator)
+                .div(collateralRatioDenominator);
             // How much this collateral amount should we transfer for 1 oToken
             collateralsPayoutRate[i] = _convertAmountOnExpiryPrice(
                 cashValueInStrikeForCollateral,
                 oTokenDetails.strikeAsset,
                 oTokenDetails.collaterals[i],
                 oTokenDetails.expiry
-            ).toScaledUint(collateralDecimals, true);
+            ).toScaledUint(collateralDecimals, false);
+            // To toScaledUint last argument - is roundDown bool
+            // We want to round up for redeemers to get the exact amount of collateral they need to redeem
         }
 
         return collateralsPayoutRate;
@@ -524,23 +530,23 @@ contract MarginCalculator is Ownable {
                 );
                 uint256 collateralProvidedByVault = _vault.usedCollateralAmounts[i];
 
+                if (oTokenTotalCollateralAmount == 0 || collateralProvidedByVault == 0) {
+                    continue;
+                }
+
                 // Formula is:
                 // U = collateralProvidedByVault/usedCollateralAmounts - total collateral asset amount used for mint of oToken
                 // R = (collateralProvidedByVault / oTokenTotalCollateralAmount) - ratio of payout for specific collateral for this vault
                 // P = shortAmount * (payoutsRaw[i] / 10**BASE) - redeem payout for shortAmount of oTokens
                 // Un = unusedcollateral by vault
-                // excesscollateral[i] = (U - (P * R) + Un
-                excessCollateral[i] = excessCollateral[i].add(
-                    collateralProvidedByVault.sub(
-                        // TODO is it possible to have significant precision loss here?
-                        // TODO can it overflow uint256 on multiplication?
-                        payoutsRaw[i]
-                            .mul(vaultDetails.shortAmount)
-                            .mul(collateralProvidedByVault)
-                            .div(oTokenTotalCollateralAmount)
-                            .div(10**BASE)
-                    )
-                );
+                // excessCollateral[i] = (U - (P * R) + Un
+                uint256 redeemableCollateral = payoutsRaw[i] // TODO can it overflow uint256 on multiplication? // TODO is it possible to have significant precision loss here?
+                    .mul(vaultDetails.shortAmount)
+                    .mul(collateralProvidedByVault)
+                    .div(oTokenTotalCollateralAmount)
+                    .div(10**BASE);
+
+                excessCollateral[i] = excessCollateral[i].add(collateralProvidedByVault.sub(redeemableCollateral));
             }
             return (excessCollateral, true);
         } else {
@@ -1274,28 +1280,31 @@ contract MarginCalculator is Ownable {
      * @notice ratio representing how much does is oToken collaterized by certain collateral asset
      * @param _otoken the oToken address
      * @param _collateralAsset the collateral asset
-     * @return the ratio of collateral asset value to total value of collaterals
+     * @return numerator - numerator of fraction of ratio, represents value of _collateralAsset for all minted _otoken's
+     * @return denominator - denominator of fraction of ratio, represents totalValue of all collateral assets for all minted _otoken's
      */
     function _getCollateralizationRatio(address _otoken, address _collateralAsset)
         public
         view
-        returns (FPI.FixedPointInt memory)
+        returns (FPI.FixedPointInt memory numerator, FPI.FixedPointInt memory denominator)
     {
         require(_collateralAsset != address(0), "collateral asset address cannot be 0");
         OtokenInterface otoken = OtokenInterface(_otoken);
+        // This value is valuated in strike asset
         uint256 value = otoken.collateralAssetsValues(_collateralAsset);
         // TODO Possible gas optimization: totalCollateralValue is called several times for each collateral when this function called
+        // totalCollateralValue is valuated in strike asset
         uint256 totalCollateralValue = otoken.totalCollateralValue();
         // TODO Possible gas optimization: strikeAsset is called several times for each collateral when this function called
         address strikeAsset = otoken.strikeAsset();
         uint256 strikeAssetDecimals = IERC20Metadata(strikeAsset).decimals();
         if (value == 0 || totalCollateralValue == 0) {
-            return ZERO;
+            return (ZERO, FPI.fromScaledUint(1, 0));
         }
-        return
-            FPI.fromScaledUint(value, strikeAssetDecimals).div(
-                FPI.fromScaledUint(totalCollateralValue, strikeAssetDecimals)
-            );
+        return (
+            FPI.fromScaledUint(value, strikeAssetDecimals),
+            FPI.fromScaledUint(totalCollateralValue, strikeAssetDecimals)
+        );
     }
 
     /**
@@ -1363,11 +1372,11 @@ contract MarginCalculator is Ownable {
                     // initialized in function returns maybe save gas and value by initilizing inside
                     collateralsValuesRequired[i] = availableCollateralsValues[i].mul(requiredRatio).toScaledUint(
                         BASE,
-                        true
+                        false
                     );
                     collateralsAmountsRequired[i] = collateralsAmountsFPI[i].mul(requiredRatio).toScaledUint(
                         collateralsDecimals[i],
-                        true
+                        false
                     );
                 } else {
                     collateralsAmountsRequired[i] = 0;

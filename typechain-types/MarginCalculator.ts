@@ -355,7 +355,12 @@ export interface MarginCalculator extends BaseContract {
       _otoken: string,
       _collateralAsset: string,
       overrides?: CallOverrides
-    ): Promise<[FixedPointIntStructOutput]>;
+    ): Promise<
+      [FixedPointIntStructOutput, FixedPointIntStructOutput] & {
+        numerator: FixedPointIntStructOutput;
+        denominator: FixedPointIntStructOutput;
+      }
+    >;
 
     getCollateralDust(
       _collateral: string,
@@ -484,7 +489,12 @@ export interface MarginCalculator extends BaseContract {
     _otoken: string,
     _collateralAsset: string,
     overrides?: CallOverrides
-  ): Promise<FixedPointIntStructOutput>;
+  ): Promise<
+    [FixedPointIntStructOutput, FixedPointIntStructOutput] & {
+      numerator: FixedPointIntStructOutput;
+      denominator: FixedPointIntStructOutput;
+    }
+  >;
 
   getCollateralDust(
     _collateral: string,
@@ -613,7 +623,12 @@ export interface MarginCalculator extends BaseContract {
       _otoken: string,
       _collateralAsset: string,
       overrides?: CallOverrides
-    ): Promise<FixedPointIntStructOutput>;
+    ): Promise<
+      [FixedPointIntStructOutput, FixedPointIntStructOutput] & {
+        numerator: FixedPointIntStructOutput;
+        denominator: FixedPointIntStructOutput;
+      }
+    >;
 
     getCollateralDust(
       _collateral: string,

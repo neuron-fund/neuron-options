@@ -764,8 +764,16 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         uint256 collateralsLength = _args.assets.length;
         // TODO use batch transfer to pool
         for (uint256 i = 0; i < collateralsLength; i++) {
-            pool.transferToPool(_args.assets[i], _args.from, _args.amounts[i]);
-            emit CollateralAssetDeposited(_args.assets[i], _args.owner, _args.from, _args.vaultId, _args.amounts[i]);
+            if (_args.amounts[i] > 0) {
+                pool.transferToPool(_args.assets[i], _args.from, _args.amounts[i]);
+                emit CollateralAssetDeposited(
+                    _args.assets[i],
+                    _args.owner,
+                    _args.from,
+                    _args.vaultId,
+                    _args.amounts[i]
+                );
+            }
         }
         vaults[_args.owner][_args.vaultId].addCollaterals(_args.assets, _args.amounts);
     }

@@ -44,7 +44,6 @@ contract Otoken is ERC20PermitUpgradeable {
     uint256 public totalCollateralValue;
 
     /// @notice strike price with decimals = 8
-    // TODO why strike price has 8 decimals?
     uint256 public strikePrice;
 
     /// @notice expiration timestamp of the option, represented as a unix timestamp
