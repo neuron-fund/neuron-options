@@ -2,18 +2,17 @@ import { BigNumber } from '@ethersproject/bignumber'
 import { Wallet } from '@ethersproject/wallet'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { assert } from 'chai'
-import { parseUnits } from 'ethers/lib/utils'
-import { ethers, getNamedAccounts, network, getUnnamedAccounts } from 'hardhat'
-import { USDC, DAI, WETH } from '../../constants/externalAddresses'
+import { parseUnits, formatUnits } from 'ethers/lib/utils'
+import { ethers, getNamedAccounts, network } from 'hardhat'
 import { Otoken } from '../../typechain-types'
 import { ActionArgsStruct } from '../../typechain-types/Controller'
 import { testVaultOwnersPrivateKeys } from '../../utils/accounts'
-import { AddressZero } from '../../utils/ethers'
+import { AddressZero, bigNumberDeviatedEqual } from '../../utils/ethers'
 import { namedAccountsSigners } from '../../utils/hardhat'
 import { createValidExpiry, waitNDays } from '../../utils/time'
 import { FixedSizeArray } from '../../utils/types'
 import { getAction, ActionType } from './actions'
-import { addTokenDecimalsToAmount, approveERC20, getEthOrERC20BalanceFormatted, getERC20BalanceOf } from './erc20'
+import { addTokenDecimalsToAmount, approveERC20, getERC20BalanceOf, getERC20Decimals } from './erc20'
 import { TestDeployResult } from './fixtures'
 import { getAssetFromWhale } from './funds'
 import { setStablePrices } from './oracle'
@@ -45,6 +44,10 @@ export type TestMintRedeemSettleParams<T extends TestMintOTokenParams> = {
   expiryPrices: OTokenPrices<T>
 }
 
+// Deviation is calculated in decimals of asset
+const expectedRedeemUsdDeviation = 0.1
+const expectedSettleDeviation = 10
+
 export const testMintRedeemSettleFactory = (getDeployResults: () => TestDeployResult) => {
   return async <T extends TestMintOTokenParams>(params: TestMintRedeemSettleParams<T>) => {
     const { user, deployer, redeemer } = await namedAccountsSigners(getNamedAccounts)
@@ -64,10 +67,8 @@ export const testMintRedeemSettleFactory = (getDeployResults: () => TestDeployRe
 
     const totalOtokenMintFormatted = params.vaults.reduce((a, b) => a + b.oTokenAmountFormatted, 0)
     const totalOtokenMint = parseUnits(totalOtokenMintFormatted.toString(), oTokenDecimals)
-    console.log(`testMintRedeemSettleFactory ~ totalOtokenMint`, totalOtokenMint)
 
     await setStablePrices(oracle, deployer, params.initalPrices)
-    console.log(`testMintRedeemSettleFactory ~ setStablePrices`)
 
     await whitelistAndCreateOtoken(
       {
@@ -79,21 +80,18 @@ export const testMintRedeemSettleFactory = (getDeployResults: () => TestDeployRe
       oTokenParams
     )
 
-    console.log(`testMintRedeemSettleFactory ~ whitelistAndCreateOtoken`)
     const oToken = await findOToken(user, oTokenFactory, oTokenParams)
-    console.log(`testMintRedeemSettleFactory ~ findOToken`)
     assert(oToken.address !== AddressZero, 'Otoken address is zero')
 
     for (const vault of vaults) {
       const mintedAmount = await openVaultAndMint(testDeployResult, params.oTokenParams, oToken, vault)
-      console.log(`testMintRedeemSettleFactory ~ openVaultAndMint`)
       await oToken.connect(vault.owner).transfer(redeemer.address, mintedAmount)
     }
 
     const redeemerBalanceAfterMint = await getERC20BalanceOf(redeemer, oToken.address)
     assert(
       redeemerBalanceAfterMint.eq(totalOtokenMint),
-      `Redeemer balance is not correct\n Expected: ${totalOtokenMint}\n Got: ${redeemerBalanceAfterMint}`
+      `Redeemer balance of oToken is not correct\n Expected: ${totalOtokenMint}\n Got: ${redeemerBalanceAfterMint}`
     )
 
     await waitNDays(expiryDays + 1, network.provider)
@@ -116,10 +114,15 @@ export const testMintRedeemSettleFactory = (getDeployResults: () => TestDeployRe
     // Assert user gets right redeem
     for (const [i, collateralAmount] of redeem.collaterals.entries()) {
       const userCollateralBalance = await getERC20BalanceOf(redeemer, oTokenParams.collateralAssets[i])
+      const collateralDecimals = await getERC20Decimals(redeemer, oTokenParams.collateralAssets[i])
+      const deviationAmount = collateralAmount.sub(redeem.collaterals[i]).abs()
+      const deviationAmountFormatted = Number(formatUnits(deviationAmount, collateralDecimals))
+      const deviationUsdValue = deviationAmountFormatted * params.expiryPrices[oTokenParams.collateralAssets[i]]
       assert(
-        userCollateralBalance.eq(collateralAmount),
+        deviationUsdValue < expectedRedeemUsdDeviation,
         `Collateral ${i} redeem with wrong amount.\n
-         Expected: ${collateralAmount}, got: ${userCollateralBalance}
+         Expected: ${collateralAmount}, got: ${userCollateralBalance}\n
+         Expected diviation: ${expectedRedeemUsdDeviation}, got:  ${deviationUsdValue}\n
         `
       )
     }
@@ -145,7 +148,6 @@ export async function openVaultAndMint<T extends TestMintOTokenParams>(
   const collateralAmounts = await Promise.all(
     collateralAmountsFormatted.map(async (amount, i) => addTokenDecimalsToAmount(collateralAssets[i], amount, owner))
   )
-  console.log(`collateralAmounts`, collateralAmounts)
 
   // Transfer collateral tokens from whales to user
   await Promise.all(collateralAmounts.map((amount, i) => getAssetFromWhale(collateralAssets[i], amount, owner.address)))
@@ -153,7 +155,6 @@ export async function openVaultAndMint<T extends TestMintOTokenParams>(
   await Promise.all(
     collateralAmounts.map((amount, i) => approveERC20(collateralAssets[i], amount, owner, marginPool.address))
   )
-  console.log(`approveERC20`, approveERC20)
 
   const vaultId = 1
   const mintActions: ActionArgsStruct[] = [
@@ -211,7 +212,7 @@ export async function calculateRedeemForOtokenAmount<T extends TestMintOTokenPar
   oTokenAmountFormatted: number,
   signer: SignerWithAddress | Wallet
 ) {
-  const { expiryPrices, vaults } = params
+  const { expiryPrices, vaults, initalPrices } = params
   const { collateralAssets, isPut, strikePriceFormatted, underlyingAsset } = params.oTokenParams
 
   const zero = {
@@ -226,18 +227,24 @@ export async function calculateRedeemForOtokenAmount<T extends TestMintOTokenPar
       return zero
     }
 
-    const totalCollateralAmountsFormatted = collateralAssets.map((x, i) =>
-      vaults.map(vault => vault.collateralAmountsFormatted[i]).reduce((a, b) => a + b, 0)
-    )
+    const vaultsUsedCollaterals = vaults.map(vault => {
+      const mintAmount = vault.oTokenAmountFormatted
+      const strikeRequired = strikePriceFormatted * mintAmount
+      const collateralValues = vault.collateralAmountsFormatted.map((x, i) => initalPrices[collateralAssets[i]] * x)
+      const totalDepositValue = collateralValues.reduce((a, b) => a + b, 0)
+      const usedCollateralRatio = strikeRequired / totalDepositValue
+      return vault.collateralAmountsFormatted.map(x => x * usedCollateralRatio)
+    })
 
-    const totalCollateralAmounts = await Promise.all(
-      collateralAssets.map((asset, i) => addTokenDecimalsToAmount(asset, totalCollateralAmountsFormatted[i], signer))
-    )
-    console.log(`totalCollateralAmounts`, totalCollateralAmounts)
+    const totalCollateralAmountsFormatted = vaultsUsedCollaterals.reduce((acc, b) => {
+      b.forEach((amount, i) => (acc[i] = (acc[i] || 0) + amount))
+      return acc
+    }, [])
 
     const totalCollateralValuesFormatted = collateralAssets.map(
       (asset, i) => totalCollateralAmountsFormatted[i] * expiryPrices[asset]
     )
+
     const totalCollateralValue = totalCollateralAmountsFormatted.reduce((a, b) => a + b, 0)
     const redeemCollateralRatios = totalCollateralValuesFormatted.map(x => x / totalCollateralValue)
     const redeemUsd = usdRedeemForOneOtoken * oTokenAmountFormatted

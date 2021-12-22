@@ -18,7 +18,6 @@ export const testDeploy = deployments.createFixture(async ({ deployments }) => {
     // Without optout this flag hardhat-deploy reverts only the deployment contracts but preserves other state, which is not suitable for tests
     fallbackToGlobal: false,
   })
-  console.log(`deploy ~ fixture`)
 
   const AddressBook = await get('AddressBook')
   const Controller = await get('Controller')

@@ -534,7 +534,7 @@ const _abi = [
   },
   {
     inputs: [],
-    name: "totalCollateralValue",
+    name: "totalMinted",
     outputs: [
       {
         internalType: "uint256",

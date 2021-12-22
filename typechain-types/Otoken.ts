@@ -43,7 +43,7 @@ export interface OtokenInterface extends utils.Interface {
     "strikeAsset()": FunctionFragment;
     "strikePrice()": FunctionFragment;
     "symbol()": FunctionFragment;
-    "totalCollateralValue()": FunctionFragment;
+    "totalMinted()": FunctionFragment;
     "totalSupply()": FunctionFragment;
     "transfer(address,uint256)": FunctionFragment;
     "transferFrom(address,address,uint256)": FunctionFragment;
@@ -145,7 +145,7 @@ export interface OtokenInterface extends utils.Interface {
   ): string;
   encodeFunctionData(functionFragment: "symbol", values?: undefined): string;
   encodeFunctionData(
-    functionFragment: "totalCollateralValue",
+    functionFragment: "totalMinted",
     values?: undefined
   ): string;
   encodeFunctionData(
@@ -223,7 +223,7 @@ export interface OtokenInterface extends utils.Interface {
   ): Result;
   decodeFunctionResult(functionFragment: "symbol", data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "totalCollateralValue",
+    functionFragment: "totalMinted",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -393,7 +393,7 @@ export interface Otoken extends BaseContract {
 
     symbol(overrides?: CallOverrides): Promise<[string]>;
 
-    totalCollateralValue(overrides?: CallOverrides): Promise<[BigNumber]>;
+    totalMinted(overrides?: CallOverrides): Promise<[BigNumber]>;
 
     totalSupply(overrides?: CallOverrides): Promise<[BigNumber]>;
 
@@ -516,7 +516,7 @@ export interface Otoken extends BaseContract {
 
   symbol(overrides?: CallOverrides): Promise<string>;
 
-  totalCollateralValue(overrides?: CallOverrides): Promise<BigNumber>;
+  totalMinted(overrides?: CallOverrides): Promise<BigNumber>;
 
   totalSupply(overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -639,7 +639,7 @@ export interface Otoken extends BaseContract {
 
     symbol(overrides?: CallOverrides): Promise<string>;
 
-    totalCollateralValue(overrides?: CallOverrides): Promise<BigNumber>;
+    totalMinted(overrides?: CallOverrides): Promise<BigNumber>;
 
     totalSupply(overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -785,7 +785,7 @@ export interface Otoken extends BaseContract {
 
     symbol(overrides?: CallOverrides): Promise<BigNumber>;
 
-    totalCollateralValue(overrides?: CallOverrides): Promise<BigNumber>;
+    totalMinted(overrides?: CallOverrides): Promise<BigNumber>;
 
     totalSupply(overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -915,9 +915,7 @@ export interface Otoken extends BaseContract {
 
     symbol(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
-    totalCollateralValue(
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
+    totalMinted(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     totalSupply(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
