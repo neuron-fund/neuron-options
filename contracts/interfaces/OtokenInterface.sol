@@ -25,6 +25,8 @@ interface OtokenInterface {
 
     function decimals() external view returns (uint8);
 
+    function totalMinted() external view returns (uint256);
+
     function decreaseAllowance(address spender, uint256 subtractedValue) external returns (bool);
 
     function expiryTimestamp() external view returns (uint256);
@@ -81,8 +83,6 @@ interface OtokenInterface {
     function strikePrice() external view returns (uint256);
 
     function symbol() external view returns (string memory);
-
-    function totalCollateralValue() external view returns (uint256);
 
     function totalSupply() external view returns (uint256);
 

@@ -18,6 +18,9 @@ import {Constants} from "./Constants.sol";
 contract Otoken is ERC20PermitUpgradeable {
     using SafeMath for uint256;
 
+    /// @notice total amount of minted oTokens, does not decrease on burn unlike totalSupply
+    uint256 public totalMinted;
+
     /// @notice address of the Controller module
     address public controller;
 
@@ -38,10 +41,6 @@ contract Otoken is ERC20PermitUpgradeable {
     /// @notice value of collateral assets denominated in strike asset used for mint total supply of this oToken
     /// updated upon every mint
     mapping(address => uint256) public collateralAssetsValues;
-
-    /// @notice total value of collateral assets denominated in strike asset used for mint total supply of this oToken
-    /// updated upon every mint
-    uint256 public totalCollateralValue;
 
     /// @notice strike price with decimals = 8
     uint256 public strikePrice;
@@ -145,8 +144,8 @@ contract Otoken is ERC20PermitUpgradeable {
             collateralsAmounts[collateralAssets[i]] = collateralsAmountsForMint[i].add(
                 collateralsAmounts[collateralAssets[i]]
             );
-            totalCollateralValue = totalCollateralValue.add(collateralAssetsValues[collateralAssets[i]]);
         }
+        totalMinted = totalMinted.add(amount);
         _mint(account, amount);
     }
 
