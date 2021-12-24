@@ -46,7 +46,7 @@ export type TestMintRedeemSettleParams<T extends TestMintOTokenParams> = {
 
 // Deviation is calculated in decimals of asset
 const expectedRedeemUsdDeviation = 0.1
-const expectedSettleDeviation = 10
+const expectedSettleCollateralUsdDeviation = 0.1
 
 export const testMintRedeemSettleFactory = (getDeployResults: () => TestDeployResult) => {
   return async <T extends TestMintOTokenParams>(params: TestMintRedeemSettleParams<T>) => {
@@ -59,6 +59,7 @@ export const testMintRedeemSettleFactory = (getDeployResults: () => TestDeployRe
         owner: await ethers.getSigner(new ethers.Wallet(testVaultOwnersPrivateKeys[i]).address),
       }))
     )
+    const { initalPrices } = params
     const { expiryDays } = params.oTokenParams
     const oTokenParams = {
       ...params.oTokenParams,
@@ -109,26 +110,63 @@ export const testMintRedeemSettleFactory = (getDeployResults: () => TestDeployRe
 
     await controller.connect(redeemer).operate(redeemActions)
 
-    const redeem = await calculateRedeemForOtokenAmount(params, totalOtokenMintFormatted, redeemer)
+    const totalRedeem = await calculateRedeemForOtokenAmount(params, totalOtokenMintFormatted, redeemer)
 
     // Assert user gets right redeem
-    for (const [i, collateralAmount] of redeem.collaterals.entries()) {
+    for (const [i, collateralAmount] of totalRedeem.collaterals.entries()) {
       const userCollateralBalance = await getERC20BalanceOf(redeemer, oTokenParams.collateralAssets[i])
       const collateralDecimals = await getERC20Decimals(redeemer, oTokenParams.collateralAssets[i])
-      const deviationAmount = collateralAmount.sub(redeem.collaterals[i]).abs()
+      const deviationAmount = collateralAmount.sub(totalRedeem.collaterals[i]).abs()
       const deviationAmountFormatted = Number(formatUnits(deviationAmount, collateralDecimals))
       const deviationUsdValue = deviationAmountFormatted * params.expiryPrices[oTokenParams.collateralAssets[i]]
       assert(
         deviationUsdValue < expectedRedeemUsdDeviation,
         `Collateral ${i} redeem with wrong amount.\n
          Expected: ${collateralAmount}, got: ${userCollateralBalance}\n
-         Expected diviation: ${expectedRedeemUsdDeviation}, got:  ${deviationUsdValue}\n
+         Expected deviation: ${expectedRedeemUsdDeviation}, got:  ${deviationUsdValue}\n
         `
       )
     }
 
+    const usdRedeemForOneOtoken = getUsdRedeemForOneOtoken(params)
+    const collateralsDecimals = await Promise.all(oTokenParams.collateralAssets.map(t => getERC20Decimals(redeemer, t)))
     for (const vault of vaults) {
       await settleVault(testDeployResult, vault)
+      const vaultCollateralsValuesOnDeposit = vault.collateralAmountsFormatted.map(
+        (collateralAmount, i) => collateralAmount * initalPrices[oTokenParams.collateralAssets[i]]
+      )
+      const vaultTotalCollateralValueOnDeposit = vault.collateralAmountsFormatted.reduce(
+        (acc, b, i) => (acc += b * initalPrices[oTokenParams.collateralAssets[i]]),
+        0
+      )
+
+      const vaultRedeemCollateralsFormatted = vaultCollateralsValuesOnDeposit.map(
+        (a, i) => (a / vaultTotalCollateralValueOnDeposit) * usdRedeemForOneOtoken * vault.oTokenAmountFormatted
+      )
+      const expectedCollateralsLeftFormatted = vault.collateralAmountsFormatted.map(
+        (c, i) => c - vaultRedeemCollateralsFormatted[i]
+      )
+      const expectedCollateralsLeftValuesFormatted = expectedCollateralsLeftFormatted.map(
+        (c, i) => c * params.expiryPrices[oTokenParams.collateralAssets[i]]
+      )
+
+      const collateralsLeft = await Promise.all(
+        oTokenParams.collateralAssets.map((c, i) => getERC20BalanceOf(vault.owner, c))
+      )
+      const collateralsLeftFormatted = collateralsLeft.map((c, i) => Number(formatUnits(c, collateralsDecimals[i])))
+      const collateralsLeftValuesFormatted = collateralsLeftFormatted.map(
+        (c, i) => c * params.expiryPrices[oTokenParams.collateralAssets[i]]
+      )
+      for (const [i, collateralAsset] of oTokenParams.collateralAssets.entries()) {
+        const deviationValue = Math.abs(collateralsLeftValuesFormatted[i] - expectedCollateralsLeftValuesFormatted[i])
+        assert(
+          deviationValue < expectedSettleCollateralUsdDeviation,
+          `Collateral ${i}, ${collateralAsset} settle with wrong value.\n
+           Expected: ${expectedCollateralsLeftValuesFormatted[i]}, got: ${collateralsLeftValuesFormatted[i]}\n
+           Expected deviation: ${expectedSettleCollateralUsdDeviation}, got:  ${deviationValue}\n
+          `
+        )
+      }
     }
   }
 }
@@ -207,21 +245,28 @@ export async function settleVault<T extends TestMintOTokenParams>(
   await controller.connect(owner).operate(settleVaultActions)
 }
 
+export function getUsdRedeemForOneOtoken<T extends TestMintOTokenParams>(params: TestMintRedeemSettleParams<T>) {
+  const { expiryPrices } = params
+  const { strikePriceFormatted, underlyingAsset } = params.oTokenParams
+  return Math.max(strikePriceFormatted - expiryPrices[underlyingAsset], 0)
+}
+
 export async function calculateRedeemForOtokenAmount<T extends TestMintOTokenParams>(
   params: TestMintRedeemSettleParams<T>,
   oTokenAmountFormatted: number,
   signer: SignerWithAddress | Wallet
 ) {
   const { expiryPrices, vaults, initalPrices } = params
-  const { collateralAssets, isPut, strikePriceFormatted, underlyingAsset } = params.oTokenParams
+  const { collateralAssets, isPut, strikePriceFormatted } = params.oTokenParams
 
   const zero = {
     usd: 0,
     collaterals: collateralAssets.map(() => BigNumber.from(0)),
+    collateralsFormatted: collateralAssets.map(() => 0),
   }
 
   if (isPut) {
-    const usdRedeemForOneOtoken = Math.max(strikePriceFormatted - expiryPrices[underlyingAsset], 0)
+    const usdRedeemForOneOtoken = getUsdRedeemForOneOtoken(params)
 
     if (usdRedeemForOneOtoken === 0) {
       return zero

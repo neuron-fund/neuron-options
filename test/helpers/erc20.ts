@@ -7,7 +7,8 @@ import { Wallet } from '@ethersproject/wallet'
 
 export const addTokenDecimalsToAmount = async (token: string, amount: number, signer: SignerWithAddress | Wallet) => {
   const decimals = await ERC20Interface__factory.connect(token, signer).decimals()
-  return parseUnits(amount.toString(), decimals)
+  // toFixed is used to avoid error "fractional component exceeds decimals"
+  return parseUnits(amount.toFixed(decimals).toString(), decimals)
 }
 
 export const getERC20BalanceOf = async (
