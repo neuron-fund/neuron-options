@@ -4,7 +4,7 @@
 
 ## Compile contracts
 
-`npx harhat compile`
+`npx hardhat compile`
 
 ## Test
 

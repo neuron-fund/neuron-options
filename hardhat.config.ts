@@ -95,6 +95,15 @@ const config: HardhatUserConfig = {
     redeemer: {
       default: 3,
     },
+    random_user: {
+      default: 4,
+    },
+    random_user2: {
+      default: 5,
+    },
+    random_user3: {
+      default: 6,
+    }
   },
 }
 

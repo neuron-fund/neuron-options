@@ -4,7 +4,6 @@
 import {
   BaseContract,
   BigNumber,
-  BigNumberish,
   BytesLike,
   CallOverrides,
   ContractTransaction,
@@ -17,42 +16,33 @@ import { FunctionFragment, Result } from "@ethersproject/abi";
 import { Listener, Provider } from "@ethersproject/providers";
 import { TypedEventFilter, TypedEvent, TypedListener, OnEvent } from "./common";
 
-export interface MigrationsInterface extends utils.Interface {
+export interface CalleeAllowanceTesterInterface extends utils.Interface {
   functions: {
-    "last_completed_migration()": FunctionFragment;
-    "owner()": FunctionFragment;
-    "setCompleted(uint256)": FunctionFragment;
+    "callFunction(address,bytes)": FunctionFragment;
+    "weth()": FunctionFragment;
   };
 
   encodeFunctionData(
-    functionFragment: "last_completed_migration",
-    values?: undefined
+    functionFragment: "callFunction",
+    values: [string, BytesLike]
   ): string;
-  encodeFunctionData(functionFragment: "owner", values?: undefined): string;
-  encodeFunctionData(
-    functionFragment: "setCompleted",
-    values: [BigNumberish]
-  ): string;
+  encodeFunctionData(functionFragment: "weth", values?: undefined): string;
 
   decodeFunctionResult(
-    functionFragment: "last_completed_migration",
+    functionFragment: "callFunction",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "setCompleted",
-    data: BytesLike
-  ): Result;
+  decodeFunctionResult(functionFragment: "weth", data: BytesLike): Result;
 
   events: {};
 }
 
-export interface Migrations extends BaseContract {
+export interface CalleeAllowanceTester extends BaseContract {
   connect(signerOrProvider: Signer | Provider | string): this;
   attach(addressOrName: string): this;
   deployed(): Promise<this>;
 
-  interface: MigrationsInterface;
+  interface: CalleeAllowanceTesterInterface;
 
   queryFilter<TEvent extends TypedEvent>(
     event: TypedEventFilter<TEvent>,
@@ -74,59 +64,52 @@ export interface Migrations extends BaseContract {
   removeListener: OnEvent<this>;
 
   functions: {
-    last_completed_migration(overrides?: CallOverrides): Promise<[BigNumber]>;
-
-    owner(overrides?: CallOverrides): Promise<[string]>;
-
-    setCompleted(
-      completed: BigNumberish,
+    callFunction(
+      arg0: string,
+      _data: BytesLike,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
+
+    weth(overrides?: CallOverrides): Promise<[string]>;
   };
 
-  last_completed_migration(overrides?: CallOverrides): Promise<BigNumber>;
-
-  owner(overrides?: CallOverrides): Promise<string>;
-
-  setCompleted(
-    completed: BigNumberish,
+  callFunction(
+    arg0: string,
+    _data: BytesLike,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
+  weth(overrides?: CallOverrides): Promise<string>;
+
   callStatic: {
-    last_completed_migration(overrides?: CallOverrides): Promise<BigNumber>;
-
-    owner(overrides?: CallOverrides): Promise<string>;
-
-    setCompleted(
-      completed: BigNumberish,
+    callFunction(
+      arg0: string,
+      _data: BytesLike,
       overrides?: CallOverrides
     ): Promise<void>;
+
+    weth(overrides?: CallOverrides): Promise<string>;
   };
 
   filters: {};
 
   estimateGas: {
-    last_completed_migration(overrides?: CallOverrides): Promise<BigNumber>;
-
-    owner(overrides?: CallOverrides): Promise<BigNumber>;
-
-    setCompleted(
-      completed: BigNumberish,
+    callFunction(
+      arg0: string,
+      _data: BytesLike,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
+
+    weth(overrides?: CallOverrides): Promise<BigNumber>;
   };
 
   populateTransaction: {
-    last_completed_migration(
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
-    owner(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    setCompleted(
-      completed: BigNumberish,
+    callFunction(
+      arg0: string,
+      _data: BytesLike,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
+
+    weth(overrides?: CallOverrides): Promise<PopulatedTransaction>;
   };
 }
