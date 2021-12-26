@@ -626,7 +626,7 @@ contract MarginCalculator is Ownable {
             _strike,
             _expiryTimestamp
         );
-
+        console.log("underlyingPriceInStrike", underlyingPriceInStrike.toScaledUint(BASE, false));
         return _getCashValue(strikePrice, underlyingPriceInStrike, _isPut);
     }
 

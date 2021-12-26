@@ -263,8 +263,9 @@ export async function settleVault<T extends TestMintOTokenParams>(
 
 export function getStrikeRedeemForOneOtoken<T extends TestMintOTokenParams>(params: TestMintRedeemSettleParams<T>) {
   const { expiryPrices } = params
-  const { strikePriceFormatted, underlyingAsset } = params.oTokenParams
-  return Math.max(strikePriceFormatted - expiryPrices[underlyingAsset], 0)
+  const { strikePriceFormatted, underlyingAsset, strikeAsset } = params.oTokenParams
+  const expiryPriceInStrike = expiryPrices[underlyingAsset] / expiryPrices[strikeAsset]
+  return Math.max(strikePriceFormatted - expiryPriceInStrike, 0)
 }
 
 export function getUsdRedeemForOneOtoken<T extends TestMintOTokenParams>(params: TestMintRedeemSettleParams<T>) {
@@ -317,8 +318,8 @@ export async function calculateRedeemForOtokenAmount<T extends TestMintOTokenPar
       x => x / (totalOTokensMinted * strikePriceFormatted * initialPrices[strikeAsset])
     )
     const redeemUsd = usdRedeemForOneOtoken * oTokenAmountFormatted
-    const redeemCollateralValuesUsdc = redeemCollateralRatios.map(x => x * redeemUsd)
-    const redeemCollateralAmountsFormatted = redeemCollateralValuesUsdc.map(
+    const redeemCollateralValuesUsd = redeemCollateralRatios.map(x => x * redeemUsd)
+    const redeemCollateralAmountsFormatted = redeemCollateralValuesUsd.map(
       (x, i) => x / expiryPrices[collateralAssets[i]]
     )
     const redeemCollateralAmounts = await Promise.all(

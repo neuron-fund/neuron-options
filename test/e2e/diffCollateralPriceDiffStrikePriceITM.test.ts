@@ -88,7 +88,7 @@ const testsParams = [
       [USDT]: 2.5,
       [USDC]: 1.4,
       [DAI]: 3.1,
-      [WETH]: 3500,
+      [WETH]: 4900,
     },
     vaults: [
       {
@@ -128,7 +128,7 @@ const testsParams = [
   },
 ] as const
 
-describe('Mint, redeem, settle, tests ITM, collateral changing prices, strike chaning prices, using stablePrice in Oracle', function () {
+describe('Mint, redeem, settle, tests ITM, collateral changing prices, strike changing prices, using stablePrice in Oracle', function () {
   let deployResult: Awaited<ReturnType<typeof testDeploy>>
 
   before(async () => {
