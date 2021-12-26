@@ -26,3 +26,5 @@ Is it possible to call library MarginVault of Controller from outside
 For burning oTokens give vault owner ability to burn oToken to get collateral. Transfer protportianlly to number of burn to total minted by this vault owner. !REQUIRE check that number he has and wants to burn does not exceeds number of oTokens he minted for the vault.
 
 Restrict ratios for collateral to restrict minting a lot of oTokens for non liquid assets
+
+TODO make helper function to help users of vault to calculate how much of collateral they should deposit to cover the collaterization of provided oToken amount, depends on their wallet balances
