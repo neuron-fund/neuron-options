@@ -19,6 +19,8 @@ import {MarginPoolInterface} from "../interfaces/MarginPoolInterface.sol";
 import {CalleeInterface} from "../interfaces/CalleeInterface.sol";
 import {ArrayAddressUtils} from "../libs/ArrayAddressUtils.sol";
 
+import "hardhat/console.sol";
+
 /**
  * Controller Error Codes
  * C1: sender is not full pauser
@@ -829,6 +831,8 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         // in other words -  usedCollateralsAmounts[i] * collateralAssetPriceInStrike[i]
         (uint256[] memory usedCollateralsAmounts, uint256[] memory usedCollateralsValues) = calculator
             ._getCollateralRequired(vaults[_args.owner][_args.vaultId], _args.otoken, _args.amount);
+        console.log("usedCollateralsAmounts", usedCollateralsAmounts[0]);
+        console.log("usedCollateralsAmounts", usedCollateralsAmounts[1]);
         otoken.mintOtoken(_args.to, _args.amount, usedCollateralsAmounts, usedCollateralsValues);
         vaults[_args.owner][_args.vaultId].addShort(_args.otoken, _args.amount);
         vaults[_args.owner][_args.vaultId].useCollateralBulk(usedCollateralsAmounts);
@@ -871,6 +875,7 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
      * @param _args RedeemArgs structure
      */
     function _redeem(Actions.RedeemArgs memory _args) internal {
+        console.log("REDEEM TRANSACTION");
         OtokenInterface otoken = OtokenInterface(_args.otoken);
 
         // check that otoken to redeem is whitelisted
@@ -910,6 +915,7 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
      */
     function _settleVault(Actions.SettleVaultArgs memory _args) internal onlyAuthorized(msg.sender, _args.owner) {
         require(_checkVaultId(_args.owner, _args.vaultId), "C35");
+        console.log("SETTLE VAULT TRANSACTION");
 
         (MarginVault.Vault memory vault, ) = getVaultWithDetails(_args.owner, _args.vaultId);
 
@@ -954,6 +960,8 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         delete vaults[_args.owner][_args.vaultId];
 
         for (uint256 i = 0; i < collaterals.length; i++) {
+            console.log("Vault deposit:", i, vault.collateralAmounts[i]);
+            console.log("Vault payouts:", i, payouts[i]);
             if (payouts[i] != 0) {
                 pool.transferToUser(collaterals[i], _args.to, payouts[i]);
             }
@@ -1009,7 +1017,7 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         )
     {
         OtokenInterface otoken = OtokenInterface(_otoken);
-        (address[] memory collaterals, address underlying, address strike, , uint256 expiry, ) = otoken
+        (address[] memory collaterals, , address underlying, address strike, , uint256 expiry, , ) = otoken
             .getOtokenDetails();
         return (collaterals, underlying, strike, expiry);
     }

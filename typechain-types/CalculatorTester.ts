@@ -48,21 +48,15 @@ export type VaultStructOutput = [
   unusedCollateralAmounts: BigNumber[];
 };
 
-export type FixedPointIntStruct = { value: BigNumberish };
-
-export type FixedPointIntStructOutput = [BigNumber] & { value: BigNumber };
-
 export interface CalculatorTesterInterface extends utils.Interface {
   functions: {
     "AUCTION_TIME()": FunctionFragment;
     "_getCollateralRequired((address,address[],address[],uint256,uint256[],uint256[],uint256[],uint256[]),address,uint256)": FunctionFragment;
-    "_getCollateralizationRatio(address,address)": FunctionFragment;
     "findUpperBoundValue(address,address,address,bool,uint256)": FunctionFragment;
     "getCollateralDust(address)": FunctionFragment;
     "getExcessCollateral((address,address[],address[],uint256,uint256[],uint256[],uint256[],uint256[]))": FunctionFragment;
     "getExpiredCashValue(address,address,uint256,uint256,bool)": FunctionFragment;
     "getExpiredPayoutRate(address)": FunctionFragment;
-    "getMarginRequired((address,address[],address[],uint256,uint256[],uint256[],uint256[],uint256[]))": FunctionFragment;
     "getMaxPrice(address,address,address[],bool,uint256)": FunctionFragment;
     "getOracleDeviation()": FunctionFragment;
     "getPayout(address,uint256)": FunctionFragment;
@@ -89,10 +83,6 @@ export interface CalculatorTesterInterface extends utils.Interface {
     values: [VaultStruct, string, BigNumberish]
   ): string;
   encodeFunctionData(
-    functionFragment: "_getCollateralizationRatio",
-    values: [string, string]
-  ): string;
-  encodeFunctionData(
     functionFragment: "findUpperBoundValue",
     values: [string, string, string, boolean, BigNumberish]
   ): string;
@@ -111,10 +101,6 @@ export interface CalculatorTesterInterface extends utils.Interface {
   encodeFunctionData(
     functionFragment: "getExpiredPayoutRate",
     values: [string]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getMarginRequired",
-    values: [VaultStruct]
   ): string;
   encodeFunctionData(
     functionFragment: "getMaxPrice",
@@ -188,10 +174,6 @@ export interface CalculatorTesterInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "_getCollateralizationRatio",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
     functionFragment: "findUpperBoundValue",
     data: BytesLike
   ): Result;
@@ -209,10 +191,6 @@ export interface CalculatorTesterInterface extends utils.Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "getExpiredPayoutRate",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getMarginRequired",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -376,23 +354,7 @@ export interface CalculatorTester extends BaseContract {
       _otoken: string,
       _amount: BigNumberish,
       overrides?: CallOverrides
-    ): Promise<
-      [BigNumber[], BigNumber[]] & {
-        collateralsAmountsRequired: BigNumber[];
-        collateralsValuesRequired: BigNumber[];
-      }
-    >;
-
-    _getCollateralizationRatio(
-      _otoken: string,
-      _collateralAsset: string,
-      overrides?: CallOverrides
-    ): Promise<
-      [FixedPointIntStructOutput, FixedPointIntStructOutput] & {
-        numerator: FixedPointIntStructOutput;
-        denominator: FixedPointIntStructOutput;
-      }
-    >;
+    ): Promise<[BigNumber[], BigNumber[]]>;
 
     findUpperBoundValue(
       _underlying: string,
@@ -425,14 +387,7 @@ export interface CalculatorTester extends BaseContract {
     getExpiredPayoutRate(
       _otoken: string,
       overrides?: CallOverrides
-    ): Promise<[BigNumber[]]>;
-
-    getMarginRequired(
-      _vault: VaultStruct,
-      overrides?: CallOverrides
-    ): Promise<
-      [boolean, FixedPointIntStructOutput[], FixedPointIntStructOutput[]]
-    >;
+    ): Promise<[BigNumber[]] & { collateralsPayoutRate: BigNumber[] }>;
 
     getMaxPrice(
       _underlying: string,
@@ -539,23 +494,7 @@ export interface CalculatorTester extends BaseContract {
     _otoken: string,
     _amount: BigNumberish,
     overrides?: CallOverrides
-  ): Promise<
-    [BigNumber[], BigNumber[]] & {
-      collateralsAmountsRequired: BigNumber[];
-      collateralsValuesRequired: BigNumber[];
-    }
-  >;
-
-  _getCollateralizationRatio(
-    _otoken: string,
-    _collateralAsset: string,
-    overrides?: CallOverrides
-  ): Promise<
-    [FixedPointIntStructOutput, FixedPointIntStructOutput] & {
-      numerator: FixedPointIntStructOutput;
-      denominator: FixedPointIntStructOutput;
-    }
-  >;
+  ): Promise<[BigNumber[], BigNumber[]]>;
 
   findUpperBoundValue(
     _underlying: string,
@@ -589,13 +528,6 @@ export interface CalculatorTester extends BaseContract {
     _otoken: string,
     overrides?: CallOverrides
   ): Promise<BigNumber[]>;
-
-  getMarginRequired(
-    _vault: VaultStruct,
-    overrides?: CallOverrides
-  ): Promise<
-    [boolean, FixedPointIntStructOutput[], FixedPointIntStructOutput[]]
-  >;
 
   getMaxPrice(
     _underlying: string,
@@ -702,23 +634,7 @@ export interface CalculatorTester extends BaseContract {
       _otoken: string,
       _amount: BigNumberish,
       overrides?: CallOverrides
-    ): Promise<
-      [BigNumber[], BigNumber[]] & {
-        collateralsAmountsRequired: BigNumber[];
-        collateralsValuesRequired: BigNumber[];
-      }
-    >;
-
-    _getCollateralizationRatio(
-      _otoken: string,
-      _collateralAsset: string,
-      overrides?: CallOverrides
-    ): Promise<
-      [FixedPointIntStructOutput, FixedPointIntStructOutput] & {
-        numerator: FixedPointIntStructOutput;
-        denominator: FixedPointIntStructOutput;
-      }
-    >;
+    ): Promise<[BigNumber[], BigNumber[]]>;
 
     findUpperBoundValue(
       _underlying: string,
@@ -752,13 +668,6 @@ export interface CalculatorTester extends BaseContract {
       _otoken: string,
       overrides?: CallOverrides
     ): Promise<BigNumber[]>;
-
-    getMarginRequired(
-      _vault: VaultStruct,
-      overrides?: CallOverrides
-    ): Promise<
-      [boolean, FixedPointIntStructOutput[], FixedPointIntStructOutput[]]
-    >;
 
     getMaxPrice(
       _underlying: string,
@@ -935,12 +844,6 @@ export interface CalculatorTester extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
-    _getCollateralizationRatio(
-      _otoken: string,
-      _collateralAsset: string,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
     findUpperBoundValue(
       _underlying: string,
       _strike: string,
@@ -971,11 +874,6 @@ export interface CalculatorTester extends BaseContract {
 
     getExpiredPayoutRate(
       _otoken: string,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
-    getMarginRequired(
-      _vault: VaultStruct,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
@@ -1087,12 +985,6 @@ export interface CalculatorTester extends BaseContract {
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
-    _getCollateralizationRatio(
-      _otoken: string,
-      _collateralAsset: string,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
     findUpperBoundValue(
       _underlying: string,
       _strike: string,
@@ -1123,11 +1015,6 @@ export interface CalculatorTester extends BaseContract {
 
     getExpiredPayoutRate(
       _otoken: string,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
-    getMarginRequired(
-      _vault: VaultStruct,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 

@@ -17,9 +17,11 @@ interface OtokenInterface {
 
     function getCollateralAssets() external view returns (address[] memory);
 
-    function collateralAssetsValues(address) external view returns (uint256);
+    function getCollateralsAmounts() external view returns (uint256[] memory);
 
-    function collateralsAmounts(address) external view returns (uint256);
+    function collateralsValues(uint256) external view returns (uint256);
+
+    function getCollateralsValues() external view returns (uint256[] memory);
 
     function controller() external view returns (address);
 
@@ -36,11 +38,13 @@ interface OtokenInterface {
         view
         returns (
             address[] memory,
+            uint256[] memory,
             address,
             address,
             uint256,
             uint256,
-            bool
+            bool,
+            uint256
         );
 
     function increaseAllowance(address spender, uint256 addedValue) external returns (bool);

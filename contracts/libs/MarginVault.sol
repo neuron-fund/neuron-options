@@ -7,6 +7,8 @@ pragma experimental ABIEncoderV2;
 
 import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
+import "hardhat/console.sol";
+
 /**
  * MarginVault Error Codes
  * V1: invalid short otoken amount
@@ -203,6 +205,7 @@ library MarginVault {
         );
 
         for (uint256 i = 0; i < _amounts.length; i++) {
+            console.log("VAULT UNUSED COLLATERAL BEFORE", _vault.unusedCollateralAmounts[i]);
             uint256 newUsedCollateralAmount = _vault.usedCollateralAmounts[i].add(_amounts[i]);
 
             _vault.usedCollateralAmounts[i] = newUsedCollateralAmount;

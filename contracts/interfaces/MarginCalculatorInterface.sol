@@ -33,14 +33,14 @@ interface MarginCalculatorInterface {
 
     function getExpiredPayoutRate(address _otoken) external view returns (uint256[] memory);
 
-    function getMarginRequired(MarginVault.Vault memory _vault)
-        external
-        view
-        returns (
-            bool,
-            FixedPointInt256.FixedPointInt[] memory,
-            FixedPointInt256.FixedPointInt[] memory
-        );
+    // function getMarginRequired(MarginVault.Vault memory _vault)
+    //     external
+    //     view
+    //     returns (
+    //         bool,
+    //         FixedPointInt256.FixedPointInt[] memory,
+    //         FixedPointInt256.FixedPointInt[] memory
+    //     );
 
     function getMaxPrice(
         address _underlying,

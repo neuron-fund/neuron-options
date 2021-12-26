@@ -36,11 +36,11 @@ contract Otoken is ERC20PermitUpgradeable {
 
     /// @notice amounts of collateralAssets used for collaterization of total supply of this oToken
     /// updated upon every mint
-    mapping(address => uint256) public collateralsAmounts;
+    uint256[] public collateralsAmounts;
 
     /// @notice value of collateral assets denominated in strike asset used for mint total supply of this oToken
     /// updated upon every mint
-    mapping(address => uint256) public collateralAssetsValues;
+    uint256[] public collateralsValues;
 
     /// @notice strike price with decimals = 8
     uint256 public strikePrice;
@@ -82,6 +82,8 @@ contract Otoken is ERC20PermitUpgradeable {
         underlyingAsset = _underlyingAsset;
         strikeAsset = _strikeAsset;
         collateralAssets = _collateralAssets;
+        collateralsAmounts = new uint256[](collateralAssets.length);
+        collateralsValues = new uint256[](collateralAssets.length);
         strikePrice = _strikePrice;
         expiryTimestamp = _expiryTimestamp;
         isPut = _isPut;
@@ -99,18 +101,37 @@ contract Otoken is ERC20PermitUpgradeable {
         view
         returns (
             address[] memory,
+            uint256[] memory,
             address,
             address,
             uint256,
             uint256,
-            bool
+            bool,
+            uint256
         )
     {
-        return (collateralAssets, underlyingAsset, strikeAsset, strikePrice, expiryTimestamp, isPut);
+        return (
+            collateralAssets,
+            collateralsAmounts,
+            underlyingAsset,
+            strikeAsset,
+            strikePrice,
+            expiryTimestamp,
+            isPut,
+            totalMinted
+        );
     }
 
     function getCollateralAssets() external view returns (address[] memory) {
         return collateralAssets;
+    }
+
+    function getCollateralsAmounts() external view returns (uint256[] memory) {
+        return collateralsAmounts;
+    }
+
+    function getCollateralsValues() external view returns (uint256[] memory) {
+        return collateralsValues;
     }
 
     /**
@@ -138,12 +159,8 @@ contract Otoken is ERC20PermitUpgradeable {
         );
         for (uint256 i = 0; i < collateralAssets.length; i++) {
             // TODO check if right
-            collateralAssetsValues[collateralAssets[i]] = collateralsValuesForMint[i].add(
-                collateralAssetsValues[collateralAssets[i]]
-            );
-            collateralsAmounts[collateralAssets[i]] = collateralsAmountsForMint[i].add(
-                collateralsAmounts[collateralAssets[i]]
-            );
+            collateralsValues[i] = collateralsValuesForMint[i].add(collateralsValues[i]);
+            collateralsAmounts[i] = collateralsAmounts[i].add(collateralsAmountsForMint[i]);
         }
         totalMinted = totalMinted.add(amount);
         _mint(account, amount);

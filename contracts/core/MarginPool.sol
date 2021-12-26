@@ -9,6 +9,8 @@ import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
+import "hardhat/console.sol";
+
 /**
  * @title MarginPool
  * @notice Contract that holds all protocol funds
@@ -95,6 +97,8 @@ contract MarginPool is Ownable {
         uint256 _amount
     ) public onlyController {
         require(_user != address(this), "MarginPool: cannot transfer assets to oneself");
+        console.log("Asset balance before transfer", assetBalance[_asset]);
+        console.log("Amount to transfer", _amount);
         assetBalance[_asset] = assetBalance[_asset].sub(_amount);
 
         // transfer _asset _amount from pool to _user

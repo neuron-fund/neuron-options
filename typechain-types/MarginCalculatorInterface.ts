@@ -60,7 +60,6 @@ export interface MarginCalculatorInterfaceInterface extends utils.Interface {
     "getCollateralDust(address)": FunctionFragment;
     "getExcessCollateral((address,address[],address[],uint256,uint256[],uint256[],uint256[],uint256[]))": FunctionFragment;
     "getExpiredPayoutRate(address)": FunctionFragment;
-    "getMarginRequired((address,address[],address[],uint256,uint256[],uint256[],uint256[],uint256[]))": FunctionFragment;
     "getMaxPrice(address,address,address[],bool,uint256)": FunctionFragment;
     "getOracleDeviation()": FunctionFragment;
     "getPayout(address,uint256)": FunctionFragment;
@@ -100,10 +99,6 @@ export interface MarginCalculatorInterfaceInterface extends utils.Interface {
   encodeFunctionData(
     functionFragment: "getExpiredPayoutRate",
     values: [string]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getMarginRequired",
-    values: [VaultStruct]
   ): string;
   encodeFunctionData(
     functionFragment: "getMaxPrice",
@@ -178,10 +173,6 @@ export interface MarginCalculatorInterfaceInterface extends utils.Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "getExpiredPayoutRate",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getMarginRequired",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -372,13 +363,6 @@ export interface MarginCalculatorInterface extends BaseContract {
       overrides?: CallOverrides
     ): Promise<[BigNumber[]]>;
 
-    getMarginRequired(
-      _vault: VaultStruct,
-      overrides?: CallOverrides
-    ): Promise<
-      [boolean, FixedPointIntStructOutput[], FixedPointIntStructOutput[]]
-    >;
-
     getMaxPrice(
       _underlying: string,
       _strike: string,
@@ -501,13 +485,6 @@ export interface MarginCalculatorInterface extends BaseContract {
     overrides?: CallOverrides
   ): Promise<BigNumber[]>;
 
-  getMarginRequired(
-    _vault: VaultStruct,
-    overrides?: CallOverrides
-  ): Promise<
-    [boolean, FixedPointIntStructOutput[], FixedPointIntStructOutput[]]
-  >;
-
   getMaxPrice(
     _underlying: string,
     _strike: string,
@@ -629,13 +606,6 @@ export interface MarginCalculatorInterface extends BaseContract {
       _otoken: string,
       overrides?: CallOverrides
     ): Promise<BigNumber[]>;
-
-    getMarginRequired(
-      _vault: VaultStruct,
-      overrides?: CallOverrides
-    ): Promise<
-      [boolean, FixedPointIntStructOutput[], FixedPointIntStructOutput[]]
-    >;
 
     getMaxPrice(
       _underlying: string,
@@ -822,11 +792,6 @@ export interface MarginCalculatorInterface extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
-    getMarginRequired(
-      _vault: VaultStruct,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
     getMaxPrice(
       _underlying: string,
       _strike: string,
@@ -942,11 +907,6 @@ export interface MarginCalculatorInterface extends BaseContract {
 
     getExpiredPayoutRate(
       _otoken: string,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
-    getMarginRequired(
-      _vault: VaultStruct,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 

@@ -25,13 +25,15 @@ export interface OtokenInterface extends utils.Interface {
     "balanceOf(address)": FunctionFragment;
     "burnOtoken(address,uint256)": FunctionFragment;
     "collateralAssets(uint256)": FunctionFragment;
-    "collateralAssetsValues(address)": FunctionFragment;
-    "collateralsAmounts(address)": FunctionFragment;
+    "collateralsAmounts(uint256)": FunctionFragment;
+    "collateralsValues(uint256)": FunctionFragment;
     "controller()": FunctionFragment;
     "decimals()": FunctionFragment;
     "decreaseAllowance(address,uint256)": FunctionFragment;
     "expiryTimestamp()": FunctionFragment;
     "getCollateralAssets()": FunctionFragment;
+    "getCollateralsAmounts()": FunctionFragment;
+    "getCollateralsValues()": FunctionFragment;
     "getOtokenDetails()": FunctionFragment;
     "increaseAllowance(address,uint256)": FunctionFragment;
     "init(address,address,address,address[],uint256,uint256,bool)": FunctionFragment;
@@ -72,12 +74,12 @@ export interface OtokenInterface extends utils.Interface {
     values: [BigNumberish]
   ): string;
   encodeFunctionData(
-    functionFragment: "collateralAssetsValues",
-    values: [string]
+    functionFragment: "collateralsAmounts",
+    values: [BigNumberish]
   ): string;
   encodeFunctionData(
-    functionFragment: "collateralsAmounts",
-    values: [string]
+    functionFragment: "collateralsValues",
+    values: [BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "controller",
@@ -94,6 +96,14 @@ export interface OtokenInterface extends utils.Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "getCollateralAssets",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getCollateralsAmounts",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getCollateralsValues",
     values?: undefined
   ): string;
   encodeFunctionData(
@@ -178,11 +188,11 @@ export interface OtokenInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "collateralAssetsValues",
+    functionFragment: "collateralsAmounts",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "collateralsAmounts",
+    functionFragment: "collateralsValues",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "controller", data: BytesLike): Result;
@@ -197,6 +207,14 @@ export interface OtokenInterface extends utils.Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "getCollateralAssets",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "getCollateralsAmounts",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "getCollateralsValues",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -317,13 +335,13 @@ export interface Otoken extends BaseContract {
       overrides?: CallOverrides
     ): Promise<[string]>;
 
-    collateralAssetsValues(
-      arg0: string,
+    collateralsAmounts(
+      arg0: BigNumberish,
       overrides?: CallOverrides
     ): Promise<[BigNumber]>;
 
-    collateralsAmounts(
-      arg0: string,
+    collateralsValues(
+      arg0: BigNumberish,
       overrides?: CallOverrides
     ): Promise<[BigNumber]>;
 
@@ -341,9 +359,24 @@ export interface Otoken extends BaseContract {
 
     getCollateralAssets(overrides?: CallOverrides): Promise<[string[]]>;
 
+    getCollateralsAmounts(overrides?: CallOverrides): Promise<[BigNumber[]]>;
+
+    getCollateralsValues(overrides?: CallOverrides): Promise<[BigNumber[]]>;
+
     getOtokenDetails(
       overrides?: CallOverrides
-    ): Promise<[string[], string, string, BigNumber, BigNumber, boolean]>;
+    ): Promise<
+      [
+        string[],
+        BigNumber[],
+        string,
+        string,
+        BigNumber,
+        BigNumber,
+        boolean,
+        BigNumber
+      ]
+    >;
 
     increaseAllowance(
       spender: string,
@@ -440,13 +473,13 @@ export interface Otoken extends BaseContract {
     overrides?: CallOverrides
   ): Promise<string>;
 
-  collateralAssetsValues(
-    arg0: string,
+  collateralsAmounts(
+    arg0: BigNumberish,
     overrides?: CallOverrides
   ): Promise<BigNumber>;
 
-  collateralsAmounts(
-    arg0: string,
+  collateralsValues(
+    arg0: BigNumberish,
     overrides?: CallOverrides
   ): Promise<BigNumber>;
 
@@ -464,9 +497,24 @@ export interface Otoken extends BaseContract {
 
   getCollateralAssets(overrides?: CallOverrides): Promise<string[]>;
 
+  getCollateralsAmounts(overrides?: CallOverrides): Promise<BigNumber[]>;
+
+  getCollateralsValues(overrides?: CallOverrides): Promise<BigNumber[]>;
+
   getOtokenDetails(
     overrides?: CallOverrides
-  ): Promise<[string[], string, string, BigNumber, BigNumber, boolean]>;
+  ): Promise<
+    [
+      string[],
+      BigNumber[],
+      string,
+      string,
+      BigNumber,
+      BigNumber,
+      boolean,
+      BigNumber
+    ]
+  >;
 
   increaseAllowance(
     spender: string,
@@ -563,13 +611,13 @@ export interface Otoken extends BaseContract {
       overrides?: CallOverrides
     ): Promise<string>;
 
-    collateralAssetsValues(
-      arg0: string,
+    collateralsAmounts(
+      arg0: BigNumberish,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
-    collateralsAmounts(
-      arg0: string,
+    collateralsValues(
+      arg0: BigNumberish,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
@@ -587,9 +635,24 @@ export interface Otoken extends BaseContract {
 
     getCollateralAssets(overrides?: CallOverrides): Promise<string[]>;
 
+    getCollateralsAmounts(overrides?: CallOverrides): Promise<BigNumber[]>;
+
+    getCollateralsValues(overrides?: CallOverrides): Promise<BigNumber[]>;
+
     getOtokenDetails(
       overrides?: CallOverrides
-    ): Promise<[string[], string, string, BigNumber, BigNumber, boolean]>;
+    ): Promise<
+      [
+        string[],
+        BigNumber[],
+        string,
+        string,
+        BigNumber,
+        BigNumber,
+        boolean,
+        BigNumber
+      ]
+    >;
 
     increaseAllowance(
       spender: string,
@@ -711,13 +774,13 @@ export interface Otoken extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
-    collateralAssetsValues(
-      arg0: string,
+    collateralsAmounts(
+      arg0: BigNumberish,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
-    collateralsAmounts(
-      arg0: string,
+    collateralsValues(
+      arg0: BigNumberish,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
@@ -734,6 +797,10 @@ export interface Otoken extends BaseContract {
     expiryTimestamp(overrides?: CallOverrides): Promise<BigNumber>;
 
     getCollateralAssets(overrides?: CallOverrides): Promise<BigNumber>;
+
+    getCollateralsAmounts(overrides?: CallOverrides): Promise<BigNumber>;
+
+    getCollateralsValues(overrides?: CallOverrides): Promise<BigNumber>;
 
     getOtokenDetails(overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -836,13 +903,13 @@ export interface Otoken extends BaseContract {
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
-    collateralAssetsValues(
-      arg0: string,
+    collateralsAmounts(
+      arg0: BigNumberish,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
-    collateralsAmounts(
-      arg0: string,
+    collateralsValues(
+      arg0: BigNumberish,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
@@ -859,6 +926,14 @@ export interface Otoken extends BaseContract {
     expiryTimestamp(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     getCollateralAssets(
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    getCollateralsAmounts(
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    getCollateralsValues(
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 

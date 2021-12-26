@@ -6,7 +6,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { Wallet } from '@ethersproject/wallet'
 
 export const addTokenDecimalsToAmount = async (token: string, amount: number, signer: SignerWithAddress | Wallet) => {
-  const decimals = await ERC20Interface__factory.connect(token, signer).decimals()
+  const decimals = await getERC20Decimals(signer, token)
   // toFixed is used to avoid error "fractional component exceeds decimals"
   return parseUnits(amount.toFixed(decimals).toString(), decimals)
 }

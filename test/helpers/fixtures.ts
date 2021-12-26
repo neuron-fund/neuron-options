@@ -14,7 +14,7 @@ import {
 export const testDeploy = deployments.createFixture(async ({ deployments }) => {
   const { get } = deployments
 
-  await deployments.fixture(['Controller', 'PricerUSDC_USD', 'PricerETH_USD', 'PricerDAI_USD'], {
+  await deployments.fixture(['Controller', 'PricerUSDC_USD', 'PricerETH_USD', 'PricerDAI_USD', 'PricerUSDT_USD'], {
     // Without optout this flag hardhat-deploy reverts only the deployment contracts but preserves other state, which is not suitable for tests
     fallbackToGlobal: false,
   })
