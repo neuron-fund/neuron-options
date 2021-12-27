@@ -1,8 +1,5 @@
 import { expect, assert } from 'chai'
-
 import {  ethers, getNamedAccounts, web3 } from 'hardhat'
-import { ActionType } from '../helpers/actions'
-import { ActionTester as ActionTesterType } from '../../typechain-types'
 
 import { 
     MockERC20 as MockERC20Instance,
@@ -226,18 +223,25 @@ import {
   
       it('should revert adding arbitrary key:address from non-owner address', async () => {
         await expect(
-          addressBook.connect(random).updateImpl(modulekey, module.address),
-          'Ownable: caller is not the owner',
-        )
+          addressBook.connect(random).updateImpl(modulekey, module.address)).to.be.revertedWith(
+            'Ownable: caller is not the owner')
       })
   
       it('should set new module key and address', async () => {
+
+        console.log(`going to make addressBook.updateImpl(%{modulekey}, %{module.address}}`)
+
         await addressBook.updateImpl(modulekey, module.address, { from: owner })
-        
+        console.log('going to make getContractFactory')
+
         const OwnedUpgradeabilityProxy = await ethers.getContractFactory("OwnedUpgradeabilityProxy")
+        console.log('going to attach')
+
         const proxy: OwnedUpgradeabilityProxyInstance = OwnedUpgradeabilityProxy.attach(
           await addressBook.getAddress(modulekey),
         ) as OwnedUpgradeabilityProxyInstance
+        console.log('going to get proxy.implementation()')
+        
         const implementationAddress = await proxy.implementation()
   
         assert.equal(module.address, implementationAddress, 'New module implementation address mismatch')
@@ -246,33 +250,48 @@ import {
   
     describe('Upgrade contract', async () => {
       const key = web3.utils.soliditySha3('ammModule')
-  
+
       let v1Contract: UpgradeableContractV1Instance
       let v2Contract: UpgradeableContractV2Instance
+
   
       before(async () => {
+        
+
+        const AddressBook = await ethers.getContractFactory("AddressBook") //reimport
+        addressBook = await AddressBook.deploy() as AddressBookInstance
+        await addressBook.deployed()
+        
+        console.log('await v1')
+        
         v1Contract = await (await ethers.getContractFactory("UpgradeableContractV1")).deploy() as UpgradeableContractV1Instance
         await v1Contract.deployed()
-  
-        await addressBook.updateImpl(key, v1Contract.address, { from: owner })
+        
+        console.log('updateImpl')
+        await addressBook.updateImpl(key, v1Contract.address, { from: owner }) 
         const OwnedUpgradeabilityProxy = await ethers.getContractFactory('OwnedUpgradeabilityProxy')
-  
+        
+        console.log('attach')
         const proxy: OwnedUpgradeabilityProxyInstance = OwnedUpgradeabilityProxy.attach(
             await addressBook.getAddress(key),
           ) as OwnedUpgradeabilityProxyInstance
 
-
+        console.log('implementation')
         const implementationAddress = await proxy.implementation()
-  
+        
+        console.log('asseretions')
         assert.equal(v1Contract.address, implementationAddress, 'AMM module implementation address mismatch')
         assert.equal((await v1Contract.getV1Version()).toString(), '1', 'AMM implementation version mismatch')
       })
-  
+   
       it('should upgrade contract from V1 to V2', async () => {
         // deploy V2 implementation
+        console.log('v2Contract')
+
         v2Contract = await (await ethers.getContractFactory("UpgradeableContractV2")).deploy() as UpgradeableContractV2Instance
         await v2Contract.deployed()
 
+        console.log('v2Contract')
         const OwnedUpgradeabilityProxy = await ethers.getContractFactory('OwnedUpgradeabilityProxy')  
         const v1Proxy: OwnedUpgradeabilityProxyInstance = OwnedUpgradeabilityProxy.attach(
             await addressBook.getAddress(key),
