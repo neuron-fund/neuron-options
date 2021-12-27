@@ -6,8 +6,9 @@
   "scripts": {
     "start": "npx hardhat node --hostname 0.0.0.0",
     "test": "FORK_BLOCK_NUMBER=13719189 npx hardhat test",
-    "unit-tests": "npx hardhat test ./test/unit_tests/*",
+    "unit-tests": "FORK_BLOCK_NUMBER=13719189 npx hardhat test ./test/unit_tests/*",
     "local-unit-tests": "npx hardhat test --network localhost ./test/unit_tests/*",
+    "start-local": "FORK_BLOCK_NUMBER=13719189 npx hardhat node --no-deploy",
     "size-contracts": "OPTIMIZER=200 npx hardhat compile --quiet --no-typechain && npx hardhat size-contracts",
     "watch-size": "watch 'npm run size-contracts' ./contracts"
   },

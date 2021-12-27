@@ -2,10 +2,9 @@ import { expect, assert } from 'chai'
 
 import {  ethers, getNamedAccounts } from 'hardhat'
 import { ActionType } from '../helpers/actions'
-import { ActionTester } from '../../typechain-types'
+import { ActionTester as ActionTesterType } from '../../typechain-types'
 
-
-let actionTester: ActionTester;
+let actionTester: ActionTesterType;
 
 const ZERO_ADDR = '0x0000000000000000000000000000000000000000'
 
@@ -14,7 +13,7 @@ describe('Actions contract', function () {
 
   before(async () => {
     const ActionTester = await ethers.getContractFactory("ActionTester")
-    actionTester = await ActionTester.deploy() as ActionTester
+    actionTester = await ActionTester.deploy() as ActionTesterType
     await actionTester.deployed()
   })
   describe('Parse Deposit Arguments', function () {
@@ -179,22 +178,46 @@ describe('Actions contract', function () {
         actionType: ActionType.OpenVault,
         owner: owner,
         secondAddress: owner,
-        assets: [ZERO_ADDR, ZERO_ADDR], 
+        assets: [ZERO_ADDR], 
         vaultId: '0',
-        amounts: ['10', '10'],
+        amounts: ['10'],
         index: '0',
         data: ZERO_ADDR,
       }
       
       await expect(actionTester.testParseRedeemAction(data)).to.be.revertedWith('A13')
     })
+    it('should not be able to redeem more than one token', async () => {
+      const {deployer: owner, random_user: random} = await getNamedAccounts();
+      const data = {
+        actionType: ActionType.Redeem,
+        owner: owner,
+        secondAddress: owner,
+        assets: [random, random], 
+        vaultId: '0',
+        amounts: ['10'],
+        index: '0',
+        data: ZERO_ADDR,
+      }      
+      await expect(actionTester.testParseRedeemAction(data)).to.be.revertedWith('A26')
 
+      data['assets'] = [ZERO_ADDR]
+      await expect(actionTester.testParseRedeemAction(data)).to.be.revertedWith('A27')
+
+      data['assets'] = [random]
+      data['amounts'] = ['10', '10']
+      await expect(actionTester.testParseRedeemAction(data)).to.be.revertedWith('A28')
+
+      data['amounts'] = ['0']
+      await expect(actionTester.testParseRedeemAction(data)).to.be.revertedWith('A29')
+
+    })
     it('should be able to parse arguments for an redeem action', async () => {
       const {deployer: owner, random_user: random} = await getNamedAccounts();
       const actionType = ActionType.Redeem
-      const assets = [ZERO_ADDR, ZERO_ADDR] 
+      const assets = [random]  // A26 err on ZERO_ADDR
       const vaultId = '1'
-      const amounts = ['10', '10']
+      const amounts = ['10']
       const index = '0'
       const bytesArgs = ZERO_ADDR
 
@@ -478,12 +501,35 @@ describe('Actions contract', function () {
 
       await expect(actionTester.testParseMintAction(data)).to.be.revertedWith('A5')
     })
+    it('should not able to mint more than one token', async () => {
+      const {deployer: owner, random_user: random} = await getNamedAccounts();
+      const actionType = ActionType.MintShortOption
+      const vaultId = '1'
+      const index = '0'
+      const bytesArgs = ZERO_ADDR
+
+      const data = {
+        actionType: actionType,
+        owner: owner,
+        secondAddress: random,
+        assets: [ZERO_ADDR],
+        vaultId: vaultId,
+        amounts: ['10', '10'],
+        index: index,
+        data: bytesArgs,
+      }
+      await expect(actionTester.testParseMintAction(data)).to.be.revertedWith('A24')
+
+      data['assets'] = [ZERO_ADDR, ZERO_ADDR]
+      data['amounts'] = ['10']
+      await expect(actionTester.testParseMintAction(data)).to.be.revertedWith('A25')
+    })
     it('should be able to parse arguments for a mint short action', async () => {
       const {deployer: owner, random_user: random} = await getNamedAccounts();
       const actionType = ActionType.MintShortOption
-      const assets = [ZERO_ADDR, ZERO_ADDR] 
+      const assets = [ZERO_ADDR] 
       const vaultId = '1'
-      const amounts = ['10', '10']
+      const amounts = ['10']
       const index = '0'
       const bytesArgs = ZERO_ADDR
 
@@ -511,9 +557,9 @@ describe('Actions contract', function () {
     it('should be able to parse arguments for a mint short action', async () => {
       const {deployer: owner, random_user: random} = await getNamedAccounts();
       const actionType = ActionType.MintShortOption
-      const assets = [ZERO_ADDR, ZERO_ADDR] 
+      const assets = [ZERO_ADDR] 
       const vaultId = '3'
-      const amounts = ['10', '10']
+      const amounts = ['10']
       const index = '0'
       const bytesArgs = ZERO_ADDR
 
