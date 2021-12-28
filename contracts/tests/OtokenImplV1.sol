@@ -44,7 +44,7 @@ contract OtokenImplV1 is ERC20PermitUpgradeable {
         string memory tokenSymbol = "oETHUSDCP";
         __ERC20_init_unchained(tokenName, tokenSymbol);
         __ERC20Permit_init(tokenName);
-        _setupDecimals(8);
+        //_setupDecimals(8);
     }
 
     function mintOtoken(address _to, uint256 _amount) external {
@@ -62,4 +62,10 @@ contract OtokenImplV1 is ERC20PermitUpgradeable {
             chainId := chainid()
         }
     }
+
+    function decimals() public view virtual override returns (uint8) {
+        return 8;
+    }
+
+
 }
