@@ -15,7 +15,7 @@ const oTokenParams = {
 const testsParams = [
   {
     oTokenParams: oTokenParams,
-    initalPrices: {
+    initialPrices: {
       [USDT]: 1,
       [USDC]: 1.32,
       [DAI]: 1,
@@ -36,7 +36,7 @@ const testsParams = [
   },
   {
     oTokenParams: oTokenParams,
-    initalPrices: {
+    initialPrices: {
       [USDT]: 1.1,
       [USDC]: 1.1,
       [DAI]: 1,
@@ -57,7 +57,7 @@ const testsParams = [
   },
   {
     oTokenParams: oTokenParams,
-    initalPrices: {
+    initialPrices: {
       [USDT]: 1,
       [USDC]: 1.3,
       [DAI]: 1,
@@ -78,7 +78,7 @@ const testsParams = [
   },
   {
     oTokenParams: oTokenParams,
-    initalPrices: {
+    initialPrices: {
       [USDT]: 1.7,
       [USDC]: 1,
       [DAI]: 1.1,
@@ -99,7 +99,7 @@ const testsParams = [
   },
   {
     oTokenParams: oTokenParams,
-    initalPrices: {
+    initialPrices: {
       [USDT]: 1,
       [USDC]: 1.2,
       [DAI]: 1,

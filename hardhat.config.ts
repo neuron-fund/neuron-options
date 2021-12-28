@@ -103,8 +103,8 @@ const config: HardhatUserConfig = {
     },
     random_user3: {
       default: 6,
-    },    
-  }
+    },
+  },
 }
 
 export default config

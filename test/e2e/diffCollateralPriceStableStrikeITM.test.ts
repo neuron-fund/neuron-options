@@ -13,7 +13,7 @@ const testsParams = [
       expiryDays: 7,
       isPut: true,
     },
-    initalPrices: {
+    initialPrices: {
       [USDT]: 1.4,
       [USDC]: 1,
       [DAI]: 1.5,
@@ -41,7 +41,7 @@ const testsParams = [
       expiryDays: 7,
       isPut: true,
     },
-    initalPrices: {
+    initialPrices: {
       [USDT]: 1,
       [USDC]: 1,
       [DAI]: 1,
@@ -69,7 +69,7 @@ const testsParams = [
       expiryDays: 7,
       isPut: true,
     },
-    initalPrices: {
+    initialPrices: {
       [USDT]: 1,
       [USDC]: 1,
       [DAI]: 1,
@@ -97,7 +97,7 @@ const testsParams = [
       expiryDays: 7,
       isPut: true,
     },
-    initalPrices: {
+    initialPrices: {
       [USDT]: 0.2,
       [USDC]: 1,
       [DAI]: 0.8,
@@ -125,7 +125,7 @@ const testsParams = [
       expiryDays: 7,
       isPut: true,
     },
-    initalPrices: {
+    initialPrices: {
       [USDT]: 1.4,
       [USDC]: 1,
       [DAI]: 1.7,
@@ -157,7 +157,7 @@ const testsParams = [
       expiryDays: 7,
       isPut: true,
     },
-    initalPrices: {
+    initialPrices: {
       [USDT]: 0.5,
       [USDC]: 1,
       [DAI]: 0.8,
@@ -189,7 +189,7 @@ const testsParams = [
       expiryDays: 7,
       isPut: true,
     },
-    initalPrices: {
+    initialPrices: {
       [USDT]: 1,
       [USDC]: 1,
       [DAI]: 1,
