@@ -17,6 +17,7 @@ import '@openzeppelin/hardhat-upgrades'
 import '@nomiclabs/hardhat-solhint'
 import 'hardhat-contract-sizer'
 import { getHardhatAccounts } from './utils/accounts'
+import "@nomiclabs/hardhat-truffle5";
 
 const config: HardhatUserConfig = {
   solidity: {

@@ -8,7 +8,8 @@
     "test": "FORK_BLOCK_NUMBER=13719189 npx hardhat test",
     "unit-tests": "FORK_BLOCK_NUMBER=13719189 npx hardhat test ./test/unit_tests/*",
     "local-unit-tests": "npx hardhat test --network localhost ./test/unit_tests/*",
-    "start-local": "FORK_BLOCK_NUMBER=13719189 npx hardhat node --no-deploy",
+    "start-local-fork": "FORK_BLOCK_NUMBER=13719189 npx hardhat node --no-deploy",
+    "start-local": "npx hardhat node --config ./hardhat_test.config.ts",
     "size-contracts": "OPTIMIZER=200 npx hardhat compile --quiet --no-typechain && npx hardhat size-contracts",
     "watch-size": "watch 'npm run size-contracts' ./contracts"
   },
@@ -18,7 +19,9 @@
     "@nomiclabs/hardhat-ethers": "^2.0.3",
     "@nomiclabs/hardhat-etherscan": "^2.1.8",
     "@nomiclabs/hardhat-solhint": "^2.0.0",
+    "@nomiclabs/hardhat-truffle5": "^2.0.3",
     "@nomiclabs/hardhat-waffle": "^2.0.1",
+    "@nomiclabs/hardhat-web3": "^2.0.0",
     "@openzeppelin/hardhat-upgrades": "^1.12.0",
     "@typechain/ethers-v5": "^8.0.5",
     "@typechain/hardhat": "^3.0.0",
@@ -38,12 +41,12 @@
     "ts-morph": "^13.0.2",
     "ts-node": "^10.4.0",
     "typechain": "^6.0.5",
-    "typescript": "^4.5.3"
+    "typescript": "^4.5.3",
+    "web3": "^1.6.1"
   },
   "dependencies": {
     "@ethersproject/abi": "^5.5.0",
     "@nomiclabs/hardhat-vyper": "^2.0.1",
-    "@nomiclabs/hardhat-web3": "^2.0.0",
     "@openzeppelin/contracts": "^4.4.0",
     "@openzeppelin/contracts-upgradeable": "^4.4.0",
     "@openzeppelin/test-helpers": "^0.5.15",
