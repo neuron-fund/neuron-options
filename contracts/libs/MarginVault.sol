@@ -6,6 +6,8 @@ pragma solidity 0.8.9;
 pragma experimental ABIEncoderV2;
 
 import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import {FPI} from "../libs/FixedPointInt256.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 import "hardhat/console.sol";
 
@@ -32,6 +34,9 @@ import "hardhat/console.sol";
  */
 library MarginVault {
     using SafeMath for uint256;
+    using FPI for FPI.FixedPointInt;
+
+    uint256 internal constant BASE = 8;
 
     // vault is a struct of 6 arrays that describe a position a user has, a user can have multiple vaults.
     struct Vault {
@@ -55,6 +60,7 @@ library MarginVault {
         // TODO on expiry of oTokenAddress update this variable
         // TODO should we use this new variable or maybe sub from collaeralAmounts when using collateral?
         uint256[] usedCollateralAmounts;
+        uint256[] usedCollateralValues;
         uint256[] unusedCollateralAmounts;
     }
 
@@ -87,19 +93,80 @@ library MarginVault {
      * @param _amount number of _shortOtoken being reduced in the user's vault
      */
     function removeShort(
+        // TODO Will using memory here will save gas since we have a lot of reading from _vault opearations?
         Vault storage _vault,
         address _shortOtoken,
         uint256 _amount
-    ) external {
+    ) external returns (uint256[] memory freedCollateralAmounts, uint256[] memory freedCollateralValues) {
         // check that the removed short oToken exists in the vault at the specified index
         require(_vault.shortOtoken == _shortOtoken, "V3");
 
         uint256 newShortAmount = _vault.shortAmount.sub(_amount);
 
+        uint256[] memory newUsedCollateralAmounts = new uint256[](_vault.collateralAssets.length);
+        uint256[] memory newUsedCollateralValues = new uint256[](_vault.collateralAssets.length);
+        freedCollateralAmounts = new uint256[](_vault.collateralAssets.length);
+        freedCollateralValues = new uint256[](_vault.collateralAssets.length);
+        uint256[] memory newUnusedCollateralAmounts = _vault.unusedCollateralAmounts;
         if (newShortAmount == 0) {
-            _vault.shortOtoken = address(0);
+            newUnusedCollateralAmounts = _vault.collateralAmounts;
+            for (uint256 i = 0; i < _vault.collateralAssets.length; i++) {
+                newUsedCollateralAmounts[i] = 0;
+                newUsedCollateralValues[i] = 0;
+                freedCollateralAmounts[i] = _vault.usedCollateralAmounts[i];
+                freedCollateralValues[i] = _vault.usedCollateralValues[i];
+            }
+        } else {
+            // usedLeftRatio is multiplier which is used to calculate the new used collateral values and used amounts
+            FPI.FixedPointInt memory usedLeftRatio = FPI.fromScaledUint(1, 0).sub(
+                FPI.fromScaledUint(newShortAmount, BASE).div(FPI.fromScaledUint(_vault.shortAmount, BASE))
+            );
+            for (uint256 i = 0; i < _vault.collateralAssets.length; i++) {
+                uint256 collateralDecimals = uint256(IERC20Metadata(_vault.collateralAssets[i]).decimals());
+                newUsedCollateralAmounts[i] = toFPImulAndBack(
+                    _vault.usedCollateralAmounts[i],
+                    collateralDecimals,
+                    usedLeftRatio,
+                    false
+                );
+
+                newUsedCollateralValues[i] = toFPImulAndBack(
+                    _vault.usedCollateralValues[i],
+                    BASE,
+                    usedLeftRatio,
+                    false
+                );
+                freedCollateralAmounts[i] = _vault.usedCollateralAmounts[i].sub(newUsedCollateralAmounts[i]);
+                freedCollateralValues[i] = _vault.usedCollateralValues[i].sub(newUsedCollateralValues[i]);
+                newUnusedCollateralAmounts[i] = newUnusedCollateralAmounts[i].add(freedCollateralAmounts[i]);
+                console.log("------------------", i);
+                console.log("Old used collateral values", _vault.usedCollateralValues[i]);
+                console.log("New used collateral values", newUsedCollateralValues[i]);
+                console.log("Freed colllateral values", freedCollateralValues[i]);
+
+                console.log("Vault total collateral amounts", _vault.collateralAmounts[i]);
+                console.log("Old used collateral amounts", _vault.usedCollateralAmounts[i]);
+                console.log("New used collateral amounts", newUsedCollateralAmounts[i]);
+                console.log("Freed collateral amounts", freedCollateralAmounts[i]);
+
+                console.log("Old unused collateral amounts", _vault.unusedCollateralAmounts[i]);
+                console.log("New unused collateral amounts", newUnusedCollateralAmounts[i]);
+            }
         }
         _vault.shortAmount = newShortAmount;
+        _vault.usedCollateralAmounts = newUsedCollateralAmounts;
+        _vault.unusedCollateralAmounts = newUnusedCollateralAmounts;
+        _vault.usedCollateralValues = newUsedCollateralValues;
+        console.log("----------END OF removeShort---------");
+    }
+
+    function toFPImulAndBack(
+        uint256 _value,
+        uint256 _decimals,
+        FPI.FixedPointInt memory _multiplicator,
+        bool roundDown
+    ) internal pure returns (uint256) {
+        return FPI.fromScaledUint(_value, _decimals).mul(_multiplicator).toScaledUint(_decimals, roundDown);
     }
 
     /**
@@ -198,17 +265,29 @@ library MarginVault {
         _vault.collateralAmounts[_index] = newCollateralAmount;
     }
 
-    function useCollateralBulk(Vault storage _vault, uint256[] memory _amounts) external {
+    function useCollateralBulk(
+        Vault storage _vault,
+        uint256[] memory _amounts,
+        uint256[] memory _values
+    ) external {
         require(
             _amounts.length == _vault.collateralAssets.length,
             "Amounts for collateral is not same length as collateral assets"
         );
 
+        console.log("values.length", _values.length);
+        console.log("_amounts.length", _amounts.length);
+        console.log("_vault.usedCollateralAmounts.length", _vault.usedCollateralAmounts.length);
         for (uint256 i = 0; i < _amounts.length; i++) {
-            console.log("VAULT UNUSED COLLATERAL BEFORE", _vault.unusedCollateralAmounts[i]);
+            console.log("i", i);
+            console.log("_vault.usedCollateralAmounts[i]", _vault.usedCollateralAmounts[i]);
+            console.log("_vault.usedCollateralValues[i]", _vault.usedCollateralValues[i]);
             uint256 newUsedCollateralAmount = _vault.usedCollateralAmounts[i].add(_amounts[i]);
 
+            uint256 newUsedCollateralValue = _vault.usedCollateralValues[i].add(_values[i]);
+
             _vault.usedCollateralAmounts[i] = newUsedCollateralAmount;
+            _vault.usedCollateralValues[i] = newUsedCollateralValue;
             require(
                 _vault.usedCollateralAmounts[i] <= _vault.collateralAmounts[i],
                 "Trying to use collateral which exceeds vault's balance"

@@ -25,6 +25,7 @@ export type VaultStruct = {
   longAmounts: BigNumberish[];
   collateralAmounts: BigNumberish[];
   usedCollateralAmounts: BigNumberish[];
+  usedCollateralValues: BigNumberish[];
   unusedCollateralAmounts: BigNumberish[];
 };
 
@@ -33,6 +34,7 @@ export type VaultStructOutput = [
   string[],
   string[],
   BigNumber,
+  BigNumber[],
   BigNumber[],
   BigNumber[],
   BigNumber[],
@@ -45,6 +47,7 @@ export type VaultStructOutput = [
   longAmounts: BigNumber[];
   collateralAmounts: BigNumber[];
   usedCollateralAmounts: BigNumber[];
+  usedCollateralValues: BigNumber[];
   unusedCollateralAmounts: BigNumber[];
 };
 

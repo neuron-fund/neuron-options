@@ -15,6 +15,12 @@ interface OtokenInterface {
 
     function burnOtoken(address account, uint256 amount) external;
 
+    function reduceCollaterization(
+        uint256[] calldata collateralsAmountsForReduce,
+        uint256[] calldata collateralsValuesForReduce,
+        uint256 oTokenAmountBurnt
+    ) external;
+
     function getCollateralAssets() external view returns (address[] memory);
 
     function getCollateralsAmounts() external view returns (uint256[] memory);
@@ -27,7 +33,7 @@ interface OtokenInterface {
 
     function decimals() external view returns (uint8);
 
-    function totalMinted() external view returns (uint256);
+    function collaterizedTotalAmount() external view returns (uint256);
 
     function decreaseAllowance(address spender, uint256 subtractedValue) external returns (bool);
 

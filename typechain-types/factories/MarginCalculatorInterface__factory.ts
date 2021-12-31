@@ -209,6 +209,11 @@ const _abi = [
           },
           {
             internalType: "uint256[]",
+            name: "usedCollateralValues",
+            type: "uint256[]",
+          },
+          {
+            internalType: "uint256[]",
             name: "unusedCollateralAmounts",
             type: "uint256[]",
           },
@@ -331,6 +336,11 @@ const _abi = [
           {
             internalType: "uint256[]",
             name: "usedCollateralAmounts",
+            type: "uint256[]",
+          },
+          {
+            internalType: "uint256[]",
+            name: "usedCollateralValues",
             type: "uint256[]",
           },
           {

@@ -25,6 +25,7 @@ export type VaultStruct = {
   longAmounts: BigNumberish[];
   collateralAmounts: BigNumberish[];
   usedCollateralAmounts: BigNumberish[];
+  usedCollateralValues: BigNumberish[];
   unusedCollateralAmounts: BigNumberish[];
 };
 
@@ -33,6 +34,7 @@ export type VaultStructOutput = [
   string[],
   string[],
   BigNumber,
+  BigNumber[],
   BigNumber[],
   BigNumber[],
   BigNumber[],
@@ -45,15 +47,16 @@ export type VaultStructOutput = [
   longAmounts: BigNumber[];
   collateralAmounts: BigNumber[];
   usedCollateralAmounts: BigNumber[];
+  usedCollateralValues: BigNumber[];
   unusedCollateralAmounts: BigNumber[];
 };
 
 export interface MarginCalculatorInterface extends utils.Interface {
   functions: {
     "AUCTION_TIME()": FunctionFragment;
-    "_getCollateralRequired((address,address[],address[],uint256,uint256[],uint256[],uint256[],uint256[]),address,uint256)": FunctionFragment;
+    "_getCollateralRequired((address,address[],address[],uint256,uint256[],uint256[],uint256[],uint256[],uint256[]),address,uint256)": FunctionFragment;
     "getCollateralDust(address)": FunctionFragment;
-    "getExcessCollateral((address,address[],address[],uint256,uint256[],uint256[],uint256[],uint256[]))": FunctionFragment;
+    "getExcessCollateral((address,address[],address[],uint256,uint256[],uint256[],uint256[],uint256[],uint256[]))": FunctionFragment;
     "getExpiredPayoutRate(address)": FunctionFragment;
     "getMaxPrice(address,address,address[],bool,uint256)": FunctionFragment;
     "getOracleDeviation()": FunctionFragment;
