@@ -179,6 +179,19 @@ const _abi = [
   },
   {
     inputs: [],
+    name: "collaterizedTotalAmount",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
     name: "controller",
     outputs: [
       {
@@ -511,6 +524,29 @@ const _abi = [
     type: "function",
   },
   {
+    inputs: [
+      {
+        internalType: "uint256[]",
+        name: "collateralsAmountsForReduce",
+        type: "uint256[]",
+      },
+      {
+        internalType: "uint256[]",
+        name: "collateralsValuesForReduce",
+        type: "uint256[]",
+      },
+      {
+        internalType: "uint256",
+        name: "oTokenAmountBurnt",
+        type: "uint256",
+      },
+    ],
+    name: "reduceCollaterization",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
     inputs: [],
     name: "strikeAsset",
     outputs: [
@@ -544,19 +580,6 @@ const _abi = [
         internalType: "string",
         name: "",
         type: "string",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "totalMinted",
-    outputs: [
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
       },
     ],
     stateMutability: "view",

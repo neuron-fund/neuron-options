@@ -22,7 +22,6 @@ export type BurnArgsStruct = {
   vaultId: BigNumberish;
   from: string;
   otoken: string;
-  index: BigNumberish;
   amount: BigNumberish;
 };
 
@@ -31,14 +30,12 @@ export type BurnArgsStructOutput = [
   BigNumber,
   string,
   string,
-  BigNumber,
   BigNumber
 ] & {
   owner: string;
   vaultId: BigNumber;
   from: string;
   otoken: string;
-  index: BigNumber;
   amount: BigNumber;
 };
 

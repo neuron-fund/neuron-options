@@ -25,6 +25,7 @@ export interface OtokenInterfaceInterface extends utils.Interface {
     "balanceOf(address)": FunctionFragment;
     "burnOtoken(address,uint256)": FunctionFragment;
     "collateralsValues(uint256)": FunctionFragment;
+    "collaterizedTotalAmount()": FunctionFragment;
     "controller()": FunctionFragment;
     "decimals()": FunctionFragment;
     "decreaseAllowance(address,uint256)": FunctionFragment;
@@ -40,10 +41,10 @@ export interface OtokenInterfaceInterface extends utils.Interface {
     "name()": FunctionFragment;
     "nonces(address)": FunctionFragment;
     "permit(address,address,uint256,uint256,uint8,bytes32,bytes32)": FunctionFragment;
+    "reduceCollaterization(uint256[],uint256[],uint256)": FunctionFragment;
     "strikeAsset()": FunctionFragment;
     "strikePrice()": FunctionFragment;
     "symbol()": FunctionFragment;
-    "totalMinted()": FunctionFragment;
     "totalSupply()": FunctionFragment;
     "transfer(address,uint256)": FunctionFragment;
     "transferFrom(address,address,uint256)": FunctionFragment;
@@ -70,6 +71,10 @@ export interface OtokenInterfaceInterface extends utils.Interface {
   encodeFunctionData(
     functionFragment: "collateralsValues",
     values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "collaterizedTotalAmount",
+    values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "controller",
@@ -136,6 +141,10 @@ export interface OtokenInterfaceInterface extends utils.Interface {
     ]
   ): string;
   encodeFunctionData(
+    functionFragment: "reduceCollaterization",
+    values: [BigNumberish[], BigNumberish[], BigNumberish]
+  ): string;
+  encodeFunctionData(
     functionFragment: "strikeAsset",
     values?: undefined
   ): string;
@@ -144,10 +153,6 @@ export interface OtokenInterfaceInterface extends utils.Interface {
     values?: undefined
   ): string;
   encodeFunctionData(functionFragment: "symbol", values?: undefined): string;
-  encodeFunctionData(
-    functionFragment: "totalMinted",
-    values?: undefined
-  ): string;
   encodeFunctionData(
     functionFragment: "totalSupply",
     values?: undefined
@@ -175,6 +180,10 @@ export interface OtokenInterfaceInterface extends utils.Interface {
   decodeFunctionResult(functionFragment: "burnOtoken", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "collateralsValues",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "collaterizedTotalAmount",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "controller", data: BytesLike): Result;
@@ -214,6 +223,10 @@ export interface OtokenInterfaceInterface extends utils.Interface {
   decodeFunctionResult(functionFragment: "nonces", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "permit", data: BytesLike): Result;
   decodeFunctionResult(
+    functionFragment: "reduceCollaterization",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "strikeAsset",
     data: BytesLike
   ): Result;
@@ -222,10 +235,6 @@ export interface OtokenInterfaceInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "symbol", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "totalMinted",
-    data: BytesLike
-  ): Result;
   decodeFunctionResult(
     functionFragment: "totalSupply",
     data: BytesLike
@@ -317,6 +326,8 @@ export interface OtokenInterface extends BaseContract {
       overrides?: CallOverrides
     ): Promise<[BigNumber]>;
 
+    collaterizedTotalAmount(overrides?: CallOverrides): Promise<[BigNumber]>;
+
     controller(overrides?: CallOverrides): Promise<[string]>;
 
     decimals(overrides?: CallOverrides): Promise<[number]>;
@@ -392,13 +403,18 @@ export interface OtokenInterface extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
+    reduceCollaterization(
+      collateralsAmountsForReduce: BigNumberish[],
+      collateralsValuesForReduce: BigNumberish[],
+      oTokenAmountBurnt: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
     strikeAsset(overrides?: CallOverrides): Promise<[string]>;
 
     strikePrice(overrides?: CallOverrides): Promise<[BigNumber]>;
 
     symbol(overrides?: CallOverrides): Promise<[string]>;
-
-    totalMinted(overrides?: CallOverrides): Promise<[BigNumber]>;
 
     totalSupply(overrides?: CallOverrides): Promise<[BigNumber]>;
 
@@ -444,6 +460,8 @@ export interface OtokenInterface extends BaseContract {
     arg0: BigNumberish,
     overrides?: CallOverrides
   ): Promise<BigNumber>;
+
+  collaterizedTotalAmount(overrides?: CallOverrides): Promise<BigNumber>;
 
   controller(overrides?: CallOverrides): Promise<string>;
 
@@ -520,13 +538,18 @@ export interface OtokenInterface extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
+  reduceCollaterization(
+    collateralsAmountsForReduce: BigNumberish[],
+    collateralsValuesForReduce: BigNumberish[],
+    oTokenAmountBurnt: BigNumberish,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
   strikeAsset(overrides?: CallOverrides): Promise<string>;
 
   strikePrice(overrides?: CallOverrides): Promise<BigNumber>;
 
   symbol(overrides?: CallOverrides): Promise<string>;
-
-  totalMinted(overrides?: CallOverrides): Promise<BigNumber>;
 
   totalSupply(overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -572,6 +595,8 @@ export interface OtokenInterface extends BaseContract {
       arg0: BigNumberish,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
+
+    collaterizedTotalAmount(overrides?: CallOverrides): Promise<BigNumber>;
 
     controller(overrides?: CallOverrides): Promise<string>;
 
@@ -648,13 +673,18 @@ export interface OtokenInterface extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
+    reduceCollaterization(
+      collateralsAmountsForReduce: BigNumberish[],
+      collateralsValuesForReduce: BigNumberish[],
+      oTokenAmountBurnt: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
     strikeAsset(overrides?: CallOverrides): Promise<string>;
 
     strikePrice(overrides?: CallOverrides): Promise<BigNumber>;
 
     symbol(overrides?: CallOverrides): Promise<string>;
-
-    totalMinted(overrides?: CallOverrides): Promise<BigNumber>;
 
     totalSupply(overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -726,6 +756,8 @@ export interface OtokenInterface extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
+    collaterizedTotalAmount(overrides?: CallOverrides): Promise<BigNumber>;
+
     controller(overrides?: CallOverrides): Promise<BigNumber>;
 
     decimals(overrides?: CallOverrides): Promise<BigNumber>;
@@ -788,13 +820,18 @@ export interface OtokenInterface extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
+    reduceCollaterization(
+      collateralsAmountsForReduce: BigNumberish[],
+      collateralsValuesForReduce: BigNumberish[],
+      oTokenAmountBurnt: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
     strikeAsset(overrides?: CallOverrides): Promise<BigNumber>;
 
     strikePrice(overrides?: CallOverrides): Promise<BigNumber>;
 
     symbol(overrides?: CallOverrides): Promise<BigNumber>;
-
-    totalMinted(overrides?: CallOverrides): Promise<BigNumber>;
 
     totalSupply(overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -842,6 +879,10 @@ export interface OtokenInterface extends BaseContract {
 
     collateralsValues(
       arg0: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    collaterizedTotalAmount(
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
@@ -916,13 +957,18 @@ export interface OtokenInterface extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
+    reduceCollaterization(
+      collateralsAmountsForReduce: BigNumberish[],
+      collateralsValuesForReduce: BigNumberish[],
+      oTokenAmountBurnt: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
     strikeAsset(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     strikePrice(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     symbol(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    totalMinted(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     totalSupply(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 

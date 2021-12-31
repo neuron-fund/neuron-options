@@ -441,16 +441,14 @@ contract MarginCalculator is Ownable {
         console.log("cashValueInStrike round up", cashValueInStrike.toScaledUint(BASE, false));
 
         uint256[] memory otokenCollateralValues = OtokenInterface(_otoken).getCollateralsValues();
-        uint256 oTokenTotalCollateralValue = uint256ArraySum(otokenCollateralValues);
-        console.log("oTokenTotalCollateralValue", oTokenTotalCollateralValue);
 
         FPI.FixedPointInt memory collaterizedTotalAmountFpi = FPI.fromScaledUint(
             oTokenDetails.collaterizedTotalAmount,
             BASE
         );
         console.log("oTokenDetails.collaterizedTotalAmount", oTokenDetails.collaterizedTotalAmount);
-        // FPI.FixedPointInt memory strikePriceFpi = FPI.fromScaledUint(oTokenDetails.strikePrice, BASE);
-        // TODO this is only put calculations, add for call
+        FPI.FixedPointInt memory strikePriceFpi = FPI.fromScaledUint(oTokenDetails.strikePrice, BASE);
+
         // Amounts of collateral to transfer for 1 oToken
         collateralsPayoutRate = new uint256[](oTokenDetails.collaterals.length);
         // TODO this calculations should be done only once after oToken expiry but not on every redeem as its now. It will help save gas for redeemers
@@ -463,9 +461,10 @@ contract MarginCalculator is Ownable {
             // Collateral value is calculated in strike asset, used BASE decimals only for convinience
             FPI.FixedPointInt memory collateralValue = FPI.fromScaledUint(otokenCollateralValues[i], BASE);
             console.log("otokenCollateralValues[i]", otokenCollateralValues[i]);
-            FPI.FixedPointInt memory collateralPayoutValueInStrike = collateralValue.mul(cashValueInStrike).div(
-                FPI.fromScaledUint(oTokenTotalCollateralValue, BASE)
-            );
+            FPI.FixedPointInt memory collateralPayoutValueInStrike = collateralValue
+                .mul(cashValueInStrike)
+                .div(collaterizedTotalAmountFpi)
+                .div(strikePriceFpi);
 
             console.log("collateralPayoutValueInStrike", collateralPayoutValueInStrike.toScaledUint(BASE, false));
 
@@ -590,54 +589,55 @@ contract MarginCalculator is Ownable {
             oTokenDetails.isPut
         );
 
-        uint256 oTokenTotalCollaterizedAmount = OtokenInterface(vaultDetails.shortOtoken).collaterizedTotalAmount();
+        FPI.FixedPointInt memory cashValueInStrikeForVaultMinted = cashValueInStrikeForOneToken.mul(
+            FPI.fromScaledUint(_vault.shortAmount, BASE)
+        );
 
         if (vaultDetails.hasShort) {
             // This payout represents how much redeemer will get for each 1e8 of oToken. But from the vault side we should also calculate ratio
             // of amounts of each collateral provided by vault to same total amount used for mint total number of oTokens
             // For example: one vault provided [200 USDC, 0 DAI], and another vault [0 USDC, 200 DAI] for the oToken mint
             // and get payout returns [100 USDC, 100 DAI] first vault pays all the 100 USDC and the second one all the 100 DAI
-            uint256[] memory payoutsRaw = getExpiredPayoutRate(vaultDetails.shortOtoken);
-            uint256[] memory oTokenCollateralsValues = OtokenInterface(vaultDetails.shortOtoken).getCollateralsValues();
+            // uint256[] memory payoutsRaw = getExpiredPayoutRate(vaultDetails.shortOtoken);
+
+            FPI.FixedPointInt memory totalVaultUsedCollateralsValue = FPI.fromScaledUint(
+                uint256ArraySum(_vault.usedCollateralValues),
+                BASE
+            );
 
             for (uint256 i = 0; i < _vault.collateralAssets.length; i++) {
-                console.log("----------------------------------", i);
-                console.log("PAYOUTS RAW ", payoutsRaw[i]);
-                uint256 collateralAmountProvidedByVault = _vault.usedCollateralAmounts[i];
-                uint256 collateralValueProvidedByVault = _vault.usedCollateralValues[i];
-                console.log("oTokenCollateralsAmounts", oTokenCollateralsValues[i]);
-                console.log("collateralValueProvidedByVault", collateralValueProvidedByVault);
-                if (oTokenCollateralsValues[i] == 0 || collateralValueProvidedByVault == 0) {
+                // uint256 collateralProvidedByVault = _vault.usedCollateralAmounts[i];
+                console.log("oTokenDetails.collateralsAmounts", i, oTokenDetails.collateralsAmounts[i]);
+                // console.log("collateralProvidedByVault", i, collateralProvidedByVault);
+                if (oTokenDetails.collateralsAmounts[i] == 0 || _vault.usedCollateralAmounts[i] == 0) {
                     continue;
                 }
 
-                uint256 collateralDecimals = IERC20Metadata(_vault.collateralAssets[i]).decimals();
-
                 // This ratio represents for specific collateral what part does this vault cover total collaterization of oToken by this collateral
-                FPI.FixedPointInt memory vaultCollateralRatio = FPI
-                    .fromScaledUint(collateralValueProvidedByVault, BASE)
-                    .div(FPI.fromScaledUint(oTokenCollateralsValues[i], BASE));
+                // FPI.FixedPointInt memory vaultCollateralRatio = FPI
+                //     .fromScaledUint(collateralProvidedByVault, collateralDecimals)
+                //     .div(FPI.fromScaledUint(oTokenDetails.collateralsAmounts[i], collateralDecimals));
 
                 // FPI.FixedPointInt memory payoutsFPI = FPI.fromScaledUint(payoutsRaw[i], collateralDecimals);
-                // FPI.FixedPointInt memory oTokenTotalMintedFPI = FPI.fromScaledUint(oTokenTotalMinted, BASE);
+                // FPI.FixedPointInt memory oTokenDetails.collaterizedTotalAmountFPI = FPI.fromScaledUint(oTokenDetails.collaterizedTotalAmount, BASE);
 
-                console.log(
-                    "TOTAL OPTION COLLATERAL PAYOUT",
-                    FPI
-                        .fromScaledUint(payoutsRaw[i], collateralDecimals)
-                        .mul(FPI.fromScaledUint(oTokenTotalCollaterizedAmount, BASE))
-                        .toScaledUint(collateralDecimals, false)
+                // uint256 redeemableCollateral = FPI
+                // // TODO possible gas optimization getExpiredPayoutRate returns payoutsRaw and just before return transforms it to uint
+                // // Can add second return to prevent transform to FPI back here
+                //     .fromScaledUint(payoutsRaw[i], collateralDecimals)
+                //     .mul(FPI.fromScaledUint(oTokenDetails.collaterizedTotalAmount, BASE))
+                //     .mul(vaultCollateralRatio)
+                //     .toScaledUint(collateralDecimals, false);
+                uint256 redeemableCollateral = calculatePutVaultCollateralRedeem(
+                    _vault.collateralAssets[i],
+                    _vault.usedCollateralValues[i],
+                    totalVaultUsedCollateralsValue,
+                    cashValueInStrikeForVaultMinted,
+                    oTokenDetails.strikeAsset,
+                    oTokenDetails.expiry
                 );
-
-                // TODO possible gas optimization getExpiredPayoutRate returns payoutsRaw and just before return transforms it to uint
-                // Can add second return to prevent transform to FPI back here
-                uint256 redeemableCollateral = FPI
-                    .fromScaledUint(payoutsRaw[i], collateralDecimals)
-                    .mul(FPI.fromScaledUint(oTokenTotalCollaterizedAmount, BASE))
-                    .mul(vaultCollateralRatio)
-                    .toScaledUint(collateralDecimals, false);
-
-                excessCollateral[i] = excessCollateral[i].add(collateralAmountProvidedByVault).sub(
+                // console.log("redeemableCollateral", redeemableCollateral);
+                excessCollateral[i] = excessCollateral[i].add(_vault.usedCollateralAmounts[i]).sub(
                     redeemableCollateral
                 );
             }

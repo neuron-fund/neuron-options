@@ -102,12 +102,21 @@ export const SettleVaultsArgsMappings = {
   to: 'secondAddress',
 } as const
 
+export const BurnShortOptionArgsMappings = {
+  owner: 'owner',
+  vaultId: 'vaultId',
+  from: 'secondAddress',
+  otoken: 'assets',
+  amount: 'amounts',
+} as const
+
 export const ActionTypeToMappings = {
   [ActionType.OpenVault]: OpenVaultArgsMappings,
   [ActionType.DepositCollateral]: DepositCollateralArgsMappings,
   [ActionType.MintShortOption]: MintShortOptionArgsMappings,
   [ActionType.Redeem]: RedeemArgsMappings,
   [ActionType.SettleVault]: SettleVaultsArgsMappings,
+  [ActionType.BurnShortOption]: BurnShortOptionArgsMappings,
 } as const
 
 export type DefinedActionsMappings = typeof ActionTypeToMappings

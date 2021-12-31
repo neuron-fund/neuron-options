@@ -5,7 +5,7 @@ import { assert } from 'chai'
 import { parseUnits, formatUnits } from 'ethers/lib/utils'
 import { ethers, getNamedAccounts, network } from 'hardhat'
 import { Otoken } from '../../typechain-types'
-import { ActionArgsStruct } from '../../typechain-types/Controller'
+import { ActionArgsStruct, Controller } from '../../typechain-types/Controller'
 import { testVaultOwnersPrivateKeys } from '../../utils/accounts'
 import { AddressZero } from '../../utils/ethers'
 import { namedAccountsSigners } from '../../utils/hardhat'
@@ -48,6 +48,7 @@ export type TestMintRedeemSettleParamsVault<
   C extends TestMintRedeemSettleParamsCheckpoints<T>
 > = {
   collateralAmountsFormatted: VaultDepositsAmounts<T>
+  burnAmountFormatted?: number
 } & (
   | { oTokenAmountFormatted: number; mintOnCheckoints?: VaultCheckpointsMint<T, C> }
   | { oTokenAmountFormatted?: number; mintOnCheckoints: VaultCheckpointsMint<T, C> }
@@ -101,17 +102,17 @@ export const testMintRedeemSettleFactory = (getDeployResults: () => TestDeployRe
       expiry: createValidExpiry(expiryDays),
     } as const
 
-    const totalOtokenMintFormatted = params.vaults.reduce((a, vault) => {
-      const { totalOTokenMint } = calcualteVaultTotalMint(
+    const totalOtokenRedeemableFormatted = params.vaults.reduce((a, vault) => {
+      const { totalOTokenMint } = calculateVaultTotalMint(
         params.oTokenParams,
         initialPrices,
         vault,
         params.checkpointsDays
       )
-      return a + totalOTokenMint
+      return a + totalOTokenMint - (vault.burnAmountFormatted || 0)
     }, 0)
 
-    const totalOtokenMint = parseUnits(totalOtokenMintFormatted.toString(), oTokenDecimals)
+    const totalOtokenRedeemable = parseUnits(totalOtokenRedeemableFormatted.toString(), oTokenDecimals)
 
     await setStablePrices(oracle, deployer, params.initialPrices)
 
@@ -154,20 +155,35 @@ export const testMintRedeemSettleFactory = (getDeployResults: () => TestDeployRe
       }
     }
 
+    // Get burn oTokens from redeemer
+    for (const vault of vaults) {
+      if (vault.burnAmountFormatted) {
+        await oToken
+          .connect(redeemer)
+          .transfer(vault.owner.address, parseUnits(vault.burnAmountFormatted.toString(), oTokenDecimals))
+      }
+    }
+
+    // Burn vaults
+    const vaultsToBurn = vaults.filter(x => x.burnAmountFormatted)
+    for (const vault of vaultsToBurn) {
+      await burnVault(controller, oToken, vault)
+    }
+
     const redeemerBalanceAfterMint = await getERC20BalanceOf(redeemer, oToken.address)
     assert(
-      redeemerBalanceAfterMint.eq(totalOtokenMint),
-      `Redeemer balance of oToken is not correct\n Expected: ${totalOtokenMint}\n Got: ${redeemerBalanceAfterMint}`
+      redeemerBalanceAfterMint.eq(totalOtokenRedeemable),
+      `Redeemer balance of oToken is not correct\n Expected: ${totalOtokenRedeemable}\n Got: ${redeemerBalanceAfterMint}`
     )
 
     await waitNDays(expiryDays + 1, network.provider)
     await setStablePrices(oracle, deployer, params.expiryPrices)
 
-    await oToken.connect(redeemer).approve(controller.address, totalOtokenMint)
+    await oToken.connect(redeemer).approve(controller.address, totalOtokenRedeemable)
 
     const redeemActions: ActionArgsStruct[] = [
       getAction(ActionType.Redeem, {
-        amount: [totalOtokenMint],
+        amount: [totalOtokenRedeemable],
         otoken: [oToken.address],
         receiver: redeemer.address,
       }),
@@ -175,8 +191,7 @@ export const testMintRedeemSettleFactory = (getDeployResults: () => TestDeployRe
 
     await controller.connect(redeemer).operate(redeemActions)
 
-    const totalRedeem = await calculateRedeemForOtokenAmount(params, totalOtokenMintFormatted, redeemer)
-    const collateralAmounts = await oToken.getCollateralsAmounts()
+    const totalRedeem = await calculateRedeemForOtokenAmount(params, totalOtokenRedeemableFormatted, redeemer)
 
     // Assert user gets right redeem
     for (const [i, collateralAmount] of totalRedeem.collaterals.entries()) {
@@ -199,19 +214,26 @@ export const testMintRedeemSettleFactory = (getDeployResults: () => TestDeployRe
     for (const vault of vaults) {
       await settleVault(testDeployResult, vault)
 
-      const { usedCollateralsValues: vaultCollateralsValuesOnDeposit, totalOTokenMint } = calcualteVaultTotalMint(
+      const { usedCollateralsValues, usedCollaterals, totalOTokenMint } = calculateVaultTotalMint(
         params.oTokenParams,
         initialPrices,
         vault,
         params.checkpointsDays
       )
-      const vaultTotalCollateralValueOnDeposit = vaultCollateralsValuesOnDeposit.reduce((acc, b, i) => (acc += b), 0)
-      const vaultCollateralsRedeemRatio = vaultCollateralsValuesOnDeposit.map(
-        (collateralValue, i) => collateralValue / vaultTotalCollateralValueOnDeposit
+      console.log(`testMintRedeemSettleFactory ~ usedCollaterals`, usedCollaterals)
+      const redeemableAlternativeRatio = totalRedeem.collateralsFormatted.map((x, i) => usedCollaterals[i] / x)
+      const redeeableAlternative = totalRedeem.collateralsFormatted
+      console.log(`testMintRedeemSettleFactory ~ redeemableAlternative`, redeemableAlternativeRatio)
+      const totalOTokenMintAfterBurn = totalOTokenMint - (vault.burnAmountFormatted || 0)
+      console.log(`testMintRedeemSettleFactory ~ totalOTokenMintAfterBurn`, totalOTokenMintAfterBurn)
+      const totalUsedCollateralsValue = usedCollateralsValues.reduce((acc, b, i) => (acc += b), 0)
+      console.log(`testMintRedeemSettleFactory ~ vaultTotalCollateralValueOnDeposit`, totalUsedCollateralsValue)
+      const vaultCollateralsRedeemRatio = usedCollateralsValues.map((collateralValue, i) =>
+        totalUsedCollateralsValue === 0 ? 1 : collateralValue / totalUsedCollateralsValue
       )
 
       const vaultCollateralsRedeemValues = vaultCollateralsRedeemRatio.map(
-        x => x * usdRedeemForOneOtoken * totalOTokenMint
+        x => x * usdRedeemForOneOtoken * totalOTokenMintAfterBurn
       )
 
       const vaultRedeemCollateralsFormatted = vaultCollateralsRedeemValues.map(
@@ -373,19 +395,9 @@ export async function calculateRedeemForOtokenAmount<
       return zero
     }
 
-    const vaultsUsedCollateralsAmounts = vaults
-      .map(vault => {
-        const { usedCollaterals } = calcualteVaultTotalMint(params.oTokenParams, initialPrices, vault, checkpointsDays)
-        return usedCollaterals
-      })
-      .reduce((acc, b) => {
-        b.forEach((amount, i) => (acc[i] = (acc[i] || 0) + amount))
-        return acc
-      }, [])
-
     const collateralValuesFormatted = vaults
       .map(vault => {
-        const { usedCollateralsValues } = calcualteVaultTotalMint(
+        const { usedCollateralsValues } = calculateVaultTotalMint(
           params.oTokenParams,
           initialPrices,
           vault,
@@ -420,7 +432,7 @@ export async function calculateRedeemForOtokenAmount<
   }
 }
 
-export function calcualteVaultTotalMint<
+export function calculateVaultTotalMint<
   T extends TestMintOTokenParams,
   C extends TestMintRedeemSettleParamsCheckpoints<T>
 >(oTokenParams: T, initialPrices: OTokenPrices<T>, vault: TestMintRedeemSettleParamsVault<T, C>, checkpoints?: C) {
@@ -443,7 +455,7 @@ export function calcualteVaultTotalMint<
 
   for (const c of Object.keys(checkpoints || {})) {
     const checkpoint = Number(c)
-    const vaultCheckpoint = vault.mintOnCheckoints[checkpoint]
+    const vaultCheckpoint = vault.mintOnCheckoints?.[checkpoint]
     if (!vaultCheckpoint) {
       continue
     }
@@ -461,7 +473,7 @@ export function calcualteVaultTotalMint<
       checkpoints[checkpoint].prices
     )
 
-    usedCollateralAmounts.forEach((a, i) => {
+    oTokenParams.collateralAssets.forEach((a, i) => {
       const collateral = oTokenParams.collateralAssets[i]
       usedCollateralAmounts[i] = (usedCollateralAmounts[i] || 0) + amountForThisMint[i]
       usedCollateralsValues[i] =
@@ -469,10 +481,20 @@ export function calcualteVaultTotalMint<
     })
   }
 
+  const burnedAmountRatio = (vault.burnAmountFormatted || 0) / vaultTotalMintAmount
+  const burnedCollateralAmounts = usedCollateralAmounts.map(x => x * burnedAmountRatio)
+  const burnedCollateralValues = usedCollateralsValues.map((x, i) => x * burnedAmountRatio)
+  console.log(`burnedCollateralValues`, burnedCollateralValues)
+
+  const usedCollateralsAfterBurn = usedCollateralAmounts.map((x, i) => x - burnedCollateralAmounts[i])
+  const usedCollateralsValuesAfterBurn = usedCollateralsValues.map((x, i) => x - burnedCollateralValues[i])
+  console.log(`usedCollateralsAfterBurn`, usedCollateralsAfterBurn)
+  console.log(`usedCollateralsValuesAfterBurn`, usedCollateralsValuesAfterBurn)
+
   return {
     totalOTokenMint: vaultTotalMintAmount,
-    usedCollaterals: usedCollateralAmounts,
-    usedCollateralsValues,
+    usedCollaterals: usedCollateralsAfterBurn,
+    usedCollateralsValues: usedCollateralsValuesAfterBurn,
   }
 }
 
@@ -492,4 +514,22 @@ export function calculateMintUsedCollaterals<T extends TestMintOTokenParams>(
   )
   const usedCollateralsRatios = collateralValues.map(x => x / totalCollateralsValue)
   return usedCollateralsRatios.map((x, i) => (x * strikeRequiredUsd) / prices[collateralAssets[i]])
+}
+
+export async function burnVault<T extends TestMintOTokenParams, C extends TestMintRedeemSettleParamsCheckpoints<T>>(
+  controller: Controller,
+  oToken: Otoken,
+  vault: TestMintRedeemSettleParamsVaultOwned<T, C>
+) {
+  const burnAction: ActionArgsStruct[] = [
+    getAction(ActionType.BurnShortOption, {
+      amount: [parseUnits(vault.burnAmountFormatted.toString(), oTokenDecimals)],
+      from: vault.owner.address,
+      otoken: [oToken.address],
+      owner: vault.owner.address,
+      vaultId: 1,
+    }),
+  ]
+
+  await controller.connect(vault.owner).operate(burnAction)
 }

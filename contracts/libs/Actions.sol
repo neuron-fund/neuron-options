@@ -94,9 +94,6 @@ library Actions {
         address from;
         // oToken that is to be burned
         address otoken;
-        // each vault can hold multiple short / long / collateral assets but we are restricting the scope to only 1 of each in this version
-        // in future versions this would be the index of the short / long / collateral asset that needs to be modified
-        uint256 index;
         // amount of oTokens that is to be burned
         uint256 amount;
     }
@@ -216,7 +213,6 @@ library Actions {
                 vaultId: _args.vaultId,
                 from: _args.secondAddress,
                 otoken: _args.assets[0],
-                index: _args.index,
                 amount: _args.amounts[0]
             });
     }

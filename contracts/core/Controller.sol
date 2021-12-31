@@ -682,16 +682,13 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         accountVaultCounter[_args.owner] = vaultId;
         vaults[_args.owner][vaultId].shortOtoken = _args.shortOtoken;
         vaults[_args.owner][vaultId].collateralAssets = oToken.getCollateralAssets();
+
+        uint256 assetsLength = vaults[_args.owner][vaultId].collateralAssets.length;
         // TODO 3 times reading length from struct. Possibly can be optimized by initializing uint with length
-        vaults[_args.owner][vaultId].collateralAmounts = new uint256[](
-            vaults[_args.owner][vaultId].collateralAssets.length
-        );
-        vaults[_args.owner][vaultId].usedCollateralAmounts = new uint256[](
-            vaults[_args.owner][vaultId].collateralAssets.length
-        );
-        vaults[_args.owner][vaultId].unusedCollateralAmounts = new uint256[](
-            vaults[_args.owner][vaultId].collateralAssets.length
-        );
+        vaults[_args.owner][vaultId].collateralAmounts = new uint256[](assetsLength);
+        vaults[_args.owner][vaultId].usedCollateralAmounts = new uint256[](assetsLength);
+        vaults[_args.owner][vaultId].unusedCollateralAmounts = new uint256[](assetsLength);
+        vaults[_args.owner][vaultId].usedCollateralValues = new uint256[](assetsLength);
 
         emit VaultOpened(_args.owner, vaultId);
     }
@@ -835,7 +832,7 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         console.log("usedCollateralsAmounts", usedCollateralsAmounts[1]);
         otoken.mintOtoken(_args.to, _args.amount, usedCollateralsAmounts, usedCollateralsValues);
         vaults[_args.owner][_args.vaultId].addShort(_args.otoken, _args.amount);
-        vaults[_args.owner][_args.vaultId].useCollateralBulk(usedCollateralsAmounts);
+        vaults[_args.owner][_args.vaultId].useCollateralBulk(usedCollateralsAmounts, usedCollateralsValues);
 
         emit ShortOtokenMinted(_args.otoken, _args.owner, _args.to, _args.vaultId, _args.amount);
     }
@@ -850,9 +847,11 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         notPartiallyPaused
         onlyAuthorized(msg.sender, _args.owner)
     {
+        console.log("BURN OTOKEn");
         // check that vault id is valid for this vault owner
         require(_checkVaultId(_args.owner, _args.vaultId), "C35");
         // only allow vault owner or vault operator to burn otoken
+        // TODO strange vulnerability, one can burn tokens from vault owner if vault owner just minted it and didnt transfer to anyone
         require((_args.from == msg.sender) || (_args.from == _args.owner), "C25");
 
         OtokenInterface otoken = OtokenInterface(_args.otoken);
@@ -861,10 +860,13 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         require(block.timestamp < otoken.expiryTimestamp(), "C26");
 
         // remove otoken from vault
-        vaults[_args.owner][_args.vaultId].removeShort(_args.otoken, _args.amount);
+        (uint256[] memory freedCollateralAmounts, uint256[] memory freedCollateralValues) = vaults[_args.owner][
+            _args.vaultId
+        ].removeShort(_args.otoken, _args.amount);
 
         // burn otoken
         otoken.burnOtoken(_args.from, _args.amount);
+        otoken.reduceCollaterization(freedCollateralAmounts, freedCollateralValues, _args.amount);
 
         emit ShortOtokenBurned(_args.otoken, _args.owner, _args.from, _args.vaultId, _args.amount);
     }
