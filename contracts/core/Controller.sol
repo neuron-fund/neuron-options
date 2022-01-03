@@ -670,12 +670,17 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         internal
         notPartiallyPaused
         onlyAuthorized(msg.sender, _args.owner)
-    {
+    {   
+        console.log("Controller._openVault");
         uint256 vaultId = accountVaultCounter[_args.owner].add(1);
 
+        console.log("_args.vaultId, vaultId", _args.vaultId, vaultId);        
         require(_args.vaultId == vaultId, "C15");
+
         // TODO add more checks on assets of vault are the same as oToken
+        console.log("_args.shortOtoken, isWhitelistedOtoken", _args.shortOtoken, whitelist.isWhitelistedOtoken(_args.shortOtoken)); 
         require(whitelist.isWhitelistedOtoken(_args.shortOtoken), "C23");
+        
         OtokenInterface oToken = OtokenInterface(_args.shortOtoken);
 
         // store new vault

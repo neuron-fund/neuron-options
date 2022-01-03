@@ -658,7 +658,7 @@ describe('Actions contract', function () {
       assert.equal(burnArgs.otoken, assets[0])
       assert.equal(burnArgs.from, random)
       assert.equal(burnArgs.vaultId.toString(), vaultId)
-      assert.equal(burnArgs.index.toString(), index)
+      //assert.equal(burnArgs.index.toString(), index)
     })
     it('should be able to parse arguments for a burn short action', async () => {
       const {deployer: owner, random_user: random} = await getNamedAccounts();
@@ -688,7 +688,6 @@ describe('Actions contract', function () {
       assert.equal(burnArgs.otoken, assets[0])
       assert.equal(burnArgs.from, owner)
       assert.equal(burnArgs.vaultId.toString(), vaultId)
-      assert.equal(burnArgs.index.toString(), index)
     })
   })
   describe('Parse Call Arguments', () => {
