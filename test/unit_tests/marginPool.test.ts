@@ -1,13 +1,16 @@
-import {
-  MockERC20Instance,
-  MockAddressBookInstance,
-  WETH9Instance,
-  MarginPoolInstance,
-  MockDumbERC20Instance,
-} from '../../build/types/truffle-types'
-import BigNumber from 'bignumber.js'
+import { 
+  MockERC20 as MockERC20Instance,
+  MockAddressBook as MockAddressBookInstance,
+ // WETH9 as WETH9Instance,
+  MarginPool as MarginPoolInstance,
+  MockDumbERC20 as MockDumbERC20Instance
+} from '../../typechain-types' 
 
-const { expectRevert, ether } = require('@openzeppelin/test-helpers')
+
+import { expectRevert, ether } from '@openzeppelin/test-helpers'
+import { artifacts, contract, web3 } from 'hardhat'
+import { BigNumber } from 'ethers'
+import { assert } from 'chai'
 
 const MockERC20 = artifacts.require('MockERC20.sol')
 const MockDumbERC20 = artifacts.require('MockDumbERC20.sol')
@@ -23,7 +26,8 @@ contract('MarginPool', ([owner, controllerAddress, farmer, user1, random]) => {
   const wethToMint = ether('50')
   // ERC20 mocks
   let usdc: MockERC20Instance
-  let weth: WETH9Instance
+  //let weth: WETH9Instance
+  let weth: MockERC20Instance
   // DumbER20: Return false when transfer fail.
   let dumbToken: MockDumbERC20Instance
   // addressbook module mock
@@ -95,48 +99,48 @@ contract('MarginPool', ([owner, controllerAddress, farmer, user1, random]) => {
     })
 
     it('should transfer to pool from user when called by the controller address', async () => {
-      const userBalanceBefore = new BigNumber(await usdc.balanceOf(user1))
-      const poolBalanceBefore = new BigNumber(await usdc.balanceOf(marginPool.address))
+      const userBalanceBefore = await usdc.balanceOf(user1)
+      const poolBalanceBefore = await usdc.balanceOf(marginPool.address)
 
       // user approve USDC transfer
       await usdc.approve(marginPool.address, usdcToTransfer, { from: user1 })
 
       await marginPool.transferToPool(usdc.address, user1, usdcToTransfer, { from: controllerAddress })
 
-      const userBalanceAfter = new BigNumber(await usdc.balanceOf(user1))
-      const poolBalanceAfter = new BigNumber(await usdc.balanceOf(marginPool.address))
+      const userBalanceAfter = await usdc.balanceOf(user1)
+      const poolBalanceAfter = await usdc.balanceOf(marginPool.address)
 
       assert.equal(
-        new BigNumber(usdcToTransfer).toString(),
-        userBalanceBefore.minus(userBalanceAfter).toString(),
+        BigNumber.from(usdcToTransfer).toString(),
+        userBalanceBefore.sub(userBalanceAfter).toString(),
         'USDC value transfered from user mismatch',
       )
 
       assert.equal(
-        new BigNumber(usdcToTransfer).toString(),
-        poolBalanceAfter.minus(poolBalanceBefore).toString(),
+        BigNumber.from(usdcToTransfer).toString(),
+        poolBalanceAfter.sub(poolBalanceBefore).toString(),
         'USDC value transfered into pool mismatch',
       )
     })
 
     it('should transfer WETH to pool from controller when called by the controller address', async () => {
-      const controllerBalanceBefore = new BigNumber(await weth.balanceOf(controllerAddress))
-      const poolBalanceBefore = new BigNumber(await weth.balanceOf(marginPool.address))
+      const controllerBalanceBefore = await weth.balanceOf(controllerAddress)
+      const poolBalanceBefore = await weth.balanceOf(marginPool.address)
 
       await marginPool.transferToPool(weth.address, controllerAddress, wethToTransfer, { from: controllerAddress })
 
-      const controllerBalanceAfter = new BigNumber(await weth.balanceOf(controllerAddress))
-      const poolBalanceAfter = new BigNumber(await weth.balanceOf(marginPool.address))
+      const controllerBalanceAfter = await weth.balanceOf(controllerAddress)
+      const poolBalanceAfter = await weth.balanceOf(marginPool.address)
 
       assert.equal(
-        new BigNumber(wethToTransfer).toString(),
-        controllerBalanceBefore.minus(controllerBalanceAfter).toString(),
+        wethToTransfer.toString(),
+        controllerBalanceBefore.sub(controllerBalanceAfter).toString(),
         'WETH value transfered from controller mismatch',
       )
 
       assert.equal(
-        new BigNumber(wethToTransfer).toString(),
-        poolBalanceAfter.minus(poolBalanceBefore).toString(),
+        wethToTransfer.toString(),
+        poolBalanceAfter.sub(poolBalanceBefore).toString(),
         'WETH value transfered into pool mismatch',
       )
     })
@@ -168,30 +172,30 @@ contract('MarginPool', ([owner, controllerAddress, farmer, user1, random]) => {
     })
 
     it('should transfer an ERC-20 to user from pool when called by the controller address', async () => {
-      const userBalanceBefore = new BigNumber(await usdc.balanceOf(user1))
-      const poolBalanceBefore = new BigNumber(await usdc.balanceOf(marginPool.address))
+      const userBalanceBefore = await usdc.balanceOf(user1)
+      const poolBalanceBefore = await usdc.balanceOf(marginPool.address)
 
       await marginPool.transferToUser(usdc.address, user1, usdcToTransfer, { from: controllerAddress })
 
-      const userBalanceAfter = new BigNumber(await usdc.balanceOf(user1))
-      const poolBalanceAfter = new BigNumber(await usdc.balanceOf(marginPool.address))
+      const userBalanceAfter = await usdc.balanceOf(user1)
+      const poolBalanceAfter = await usdc.balanceOf(marginPool.address)
 
       assert.equal(
-        new BigNumber(usdcToTransfer).toString(),
-        userBalanceAfter.minus(userBalanceBefore).toString(),
+        usdcToTransfer.toString(),
+        userBalanceAfter.sub(userBalanceBefore).toString(),
         'USDC value transfered to user mismatch',
       )
 
       assert.equal(
-        new BigNumber(usdcToTransfer).toString(),
-        poolBalanceBefore.minus(poolBalanceAfter).toString(),
+        usdcToTransfer.toString(),
+        poolBalanceBefore.sub(poolBalanceAfter).toString(),
         'USDC value transfered from pool mismatch',
       )
     })
 
     it('should transfer WETH to controller from pool, unwrap it and transfer ETH to user when called by the controller address', async () => {
-      const poolBalanceBefore = new BigNumber(await weth.balanceOf(marginPool.address))
-      const userBalanceBefore = new BigNumber(await web3.eth.getBalance(user1))
+      const poolBalanceBefore = await weth.balanceOf(marginPool.address)
+      const userBalanceBefore = await web3.eth.getBalance(user1)
 
       // transfer to controller
       await marginPool.transferToUser(weth.address, controllerAddress, wethToTransfer, { from: controllerAddress })
@@ -200,18 +204,18 @@ contract('MarginPool', ([owner, controllerAddress, farmer, user1, random]) => {
       // send ETH to user
       await web3.eth.sendTransaction({ from: controllerAddress, to: user1, value: wethToTransfer })
 
-      const poolBalanceAfter = new BigNumber(await weth.balanceOf(marginPool.address))
-      const userBalanceAfter = new BigNumber(await web3.eth.getBalance(user1))
+      const poolBalanceAfter = await weth.balanceOf(marginPool.address)
+      const userBalanceAfter = await web3.eth.getBalance(user1)
 
       assert.equal(
-        new BigNumber(wethToTransfer).toString(),
-        poolBalanceBefore.minus(poolBalanceAfter).toString(),
+        wethToTransfer.toString(),
+        poolBalanceBefore.sub(poolBalanceAfter).toString(),
         'WETH value un-wrapped from pool mismatch',
       )
 
       assert.equal(
-        new BigNumber(wethToTransfer).toString(),
-        userBalanceAfter.minus(userBalanceBefore).toString(),
+        wethToTransfer.toString(),
+        BigNumber.from(userBalanceAfter).sub(BigNumber.from(userBalanceBefore)).toString(),
         'ETH value transfered to user mismatch',
       )
     })
@@ -272,10 +276,10 @@ contract('MarginPool', ([owner, controllerAddress, farmer, user1, random]) => {
     })
 
     it('should transfer an array including weth and usdc to pool from user/controller when called by the controller address', async () => {
-      const userUsdcBalanceBefore = new BigNumber(await usdc.balanceOf(user1))
-      const poolUsdcBalanceBefore = new BigNumber(await usdc.balanceOf(marginPool.address))
-      const controllerWethBalanceBefore = new BigNumber(await weth.balanceOf(controllerAddress))
-      const poolWethBalanceBefore = new BigNumber(await weth.balanceOf(marginPool.address))
+      const userUsdcBalanceBefore = await usdc.balanceOf(user1)
+      const poolUsdcBalanceBefore = await usdc.balanceOf(marginPool.address)
+      const controllerWethBalanceBefore = await weth.balanceOf(controllerAddress)
+      const poolWethBalanceBefore = await weth.balanceOf(marginPool.address)
 
       // user approve USDC and WETH transfer
       await usdc.approve(marginPool.address, usdcToTransfer, { from: user1 })
@@ -288,32 +292,32 @@ contract('MarginPool', ([owner, controllerAddress, farmer, user1, random]) => {
         { from: controllerAddress },
       )
 
-      const userUsdcBalanceAfter = new BigNumber(await usdc.balanceOf(user1))
-      const poolUsdcBalanceAfter = new BigNumber(await usdc.balanceOf(marginPool.address))
-      const controllerWethBalanceAfter = new BigNumber(await weth.balanceOf(controllerAddress))
-      const poolWethBalanceAfter = new BigNumber(await weth.balanceOf(marginPool.address))
+      const userUsdcBalanceAfter = await usdc.balanceOf(user1)
+      const poolUsdcBalanceAfter = await usdc.balanceOf(marginPool.address)
+      const controllerWethBalanceAfter = await weth.balanceOf(controllerAddress)
+      const poolWethBalanceAfter = await weth.balanceOf(marginPool.address)
 
       assert.equal(
-        new BigNumber(usdcToTransfer).toString(),
-        userUsdcBalanceBefore.minus(userUsdcBalanceAfter).toString(),
+        usdcToTransfer.toString(),
+        userUsdcBalanceBefore.sub(userUsdcBalanceAfter).toString(),
         'USDC value transfered from user mismatch',
       )
 
       assert.equal(
-        new BigNumber(usdcToTransfer).toString(),
-        poolUsdcBalanceAfter.minus(poolUsdcBalanceBefore).toString(),
+        usdcToTransfer.toString(),
+        poolUsdcBalanceAfter.sub(poolUsdcBalanceBefore).toString(),
         'USDC value transfered into pool mismatch',
       )
 
       assert.equal(
-        new BigNumber(wethToTransfer).toString(),
-        controllerWethBalanceBefore.minus(controllerWethBalanceAfter).toString(),
+        wethToTransfer.toString(),
+        controllerWethBalanceBefore.sub(controllerWethBalanceAfter).toString(),
         'WETH value transfered from controller mismatch',
       )
 
       assert.equal(
-        new BigNumber(wethToTransfer).toString(),
-        poolWethBalanceAfter.minus(poolWethBalanceBefore).toString(),
+        wethToTransfer.toString(),
+        poolWethBalanceAfter.sub(poolWethBalanceBefore).toString(),
         'WETH value transfered into pool mismatch',
       )
     })
@@ -345,10 +349,10 @@ contract('MarginPool', ([owner, controllerAddress, farmer, user1, random]) => {
     })
 
     it('should batch transfer to users when called from controller', async () => {
-      const userUsdcBalanceBefore = new BigNumber(await usdc.balanceOf(user1))
-      const poolUsdcBalanceBefore = new BigNumber(await usdc.balanceOf(marginPool.address))
-      const controllerWethBalanceBefore = new BigNumber(await weth.balanceOf(controllerAddress))
-      const poolWethBalanceBefore = new BigNumber(await weth.balanceOf(marginPool.address))
+      const userUsdcBalanceBefore = await usdc.balanceOf(user1)
+      const poolUsdcBalanceBefore = await usdc.balanceOf(marginPool.address)
+      const controllerWethBalanceBefore = await weth.balanceOf(controllerAddress)
+      const poolWethBalanceBefore = await weth.balanceOf(marginPool.address)
 
       await marginPool.batchTransferToUser(
         [usdc.address, weth.address],
@@ -357,32 +361,32 @@ contract('MarginPool', ([owner, controllerAddress, farmer, user1, random]) => {
         { from: controllerAddress },
       )
 
-      const userUsdcBalanceAfter = new BigNumber(await usdc.balanceOf(user1))
-      const poolUsdcBalanceAfter = new BigNumber(await usdc.balanceOf(marginPool.address))
-      const controllerWethBalanceAfter = new BigNumber(await weth.balanceOf(controllerAddress))
-      const poolWethBalanceAfter = new BigNumber(await weth.balanceOf(marginPool.address))
+      const userUsdcBalanceAfter = await usdc.balanceOf(user1)
+      const poolUsdcBalanceAfter = await usdc.balanceOf(marginPool.address)
+      const controllerWethBalanceAfter = await weth.balanceOf(controllerAddress)
+      const poolWethBalanceAfter = await weth.balanceOf(marginPool.address)
 
       assert.equal(
         poolUsdcBalanceBefore.toString(),
-        userUsdcBalanceAfter.minus(userUsdcBalanceBefore).toString(),
+        userUsdcBalanceAfter.sub(userUsdcBalanceBefore).toString(),
         'USDC value transfered to user mismatch',
       )
 
       assert.equal(
         poolUsdcBalanceBefore.toString(),
-        poolUsdcBalanceBefore.minus(poolUsdcBalanceAfter).toString(),
+        poolUsdcBalanceBefore.sub(poolUsdcBalanceAfter).toString(),
         'USDC value transfered from pool mismatch',
       )
 
       assert.equal(
         poolWethBalanceBefore.toString(),
-        controllerWethBalanceAfter.minus(controllerWethBalanceBefore).toString(),
+        controllerWethBalanceAfter.sub(controllerWethBalanceBefore).toString(),
         'WETH value transfered to controller mismatch',
       )
 
       assert.equal(
         poolWethBalanceBefore.toString(),
-        poolWethBalanceBefore.minus(poolWethBalanceAfter).toString(),
+        poolWethBalanceBefore.sub(poolWethBalanceAfter).toString(),
         'WETH value transfered from pool mismatch',
       )
     })
@@ -391,7 +395,7 @@ contract('MarginPool', ([owner, controllerAddress, farmer, user1, random]) => {
   describe('Farming', () => {
     before(async () => {
       // send more usdc to pool
-      await usdc.mint(marginPool.address, new BigNumber('100'))
+      await usdc.mint(marginPool.address, BigNumber.from('100'))
     })
 
     it('should revert setting farmer address from non-owner', async () => {
@@ -405,9 +409,9 @@ contract('MarginPool', ([owner, controllerAddress, farmer, user1, random]) => {
     })
 
     it('should revert farming when receiver address is equal to zero', async () => {
-      const poolStoredBalanceBefore = new BigNumber(await marginPool.getStoredBalance(usdc.address))
-      const poolBlanaceBefore = new BigNumber(await usdc.balanceOf(marginPool.address))
-      const amountToFarm = poolBlanaceBefore.minus(poolStoredBalanceBefore)
+      const poolStoredBalanceBefore = await marginPool.getStoredBalance(usdc.address)
+      const poolBlanaceBefore = await usdc.balanceOf(marginPool.address)
+      const amountToFarm = poolBlanaceBefore.sub(poolStoredBalanceBefore)
 
       await expectRevert(
         marginPool.farm(usdc.address, ZERO_ADDR, amountToFarm, { from: farmer }),
@@ -416,9 +420,9 @@ contract('MarginPool', ([owner, controllerAddress, farmer, user1, random]) => {
     })
 
     it('should revert farming when sender is not farmer address', async () => {
-      const poolStoredBalanceBefore = new BigNumber(await marginPool.getStoredBalance(usdc.address))
-      const poolBlanaceBefore = new BigNumber(await usdc.balanceOf(marginPool.address))
-      const amountToFarm = poolBlanaceBefore.minus(poolStoredBalanceBefore)
+      const poolStoredBalanceBefore = await marginPool.getStoredBalance(usdc.address)
+      const poolBlanaceBefore = await usdc.balanceOf(marginPool.address)
+      const amountToFarm = poolBlanaceBefore.sub(poolStoredBalanceBefore)
 
       await expectRevert(
         marginPool.farm(usdc.address, random, amountToFarm, { from: random }),
@@ -427,16 +431,16 @@ contract('MarginPool', ([owner, controllerAddress, farmer, user1, random]) => {
     })
 
     it('should farm additional USDC', async () => {
-      const poolStoredBalanceBefore = new BigNumber(await marginPool.getStoredBalance(usdc.address))
-      const poolBlanaceBefore = new BigNumber(await usdc.balanceOf(marginPool.address))
-      const farmerBalanceBefore = new BigNumber(await usdc.balanceOf(farmer))
-      const amountToFarm = poolBlanaceBefore.minus(poolStoredBalanceBefore)
+      const poolStoredBalanceBefore = await marginPool.getStoredBalance(usdc.address)
+      const poolBlanaceBefore = await usdc.balanceOf(marginPool.address)
+      const farmerBalanceBefore = await usdc.balanceOf(farmer)
+      const amountToFarm = poolBlanaceBefore.sub(poolStoredBalanceBefore)
 
       await marginPool.farm(usdc.address, farmer, amountToFarm, { from: farmer })
 
-      const poolStoredBalanceAfter = new BigNumber(await marginPool.getStoredBalance(usdc.address))
-      const poolBlanaceAfter = new BigNumber(await usdc.balanceOf(marginPool.address))
-      const farmerBalanceAfter = new BigNumber(await usdc.balanceOf(farmer))
+      const poolStoredBalanceAfter = await marginPool.getStoredBalance(usdc.address)
+      const poolBlanaceAfter = await usdc.balanceOf(marginPool.address)
+      const farmerBalanceAfter = await usdc.balanceOf(farmer)
 
       assert.equal(
         poolStoredBalanceBefore.toString(),
@@ -444,19 +448,19 @@ contract('MarginPool', ([owner, controllerAddress, farmer, user1, random]) => {
         'Pool stored balance mismatch',
       )
       assert.equal(
-        poolBlanaceBefore.minus(poolBlanaceAfter).toString(),
+        poolBlanaceBefore.sub(poolBlanaceAfter).toString(),
         amountToFarm.toString(),
         'Pool balance mismatch',
       )
       assert.equal(
-        farmerBalanceAfter.minus(farmerBalanceBefore).toString(),
+        farmerBalanceAfter.sub(farmerBalanceBefore).toString(),
         amountToFarm.toString(),
         'Farmer balance mismatch',
       )
     })
 
     it('should revert farming when amount is greater than available balance to farm', async () => {
-      const amountToFarm = new BigNumber('100000000000')
+      const amountToFarm = BigNumber.from('100000000000')
 
       await expectRevert(
         marginPool.farm(usdc.address, farmer, amountToFarm, { from: farmer }),

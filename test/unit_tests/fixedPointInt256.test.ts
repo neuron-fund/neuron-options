@@ -1,6 +1,14 @@
-import { FixedPointInt256TesterInstance } from '../../build/types/truffle-types'
-import BigNumber from 'bignumber.js'
-import { createTokenAmount } from '../utils'
+import { 
+  FixedPointInt256Tester as FixedPointInt256TesterInstance
+} from '../../typechain-types' 
+
+import { createScaledNumber, createTokenAmount, underlyingPriceToCtokenPrice } from './helpers/utils'
+
+import { artifacts, contract, web3 } from 'hardhat'
+import { expect, assert } from 'chai'
+
+import { BigNumber } from 'ethers'
+
 const { expectRevert } = require('@openzeppelin/test-helpers')
 const FixedPointInt256Tester = artifacts.require('FixedPointInt256Tester.sol')
 
@@ -13,9 +21,9 @@ contract('FixedPointInt256 lib', () => {
 
   describe('Test Addition', () => {
     it('Should return 7e27 for 5e27 + 2e27', async () => {
-      const a = await lib.testFromUnscaledInt(new BigNumber(5))
-      const b = await lib.testFromUnscaledInt(new BigNumber(2))
-      const expectedResult = new BigNumber(7).multipliedBy(1e27)
+      const a = await lib.testFromUnscaledInt(BigNumber.from(5))
+      const b = await lib.testFromUnscaledInt(BigNumber.from(2))
+      const expectedResult = BigNumber.from(7).mul(1e27)
 
       assert.equal((await lib.testAdd(a, b)).toString(), expectedResult.toString(), 'adding result mismatch')
     })
@@ -23,17 +31,17 @@ contract('FixedPointInt256 lib', () => {
 
   describe('Test subtraction', () => {
     it('Should return 2e27 for 7e27 - 5e27', async () => {
-      const a = await lib.testFromUnscaledInt(new BigNumber(7))
-      const b = await lib.testFromUnscaledInt(new BigNumber(5))
-      const expectedResult = new BigNumber(2).multipliedBy(1e27)
+      const a = await lib.testFromUnscaledInt(BigNumber.from(7))
+      const b = await lib.testFromUnscaledInt(BigNumber.from(5))
+      const expectedResult = BigNumber.from(2).mul(1e27)
 
       assert.equal((await lib.testSub(a, b)).toString(), expectedResult.toString(), 'subtraction result mismatch')
     })
 
     it('Should return -2e27 for 5e27 - 7e27', async () => {
-      const a = await lib.testFromUnscaledInt(new BigNumber(7))
-      const b = await lib.testFromUnscaledInt(new BigNumber(5))
-      const expectedResult = new BigNumber(-2).multipliedBy(1e27)
+      const a = await lib.testFromUnscaledInt(BigNumber.from(7))
+      const b = await lib.testFromUnscaledInt(BigNumber.from(5))
+      const expectedResult = BigNumber.from(-2).mul(1e27)
 
       assert.equal((await lib.testSub(b, a)).toString(), expectedResult.toString(), 'subtraction result mismatch')
     })
@@ -41,40 +49,40 @@ contract('FixedPointInt256 lib', () => {
 
   describe('Test mul', () => {
     it('Should return 10e27 for 2e27 * 5e27', async () => {
-      const a = await lib.testFromUnscaledInt(new BigNumber(2))
-      const b = await lib.testFromUnscaledInt(new BigNumber(5))
-      const expectedResult = new BigNumber(10).multipliedBy(1e27)
+      const a = await lib.testFromUnscaledInt(BigNumber.from(2))
+      const b = await lib.testFromUnscaledInt(BigNumber.from(5))
+      const expectedResult = BigNumber.from(10).mul(1e27)
 
       assert.equal((await lib.testMul(a, b)).toString(), expectedResult.toString(), 'multiplication result mismatch')
     })
 
     it('Should return 10 for -2 * -5', async () => {
-      const a = await lib.testFromUnscaledInt(new BigNumber(-2))
-      const b = await lib.testFromUnscaledInt(new BigNumber(-5))
-      const expectedResult = new BigNumber(10).multipliedBy(1e27)
+      const a = await lib.testFromUnscaledInt(BigNumber.from(-2))
+      const b = await lib.testFromUnscaledInt(BigNumber.from(-5))
+      const expectedResult = BigNumber.from(10).mul(1e27)
 
       assert.equal((await lib.testMul(a, b)).toString(), expectedResult.toString(), 'multiplication result mismatch')
     })
 
     it('Should return 10 for -2 * 5', async () => {
-      const a = await lib.testFromUnscaledInt(new BigNumber(-2))
-      const b = await lib.testFromUnscaledInt(new BigNumber(5))
-      const expectedResult = new BigNumber(-10).multipliedBy(1e27)
+      const a = await lib.testFromUnscaledInt(BigNumber.from(-2))
+      const b = await lib.testFromUnscaledInt(BigNumber.from(5))
+      const expectedResult = BigNumber.from(-10).mul(1e27)
 
       assert.equal((await lib.testMul(a, b)).toString(), expectedResult.toString(), 'multiplication result mismatch')
     })
 
     it('Should return 10 for 2 * -5', async () => {
-      const a = await lib.testFromUnscaledInt(new BigNumber(2))
-      const b = await lib.testFromUnscaledInt(new BigNumber(-5))
-      const expectedResult = new BigNumber(-10).multipliedBy(1e27)
+      const a = await lib.testFromUnscaledInt(BigNumber.from(2))
+      const b = await lib.testFromUnscaledInt(BigNumber.from(-5))
+      const expectedResult = BigNumber.from(-10).mul(1e27)
 
       assert.equal((await lib.testMul(a, b)).toString(), expectedResult.toString(), 'multiplication result mismatch')
     })
 
     it('Should return 0 for 0 * 5e27', async () => {
-      const a = await lib.testFromUnscaledInt(new BigNumber(0))
-      const b = await lib.testFromUnscaledInt(new BigNumber(5))
+      const a = await lib.testFromUnscaledInt(BigNumber.from(0))
+      const b = await lib.testFromUnscaledInt(BigNumber.from(5))
 
       assert.equal((await lib.testMul(a, b)).toString(), '0', 'multiplication result mismatch')
     })
@@ -119,25 +127,25 @@ contract('FixedPointInt256 lib', () => {
 
   describe('Test div', () => {
     it('Should return 2e27 for 10e27 divided by 5e27', async () => {
-      const a = await lib.testFromUnscaledInt(new BigNumber(10))
-      const b = await lib.testFromUnscaledInt(new BigNumber(5))
-      const expectedResult = new BigNumber(2).multipliedBy(1e27)
+      const a = await lib.testFromUnscaledInt(BigNumber.from(10))
+      const b = await lib.testFromUnscaledInt(BigNumber.from(5))
+      const expectedResult = BigNumber.from(2).mul(1e27)
 
       assert.equal((await lib.testDiv(a, b)).toString(), expectedResult.toString(), 'division result mismatch')
     })
 
     it('Should return -2e27 for -10e27 divided by 5e27', async () => {
-      const a = await lib.testFromUnscaledInt(new BigNumber(-10))
-      const b = await lib.testFromUnscaledInt(new BigNumber(5))
-      const expectedResult = new BigNumber(-2).multipliedBy(1e27)
+      const a = await lib.testFromUnscaledInt(BigNumber.from(-10))
+      const b = await lib.testFromUnscaledInt(BigNumber.from(5))
+      const expectedResult = BigNumber.from(-2).mul(1e27)
 
       assert.equal((await lib.testDiv(a, b)).toString(), expectedResult.toString(), 'division result mismatch')
     })
 
     it('Should return -2e27 for 10e27 divided by -5e27', async () => {
-      const a = await lib.testFromUnscaledInt(new BigNumber(10))
-      const b = await lib.testFromUnscaledInt(new BigNumber(-5))
-      const expectedResult = new BigNumber(-2).multipliedBy(1e27)
+      const a = await lib.testFromUnscaledInt(BigNumber.from(10))
+      const b = await lib.testFromUnscaledInt(BigNumber.from(-5))
+      const expectedResult = BigNumber.from(-2).mul(1e27)
 
       assert.equal((await lib.testDiv(a, b)).toString(), expectedResult.toString(), 'division result mismatch')
     })
@@ -145,17 +153,17 @@ contract('FixedPointInt256 lib', () => {
 
   describe('Test min', () => {
     it('Should return 3e27 between 3e27 and 5e27', async () => {
-      const a = await lib.testFromUnscaledInt(new BigNumber(3))
-      const b = await lib.testFromUnscaledInt(new BigNumber(5))
-      const expectedResult = new BigNumber(3).multipliedBy(1e27)
+      const a = await lib.testFromUnscaledInt(BigNumber.from(3))
+      const b = await lib.testFromUnscaledInt(BigNumber.from(5))
+      const expectedResult = BigNumber.from(3).mul(1e27)
 
       assert.equal((await lib.testMin(a, b)).toString(), expectedResult.toString(), 'minimum result mismatch')
     })
 
     it('Should return -2e27 between -2e27 and 2e27', async () => {
-      const a = await lib.testFromUnscaledInt(new BigNumber(-2))
-      const b = await lib.testFromUnscaledInt(new BigNumber(-2))
-      const expectedResult = new BigNumber(-2).multipliedBy(1e27)
+      const a = await lib.testFromUnscaledInt(BigNumber.from(-2))
+      const b = await lib.testFromUnscaledInt(BigNumber.from(-2))
+      const expectedResult = BigNumber.from(-2).mul(1e27)
 
       assert.equal((await lib.testMin(a, b)).toString(), expectedResult.toString(), 'minimum result mismatch')
     })
@@ -163,9 +171,9 @@ contract('FixedPointInt256 lib', () => {
 
   describe('Test max', () => {
     it('Should return 3e27 between 3e27 and 1e27', async () => {
-      const a = await lib.testFromUnscaledInt(new BigNumber(3))
-      const b = await lib.testFromUnscaledInt(new BigNumber(1))
-      const expectedResult = new BigNumber(3).multipliedBy(1e27)
+      const a = await lib.testFromUnscaledInt(BigNumber.from(3))
+      const b = await lib.testFromUnscaledInt(BigNumber.from(1))
+      const expectedResult = BigNumber.from(3).mul(1e27)
 
       assert.equal((await lib.testMax(a, b)).toString(), expectedResult.toString(), 'maximum result mismatch')
     })
@@ -173,40 +181,40 @@ contract('FixedPointInt256 lib', () => {
 
   describe('Test comparison operator', () => {
     it('Should return if two int are equal or not', async () => {
-      const a = await lib.testFromUnscaledInt(new BigNumber(3))
-      const b = await lib.testFromUnscaledInt(new BigNumber(3))
+      const a = await lib.testFromUnscaledInt(BigNumber.from(3))
+      const b = await lib.testFromUnscaledInt(BigNumber.from(3))
       const expectedResult = true
 
       assert.equal(await lib.testIsEqual(a, b), expectedResult, 'isEqual result mismatch')
     })
 
     it('Should return if a is greater than b or not', async () => {
-      const a = await lib.testFromUnscaledInt(new BigNumber(-2))
-      const b = await lib.testFromUnscaledInt(new BigNumber(2))
+      const a = await lib.testFromUnscaledInt(BigNumber.from(-2))
+      const b = await lib.testFromUnscaledInt(BigNumber.from(2))
       const expectedResult = false
 
       assert.equal(await lib.testIsGreaterThan(a, b), expectedResult, 'isGreaterThan result mismatch')
     })
 
     it('Should return if a is greater than or equal b', async () => {
-      const a = await lib.testFromUnscaledInt(new BigNumber(-2))
-      const b = await lib.testFromUnscaledInt(new BigNumber(-2))
+      const a = await lib.testFromUnscaledInt(BigNumber.from(-2))
+      const b = await lib.testFromUnscaledInt(BigNumber.from(-2))
       const expectedResult = true
 
       assert.equal(await lib.testIsGreaterThanOrEqual(a, b), expectedResult, 'isGreaterThanOrEqual result mismatch')
     })
 
     it('Should return if a is less than b or not', async () => {
-      const a = await lib.testFromUnscaledInt(new BigNumber(-2))
-      const b = await lib.testFromUnscaledInt(new BigNumber(0))
+      const a = await lib.testFromUnscaledInt(BigNumber.from(-2))
+      const b = await lib.testFromUnscaledInt(BigNumber.from(0))
       const expectedResult = true
 
       assert.equal(await lib.testIsLessThan(a, b), expectedResult, 'isLessThan result mismatch')
     })
 
     it('Should return if a is less than or equal b', async () => {
-      const a = await lib.testFromUnscaledInt(new BigNumber(0))
-      const b = await lib.testFromUnscaledInt(new BigNumber(0))
+      const a = await lib.testFromUnscaledInt(BigNumber.from(0))
+      const b = await lib.testFromUnscaledInt(BigNumber.from(0))
       const expectedResult = true
 
       assert.equal(await lib.testIsLessThanOrEqual(a, b), expectedResult, 'isLessThanOrEqual result mismatch')

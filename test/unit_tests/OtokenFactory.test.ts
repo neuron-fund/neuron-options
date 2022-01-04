@@ -1,14 +1,19 @@
-import {
-  OtokenFactoryInstance,
-  MockOtokenInstance,
-  MockAddressBookInstance,
-  MockWhitelistModuleInstance,
-  MockERC20Instance,
-} from '../../build/types/truffle-types'
-import BigNumber from 'bignumber.js'
+import { 
+  OtokenFactory as OtokenFactoryInstance,
+  MockOtoken as MockOtokenInstance,
+  MockAddressBook as MockAddressBookInstance,
+  MockWhitelistModule as MockWhitelistModuleInstance,
+  MockERC20 as MockERC20Instance,
+} from '../../typechain-types' 
+
+import { artifacts, contract, web3 } from 'hardhat'
 import { assert } from 'chai'
-import { createValidExpiry, createTokenAmount } from '../utils'
-const { expectEvent, expectRevert, time } = require('@openzeppelin/test-helpers')
+
+import { createValidExpiry, createTokenAmount } from './helpers/utils'
+import { expectRevert, expectEvent, time } from '@openzeppelin/test-helpers'
+import { BigNumber } from '@ethersproject/bignumber/lib/bignumber'
+
+
 const OTokenFactory = artifacts.require('OtokenFactory.sol')
 const MockAddressBook = artifacts.require('MockAddressBook.sol')
 const MockWhitelist = artifacts.require('MockWhitelistModule.sol')
@@ -61,7 +66,7 @@ contract('OTokenFactory', ([user1, user2, controller]) => {
       const existAddress = await otokenFactory.getOtoken(
         weth.address,
         usdc.address,
-        usdc.address,
+        [usdc.address],
         strikePrice,
         expiry,
         isPut,
@@ -73,7 +78,7 @@ contract('OTokenFactory', ([user1, user2, controller]) => {
       const targetAddress = await otokenFactory.getTargetOtokenAddress(
         weth.address,
         usdc.address,
-        usdc.address,
+        [usdc.address],
         strikePrice,
         expiry,
         isPut,
@@ -85,7 +90,7 @@ contract('OTokenFactory', ([user1, user2, controller]) => {
       const targetAddress1 = await otokenFactory.getTargetOtokenAddress(
         weth.address,
         usdc.address,
-        usdc.address,
+        [usdc.address],
         strikePrice,
         expiry,
         false,
@@ -93,7 +98,7 @@ contract('OTokenFactory', ([user1, user2, controller]) => {
       const targetAddress2 = await otokenFactory.getTargetOtokenAddress(
         weth.address,
         usdc.address,
-        usdc.address,
+        [usdc.address],
         strikePrice,
         expiry,
         false,
@@ -105,7 +110,7 @@ contract('OTokenFactory', ([user1, user2, controller]) => {
       const targetAddress1 = await otokenFactory.getTargetOtokenAddress(
         weth.address,
         usdc.address,
-        usdc.address,
+        [usdc.address],
         strikePrice,
         expiry,
         isPut,
@@ -113,7 +118,7 @@ contract('OTokenFactory', ([user1, user2, controller]) => {
       const targetAddress2 = await otokenFactory.getTargetOtokenAddress(
         ZERO_ADDR,
         ZERO_ADDR,
-        ZERO_ADDR,
+        [ZERO_ADDR],
         strikePrice,
         expiry,
         isPut,
@@ -129,7 +134,7 @@ contract('OTokenFactory', ([user1, user2, controller]) => {
         otokenFactory.createOtoken(
           weth.address,
           usdc.address,
-          usdc.address,
+          [usdc.address],
           strikePrice,
           lastTimeStamp.toString(),
           isPut,
@@ -145,7 +150,7 @@ contract('OTokenFactory', ([user1, user2, controller]) => {
         otokenFactory.createOtoken(
           weth.address,
           usdc.address,
-          usdc.address,
+          [usdc.address],
           strikePrice,
           randomTime.toString(),
           isPut,
@@ -160,7 +165,7 @@ contract('OTokenFactory', ([user1, user2, controller]) => {
     it('Should revert when timestamp > 2345/12/31', async () => {
       const tooFar = 11865398400 // 01/01/2346 @ 12:00am (UTC)
       await expectRevert(
-        otokenFactory.createOtoken(weth.address, usdc.address, usdc.address, strikePrice, tooFar, isPut, {
+        otokenFactory.createOtoken(weth.address, usdc.address, [usdc.address], strikePrice, tooFar, isPut, {
           from: user1,
         }),
         "OtokenFactory: Can't create option with expiry > 2345/12/31",
@@ -169,7 +174,7 @@ contract('OTokenFactory', ([user1, user2, controller]) => {
 
     it('Should revert when creating a 0 strike put', async () => {
       await expectRevert(
-        otokenFactory.createOtoken(weth.address, usdc.address, usdc.address, 0, expiry, isPut, {
+        otokenFactory.createOtoken(weth.address, usdc.address, [usdc.address], 0, expiry, isPut, {
           from: user1,
         }),
         "OtokenFactory: Can't create a $0 strike put option",
@@ -180,7 +185,7 @@ contract('OTokenFactory', ([user1, user2, controller]) => {
       const targetAddress = await otokenFactory.getTargetOtokenAddress(
         weth.address,
         usdc.address,
-        usdc.address,
+        [usdc.address],
         strikePrice,
         expiry,
         isPut,
@@ -189,7 +194,7 @@ contract('OTokenFactory', ([user1, user2, controller]) => {
       const txResponse = await otokenFactory.createOtoken(
         weth.address,
         usdc.address,
-        usdc.address,
+        [usdc.address],
         strikePrice,
         expiry,
         isPut,
@@ -217,7 +222,7 @@ contract('OTokenFactory', ([user1, user2, controller]) => {
       const targetAddress = await otokenFactory.getTargetOtokenAddress(
         weth.address,
         usdc.address,
-        usdc.address,
+        [usdc.address],
         _strikePrice,
         expiry,
         isPut,
@@ -226,7 +231,7 @@ contract('OTokenFactory', ([user1, user2, controller]) => {
       const txResponse = await otokenFactory.createOtoken(
         weth.address,
         usdc.address,
-        usdc.address,
+        [usdc.address],
         _strikePrice,
         expiry,
         isPut,
@@ -246,14 +251,14 @@ contract('OTokenFactory', ([user1, user2, controller]) => {
 
     it('Should revert when creating non-whitelisted options', async () => {
       await expectRevert(
-        otokenFactory.createOtoken(shitcoin.address, usdc.address, usdc.address, strikePrice, expiry, isPut),
+        otokenFactory.createOtoken(shitcoin.address, usdc.address, [usdc.address], strikePrice, expiry, isPut),
         'OtokenFactory: Unsupported Product',
       )
     })
 
     it('Should revert when creating duplicated option', async () => {
       await expectRevert(
-        otokenFactory.createOtoken(weth.address, usdc.address, usdc.address, strikePrice, expiry, isPut),
+        otokenFactory.createOtoken(weth.address, usdc.address, [usdc.address], strikePrice, expiry, isPut),
         'OtokenFactory: Option already created',
       )
     })
@@ -272,7 +277,7 @@ contract('OTokenFactory', ([user1, user2, controller]) => {
       const addr = await otokenFactory.getTargetOtokenAddress(
         weth.address,
         usdc.address,
-        usdc.address,
+        [usdc.address],
         strikePrice,
         expiry,
         isPut,
@@ -284,7 +289,7 @@ contract('OTokenFactory', ([user1, user2, controller]) => {
       const existAddress = await otokenFactory.getOtoken(
         weth.address,
         usdc.address,
-        usdc.address,
+        [usdc.address],
         strikePrice,
         expiry,
         isPut,
@@ -300,7 +305,7 @@ contract('OTokenFactory', ([user1, user2, controller]) => {
       // Try to create a 250 strike (use the 200 strike will throw "Option Created" error first.)
       const newStrikePrice = 250
       await expectRevert(
-        otokenFactory.createOtoken(weth.address, usdc.address, usdc.address, newStrikePrice, expiry, isPut),
+        otokenFactory.createOtoken(weth.address, usdc.address, [usdc.address], newStrikePrice, expiry, isPut),
         'Create2: Failed on deploy',
       )
     })

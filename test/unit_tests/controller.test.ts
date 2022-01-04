@@ -13,6 +13,8 @@ import {
   ArrayAddressUtils as ArrayAddressUtilsInstance
 } from '../../typechain-types'  
 
+import { ActionArgsStruct } from '../../typechain-types/Controller'
+
 import { createScaledNumber, createTokenAmount, underlyingPriceToCtokenPrice } from './helpers/utils'
 import { artifacts, contract, web3 } from 'hardhat'
 import { expect, assert } from 'chai'
@@ -38,7 +40,7 @@ const ArrayAddressUtils = artifacts.require('ArrayAddressUtils.sol')
 // address(0)
 const ZERO_ADDR = '0x0000000000000000000000000000000000000000'
 
-import { ActionType } from '../helpers/actions'
+import { ActionType, getAction } from '../helpers/actions'
 
 contract(
   'Controller',
@@ -244,38 +246,26 @@ contract(
 
         await addressBook.setWhitelist(whitelist.address)
 
-        const controller_ab = await addressBook.getController()
-        const controller_wl = await controllerProxy.whitelist()
-        
-        console.log('controllerProxy.address controller_ab', controllerProxy.address, controller_ab)
-        console.log('controllerProxy.whitelist.toString() whitelist.address', controller_wl.toString(), whitelist.address)
+        // const controller_ab = await addressBook.getController()
+        // const controller_wl = await controllerProxy.whitelist()        
+        // console.log('controllerProxy.address controller_ab', controllerProxy.address, controller_ab)
+        // console.log('controllerProxy.whitelist.toString() whitelist.address', controller_wl.toString(), whitelist.address)
 
         assert.isTrue(await whitelist.isWhitelistedOtoken(otoken.address))
 
-        const actionArgs = [
-          {
-            actionType: ActionType.OpenVault,
+        const actionArgs: ActionArgsStruct[] = [
+          getAction(ActionType.OpenVault, {
             owner: accountOwner1,
-            secondAddress: accountOwner1,
-            assets: [ZERO_ADDR],
-            vaultId: '1',
-            amounts: ['0'],
-            index: '0',
             shortOtoken: otoken.address,
-            data: ZERO_ADDR,
-          },
-          {
-            actionType: ActionType.OpenVault,
+            vaultId: 1,
+          }),
+          getAction(ActionType.OpenVault, {
             owner: accountOwner1,
-            secondAddress: accountOwner1,
-            assets: [ZERO_ADDR],
-            vaultId: '2',
-            amounts: ['0'],
-            index: '0',
             shortOtoken: otoken.address,
-            data: ZERO_ADDR,
-          },
+            vaultId: 2,
+          })
         ]
+
 
         await expectRevert(controllerProxy.operate(actionArgs, { from: accountOwner1 }), 'C13')
       })
@@ -1736,7 +1726,7 @@ contract(
           usdc.address,
           usdc.address,
           createTokenAmount(250),
-          BigNumber.from(await time.latest()).add(expiryTime),
+          BigNumber.from((await time.latest()).toString()).add(expiryTime),
           true,
         )
         await shortOtoken.init(
@@ -1745,7 +1735,7 @@ contract(
           usdc.address,
           usdc.address,
           createTokenAmount(200),
-          BigNumber.from(await time.latest()).add(expiryTime),
+          BigNumber.from((await time.latest()).toString()).add(expiryTime),
           true,
         )
 
@@ -1762,7 +1752,8 @@ contract(
 
       describe('Mint short otoken', () => {
         it('should revert minting from random address other than owner or operator', async () => {
-          const vaultCounter = BigNumber.from(await controllerProxy.accountVaultCounter(accountOwner1))
+          //const vaultCounter = BigNumber.from(await controllerProxy.accountVaultCounter(accountOwner1))
+          const vaultCounter = await controllerProxy.accountVaultCounter(accountOwner1)
           assert.isAbove(vaultCounter.toNumber(), 0, 'Account owner have no vault')
 
           const amountToMint = createTokenAmount(1)
@@ -1783,10 +1774,10 @@ contract(
         })
 
         it('should revert minting using un-marginable collateral asset', async () => {
-          const vaultCounter = BigNumber.from(await controllerProxy.accountVaultCounter(accountOwner1))
+          const vaultCounter = await controllerProxy.accountVaultCounter(accountOwner1)
           assert.isAbove(vaultCounter.toNumber(), 0, 'Account owner have no vault')
 
-          const collateralToDeposit = BigNumber.from(await shortOtoken.strikePrice()).div(1e8)
+          const collateralToDeposit = (await shortOtoken.strikePrice()).div(1e8)
           const amountToMint = createTokenAmount(1, wethDecimals)
           const actionArgs = [
             {
@@ -2127,7 +2118,7 @@ contract(
         })
 
         it('should revert when vault have more than 1 short otoken', async () => {
-          const vaultCounter = BigNumber.from(await controllerProxy.accountVaultCounter(accountOwner1))
+          const vaultCounter = await controllerProxy.accountVaultCounter(accountOwner1)
           assert.isAbove(vaultCounter.toNumber(), 0, 'Account owner have no vault')
 
           await whitelist.whitelistOtoken(longOtoken.address, { from: owner })
@@ -2164,11 +2155,11 @@ contract(
               usdc.address,
               usdc.address,
               createTokenAmount(200),
-              BigNumber.from(await time.latest()).add(expiryTime),
+              BigNumber.from((await time.latest()).toString()).add(expiryTime),
               true,
             )
 
-            const collateralToDeposit = BigNumber.from(await notWhitelistedShortOtoken.strikePrice()).div(100)
+            const collateralToDeposit = (await notWhitelistedShortOtoken.strikePrice()).div(100)
             const amountToMint = createTokenAmount(1)
             const actionArgs = [
               {
@@ -2221,7 +2212,7 @@ contract(
               usdc.address,
               usdc.address,
               createTokenAmount(1),
-              BigNumber.from(await time.latest()).add(86400),
+              BigNumber.from((await time.latest()).toString()).add(86400),
               true,
             )
             await smallestPut.init(
@@ -2230,7 +2221,7 @@ contract(
               usdc.address,
               usdc.address,
               1,
-              BigNumber.from(await time.latest()).add(86400),
+              BigNumber.from((await time.latest()).toString()).add(86400),
               true,
             )
             await whitelist.whitelistOtoken(oneDollarPut.address)
@@ -2295,7 +2286,7 @@ contract(
 
       describe('Burn short otoken', () => {
         it('should revert burning short otoken with wrong index from a vault', async () => {
-          const vaultCounter = BigNumber.from(await controllerProxy.accountVaultCounter(accountOwner1))
+          const vaultCounter = await controllerProxy.accountVaultCounter(accountOwner1)
           assert.isAbove(vaultCounter.toNumber(), 0, 'Account owner have no vault')
 
           const shortOtokenToBurn = await shortOtoken.balanceOf(accountOwner1)
@@ -2317,13 +2308,13 @@ contract(
 
         it('should revert burning when there is no enough balance', async () => {
           // transfer operator balance
-          const operatorShortBalance = BigNumber.from(await shortOtoken.balanceOf(accountOperator1))
+          const operatorShortBalance = await shortOtoken.balanceOf(accountOperator1)
           await shortOtoken.transfer(accountOwner1, operatorShortBalance, { from: accountOperator1 })
 
-          const vaultCounter = BigNumber.from(await controllerProxy.accountVaultCounter(accountOwner1))
+          const vaultCounter = await controllerProxy.accountVaultCounter(accountOwner1)
           assert.isAbove(vaultCounter.toNumber(), 0, 'Account owner have no vault')
 
-          const shortOtokenToBurn = BigNumber.from(await shortOtoken.balanceOf(accountOwner1))
+          const shortOtokenToBurn =await shortOtoken.balanceOf(accountOwner1)
           const actionArgs = [
             {
               actionType: ActionType.BurnShortOption,
@@ -2347,10 +2338,10 @@ contract(
         })
 
         it('should revert burning when called from an address other than account owner or operator', async () => {
-          const vaultCounter = BigNumber.from(await controllerProxy.accountVaultCounter(accountOwner1))
+          const vaultCounter = await controllerProxy.accountVaultCounter(accountOwner1)
           assert.isAbove(vaultCounter.toNumber(), 0, 'Account owner have no vault')
 
-          const shortOtokenToBurn = BigNumber.from(await shortOtoken.balanceOf(accountOwner1))
+          const shortOtokenToBurn = await shortOtoken.balanceOf(accountOwner1)
           const actionArgs = [
             {
               actionType: ActionType.BurnShortOption,
@@ -2370,7 +2361,7 @@ contract(
         it('should revert minting short with invalid vault id', async () => {
           const vaultCounter = BigNumber.from('100')
 
-          const shortOtokenToBurn = BigNumber.from(await shortOtoken.balanceOf(accountOperator1))
+          const shortOtokenToBurn = await shortOtoken.balanceOf(accountOperator1)
           const actionArgs = [
             {
               actionType: ActionType.BurnShortOption,
@@ -2388,9 +2379,9 @@ contract(
         })
 
         it('should revert depositing long from an address that is not the msg.sender nor the owner account address', async () => {
-          const vaultCounter = BigNumber.from(await controllerProxy.accountVaultCounter(accountOwner1))
+          const vaultCounter = await controllerProxy.accountVaultCounter(accountOwner1)
 
-          const shortOtokenToBurn = BigNumber.from(await shortOtoken.balanceOf(accountOperator1))
+          const shortOtokenToBurn = await shortOtoken.balanceOf(accountOperator1)
           const actionArgs = [
             {
               actionType: ActionType.BurnShortOption,
@@ -2558,7 +2549,7 @@ contract(
           let expiredShortOtoken: MockOtokenInstance
 
           before(async () => {
-            const vaultCounterBefore = BigNumber.from(await controllerProxy.accountVaultCounter(accountOwner1))
+            const vaultCounterBefore = await controllerProxy.accountVaultCounter(accountOwner1)
             const expiryTime = BigNumber.from(60 * 60) // after 1 hour
             expiredShortOtoken = await MockOtoken.new()
             // init otoken
@@ -2568,14 +2559,14 @@ contract(
               usdc.address,
               usdc.address,
               createTokenAmount(200),
-              BigNumber.from(await time.latest()).add(expiryTime),
+              BigNumber.from((await time.latest()).toString()).add(expiryTime),
               true,
             )
 
             // whitelist otoken to be minted
             await whitelist.whitelistOtoken(expiredShortOtoken.address, { from: owner })
 
-            const collateralToDeposit = BigNumber.from(await expiredShortOtoken.strikePrice()).div(100)
+            const collateralToDeposit = (await expiredShortOtoken.strikePrice()).div(100)
             const amountToMint = createTokenAmount(1)
             const actionArgs = [
               {
@@ -2737,7 +2728,7 @@ contract(
           usdc.address,
           usdc.address,
           createTokenAmount(200),
-          BigNumber.from(await time.latest()).add(expiryTime),
+          BigNumber.from((await time.latest()).toString()).add(expiryTime),
           true,
         )
 
@@ -2749,15 +2740,15 @@ contract(
           usdc.address,
           usdc.address,
           createTokenAmount(200),
-          BigNumber.from(await time.latest()).add(expiryTime),
+          BigNumber.from((await time.latest()).toString()).add(expiryTime),
           true,
         )
 
         // whitelist short otoken to be used in the protocol
         await whitelist.whitelistOtoken(shortOtoken.address, { from: owner })
         // open new vault, mintnaked short, sell it to holder 1
-        const vaultCounter = BigNumber.from(await controllerProxy.accountVaultCounter(accountOwner1)).add(1)
-        const collateralToDeposit = BigNumber.from(await shortOtoken.strikePrice()).div(100)
+        const vaultCounter = (await controllerProxy.accountVaultCounter(accountOwner1)).add(1)
+        const collateralToDeposit = (await shortOtoken.strikePrice()).div(100)
         const amountToMint = createTokenAmount(1)
         const actionArgs = [
           {
@@ -3345,14 +3336,14 @@ contract(
           usdc.address,
           usdc.address,
           createTokenAmount(200),
-          BigNumber.from(await time.latest()).add(expiryTime),
+          BigNumber.from((await time.latest()).toString()).add(expiryTime),
           true,
         )
         // whitelist otoken to be used in the protocol
         await whitelist.whitelistOtoken(shortOtoken.address, { from: owner })
         // open new vault, mint naked short, sell it to holder 1
-        const collateralToDespoit = BigNumber.from(await shortOtoken.strikePrice()).div(100)
-        const vaultCounter = BigNumber.from(await controllerProxy.accountVaultCounter(accountOwner1)).add(1)
+        const collateralToDespoit = (await shortOtoken.strikePrice()).div(100)
+        const vaultCounter = (await controllerProxy.accountVaultCounter(accountOwner1)).add(1)
         const actionArgs = [
           {
             actionType: ActionType.OpenVault,
@@ -3832,7 +3823,7 @@ contract(
       let expiry: BigNumber
 
       before(async () => {
-        expiry = BigNumber.from(await time.latest())
+        expiry = BigNumber.from((await time.latest()).toString())
         expiredOtoken = await MockOtoken.new()
         // init otoken
         await expiredOtoken.init(
@@ -3841,7 +3832,7 @@ contract(
           usdc.address,
           usdc.address,
           createTokenAmount(200),
-          BigNumber.from(await time.latest()),
+          BigNumber.from((await time.latest()).toString()),
           true,
         )
 
@@ -4080,14 +4071,14 @@ contract(
           usdc.address,
           usdc.address,
           createTokenAmount(200),
-          BigNumber.from(await time.latest()).add(expiryTime),
+          BigNumber.from((await time.latest()).toString()).add(expiryTime),
           true,
         )
         // whitelist otoken to be used in the protocol
         await whitelist.whitelistOtoken(shortOtokenV1.address, { from: owner })
         // open new vault, mint naked short, sell it to holder 1
-        const collateralToDespoit = BigNumber.from(await shortOtokenV1.strikePrice()).div(100)
-        const vaultCounter = BigNumber.from(await controllerProxy.accountVaultCounter(accountOwner1)).add(1)
+        const collateralToDespoit = (await shortOtokenV1.strikePrice()).div(100)
+        const vaultCounter = (await controllerProxy.accountVaultCounter(accountOwner1)).add(1)
         const amountToMint = createTokenAmount(1)
         const actionArgs = [
           {
@@ -4200,7 +4191,7 @@ contract(
       let shortOtoken: MockOtokenInstance
 
       before(async () => {
-        const vaultCounterBefore = BigNumber.from(await controllerProxy.accountVaultCounter(accountOwner1))
+        const vaultCounterBefore = await controllerProxy.accountVaultCounter(accountOwner1)
         const expiryTime = BigNumber.from(60 * 60) // after 1 hour
         shortOtoken = await MockOtoken.new()
         // init otoken
@@ -4210,7 +4201,7 @@ contract(
           usdc.address,
           usdc.address,
           createTokenAmount(200),
-          BigNumber.from(await time.latest()).add(expiryTime),
+          BigNumber.from((await time.latest()).toString()).add(expiryTime),
           true,
         )
 
@@ -4750,12 +4741,12 @@ contract(
     describe('Donate to pool', () => {
       it('it should donate to margin pool', async () => {
         const amountToDonate = createTokenAmount(10, usdcDecimals)
-        const storedBalanceBefore = BigNumber.from(await marginPool.getStoredBalance(usdc.address))
+        const storedBalanceBefore = await marginPool.getStoredBalance(usdc.address)
 
         await usdc.approve(marginPool.address, amountToDonate, { from: donor })
         await controllerProxy.donate(usdc.address, amountToDonate, { from: donor })
 
-        const storedBalanceAfter = BigNumber.from(await marginPool.getStoredBalance(usdc.address))
+        const storedBalanceAfter = await marginPool.getStoredBalance(usdc.address)
 
         assert.equal(
           storedBalanceAfter.sub(storedBalanceBefore).toString(),
@@ -4794,7 +4785,7 @@ contract(
 
     describe('Execute an invalid action', () => {
       it('Should execute transaction with no state updates', async () => {
-        const vaultCounter = BigNumber.from(await controllerProxy.accountVaultCounter(accountOwner1))
+        const vaultCounter = await controllerProxy.accountVaultCounter(accountOwner1)
         assert.isAbove(vaultCounter.toNumber(), 0, 'Account owner have no vault')
 
         const collateralToDeposit = createTokenAmount(10, usdcDecimals)

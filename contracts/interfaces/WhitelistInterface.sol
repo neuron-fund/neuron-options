@@ -30,11 +30,11 @@ interface WhitelistInterface {
         bool _isPut
     ) external view returns (bool);
 
-    function owner() external view returns (address);
+   //  function owner() external view returns (address);
 
-    function renounceOwnership() external;
+   //  function renounceOwnership() external;
 
-    function transferOwnership(address newOwner) external;
+   //  function transferOwnership(address newOwner) external;
 
     function whitelistCallee(address _callee) external;
 

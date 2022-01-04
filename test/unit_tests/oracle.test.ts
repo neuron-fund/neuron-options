@@ -1,15 +1,18 @@
-import {
-  MockPricerInstance,
-  MockAddressBookInstance,
-  OracleInstance,
-  MockOtokenInstance,
-  MockERC20Instance,
-} from '../../build/types/truffle-types'
-import BigNumber from 'bignumber.js'
-import { assert } from 'chai'
-import { createTokenAmount } from '../utils'
+import { 
+  MockPricer as MockPricerInstance,
+  MockAddressBook as MockAddressBookInstance,
+  Oracle as OracleInstance,
+  MockOtoken as MockOtokenInstance,
+  MockERC20 as MockERC20Instance,
+} from '../../typechain-types' 
 
-const { expectRevert, expectEvent, time } = require('@openzeppelin/test-helpers')
+import { artifacts, contract, web3 } from 'hardhat'
+import { BigNumber } from 'ethers'
+import { assert } from 'chai'
+
+import { createTokenAmount } from './helpers/utils'
+
+import { expectRevert, expectEvent, time } from '@openzeppelin/test-helpers'
 
 const MockPricer = artifacts.require('MockPricer.sol')
 const MockAddressBook = artifacts.require('MockAddressBook.sol')
@@ -44,7 +47,8 @@ contract('Oracle', ([owner, disputer, random, collateral, strike]) => {
     usdc = await MockERC20.new('USDC', 'USDC', 6)
     weth = await MockERC20.new('WETH', 'WETH', 18)
     otoken = await Otoken.new()
-    otokenExpiry = new BigNumber((await time.latest()).toNumber() + time.duration.days(30).toNumber())
+
+    otokenExpiry = BigNumber.from(((await time.latest()).toNumber() + time.duration.days(30).toNumber()).toString() )
     await otoken.init(addressBook.address, weth.address, strike, collateral, '200', otokenExpiry, true)
 
     // deply mock pricer (to get live price and set expiry price)
@@ -122,7 +126,7 @@ contract('Oracle', ([owner, disputer, random, collateral, strike]) => {
   })
 
   describe('Oracle locking period', () => {
-    const lockingPeriod = new BigNumber(60 * 15) // 15min
+    const lockingPeriod = BigNumber.from(60 * 15) // 15min
 
     it('should revert setting pricer locking period from non-owner address', async () => {
       await expectRevert(
@@ -149,7 +153,7 @@ contract('Oracle', ([owner, disputer, random, collateral, strike]) => {
   })
 
   describe('Pricer dispute period', () => {
-    const disputePeriod = new BigNumber(60 * 45) // 45min
+    const disputePeriod = BigNumber.from(60 * 45) // 45min
 
     it('should revert setting pricer locking period from non-owner address', async () => {
       await expectRevert(
@@ -180,7 +184,7 @@ contract('Oracle', ([owner, disputer, random, collateral, strike]) => {
 
     before(async () => {
       await time.increaseTo(otokenExpiry.toNumber())
-      assetPrice = new BigNumber(278)
+      assetPrice = BigNumber.from(278)
     })
 
     it('should revert setting price if caller is not the pricer or disputer', async () => {
@@ -237,7 +241,7 @@ contract('Oracle', ([owner, disputer, random, collateral, strike]) => {
   })
 
   describe('Dispute price', () => {
-    const disputePrice = new BigNumber(700)
+    const disputePrice = BigNumber.from(700)
 
     it('should revert before setting any disputer', async () => {
       await expectRevert(
@@ -255,7 +259,7 @@ contract('Oracle', ([owner, disputer, random, collateral, strike]) => {
 
     it('should revert disputing price before it get pushed by pricer', async () => {
       await expectRevert(
-        oracle.disputeExpiryPrice(weth.address, otokenExpiry.plus(10), disputePrice, { from: disputer }),
+        oracle.disputeExpiryPrice(weth.address, otokenExpiry.add(10), disputePrice, { from: disputer }),
         'Oracle: price to dispute does not exist',
       )
     })
@@ -279,16 +283,16 @@ contract('Oracle', ([owner, disputer, random, collateral, strike]) => {
   })
 
   describe('Set Expiry Price From Disputer', async () => {
-    const lockingPeriod = new BigNumber(60 * 15) // 15min
-    const disputePeriod = new BigNumber(60 * 45) // 45min
-    const assetPrice = new BigNumber(278)
+    const lockingPeriod = BigNumber.from(60 * 15) // 15min
+    const disputePeriod = BigNumber.from(60 * 45) // 45min
+    const assetPrice = BigNumber.from(278)
 
     let otoken: MockOtokenInstance
     let otokenExpiry: BigNumber
 
     before(async () => {
       otoken = await Otoken.new()
-      otokenExpiry = new BigNumber((await time.latest()).toNumber() + time.duration.days(30).toNumber())
+      otokenExpiry = BigNumber.from((await time.latest()).toNumber() + time.duration.days(30).toNumber())
       await otoken.init(addressBook.address, weth.address, strike, collateral, '200', otokenExpiry, true)
       await oracle.setAssetPricer(weth.address, wethPricer.address, { from: owner })
       await oracle.setLockingPeriod(wethPricer.address, lockingPeriod, { from: owner })
@@ -376,12 +380,9 @@ contract('Oracle', ([owner, disputer, random, collateral, strike]) => {
       const prices = ['150', '200', '110']
 
       await oracle.migrateOracle(weth.address, expiries, prices, { from: owner })
+      const expiryPrice = await oracle.getExpiryPrice(weth.address, expiries[0])
 
-      assert.equal(
-        new BigNumber((await oracle.getExpiryPrice(weth.address, expiries[0]))[0]).toString(),
-        new BigNumber(prices[0]).toString(),
-        'Migrate price mismatch',
-      )
+      assert.equal(expiryPrice[0].toString(), prices[0], 'Migrate price mismatch')
     })
 
     it('should revert migrating when migration ended', async () => {

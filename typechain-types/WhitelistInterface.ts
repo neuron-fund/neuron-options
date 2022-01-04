@@ -27,9 +27,6 @@ export interface WhitelistInterfaceInterface extends utils.Interface {
     "isWhitelistedCollaterals(address[])": FunctionFragment;
     "isWhitelistedOtoken(address)": FunctionFragment;
     "isWhitelistedProduct(address,address,address[],bool)": FunctionFragment;
-    "owner()": FunctionFragment;
-    "renounceOwnership()": FunctionFragment;
-    "transferOwnership(address)": FunctionFragment;
     "whitelistCallee(address)": FunctionFragment;
     "whitelistCollaterals(address[])": FunctionFragment;
     "whitelistOtoken(address)": FunctionFragment;
@@ -71,15 +68,6 @@ export interface WhitelistInterfaceInterface extends utils.Interface {
   encodeFunctionData(
     functionFragment: "isWhitelistedProduct",
     values: [string, string, string[], boolean]
-  ): string;
-  encodeFunctionData(functionFragment: "owner", values?: undefined): string;
-  encodeFunctionData(
-    functionFragment: "renounceOwnership",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
-    functionFragment: "transferOwnership",
-    values: [string]
   ): string;
   encodeFunctionData(
     functionFragment: "whitelistCallee",
@@ -132,15 +120,6 @@ export interface WhitelistInterfaceInterface extends utils.Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "isWhitelistedProduct",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "renounceOwnership",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "transferOwnership",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -238,17 +217,6 @@ export interface WhitelistInterface extends BaseContract {
       overrides?: CallOverrides
     ): Promise<[boolean]>;
 
-    owner(overrides?: CallOverrides): Promise<[string]>;
-
-    renounceOwnership(
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<ContractTransaction>;
-
-    transferOwnership(
-      newOwner: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<ContractTransaction>;
-
     whitelistCallee(
       _callee: string,
       overrides?: Overrides & { from?: string | Promise<string> }
@@ -321,17 +289,6 @@ export interface WhitelistInterface extends BaseContract {
     overrides?: CallOverrides
   ): Promise<boolean>;
 
-  owner(overrides?: CallOverrides): Promise<string>;
-
-  renounceOwnership(
-    overrides?: Overrides & { from?: string | Promise<string> }
-  ): Promise<ContractTransaction>;
-
-  transferOwnership(
-    newOwner: string,
-    overrides?: Overrides & { from?: string | Promise<string> }
-  ): Promise<ContractTransaction>;
-
   whitelistCallee(
     _callee: string,
     overrides?: Overrides & { from?: string | Promise<string> }
@@ -400,15 +357,6 @@ export interface WhitelistInterface extends BaseContract {
       _isPut: boolean,
       overrides?: CallOverrides
     ): Promise<boolean>;
-
-    owner(overrides?: CallOverrides): Promise<string>;
-
-    renounceOwnership(overrides?: CallOverrides): Promise<void>;
-
-    transferOwnership(
-      newOwner: string,
-      overrides?: CallOverrides
-    ): Promise<void>;
 
     whitelistCallee(_callee: string, overrides?: CallOverrides): Promise<void>;
 
@@ -482,17 +430,6 @@ export interface WhitelistInterface extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
-    owner(overrides?: CallOverrides): Promise<BigNumber>;
-
-    renounceOwnership(
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<BigNumber>;
-
-    transferOwnership(
-      newOwner: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<BigNumber>;
-
     whitelistCallee(
       _callee: string,
       overrides?: Overrides & { from?: string | Promise<string> }
@@ -564,17 +501,6 @@ export interface WhitelistInterface extends BaseContract {
       _collateral: string[],
       _isPut: boolean,
       overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
-    owner(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    renounceOwnership(
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<PopulatedTransaction>;
-
-    transferOwnership(
-      newOwner: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
     whitelistCallee(

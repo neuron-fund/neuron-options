@@ -18,33 +18,49 @@ import { TypedEventFilter, TypedEvent, TypedListener, OnEvent } from "./common";
 
 export interface MockWhitelistModuleInterface extends utils.Interface {
   functions: {
-    "_isWhitelistedOtoken(address)": FunctionFragment;
+    "addressBook()": FunctionFragment;
     "blacklistCallee(address)": FunctionFragment;
+    "blacklistCollateral(address[])": FunctionFragment;
+    "blacklistOtoken(address)": FunctionFragment;
+    "blacklistProduct(address,address,address[],bool)": FunctionFragment;
     "isWhitelistedCallee(address)": FunctionFragment;
-    "isWhitelistedCollateral(address)": FunctionFragment;
+    "isWhitelistedCollaterals(address[])": FunctionFragment;
     "isWhitelistedOtoken(address)": FunctionFragment;
-    "isWhitelistedProduct(address,address,address,bool)": FunctionFragment;
+    "isWhitelistedProduct(address,address,address[],bool)": FunctionFragment;
     "whitelistCallee(address)": FunctionFragment;
-    "whitelistCollateral(address)": FunctionFragment;
+    "whitelistCollaterals(address[])": FunctionFragment;
     "whitelistOtoken(address)": FunctionFragment;
-    "whitelistProduct(address,address,address,bool)": FunctionFragment;
+    "whitelistProduct(address,address,address[],bool)": FunctionFragment;
+    "whitelistedOtoken(address)": FunctionFragment;
   };
 
   encodeFunctionData(
-    functionFragment: "_isWhitelistedOtoken",
-    values: [string]
+    functionFragment: "addressBook",
+    values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "blacklistCallee",
     values: [string]
   ): string;
   encodeFunctionData(
+    functionFragment: "blacklistCollateral",
+    values: [string[]]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "blacklistOtoken",
+    values: [string]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "blacklistProduct",
+    values: [string, string, string[], boolean]
+  ): string;
+  encodeFunctionData(
     functionFragment: "isWhitelistedCallee",
     values: [string]
   ): string;
   encodeFunctionData(
-    functionFragment: "isWhitelistedCollateral",
-    values: [string]
+    functionFragment: "isWhitelistedCollaterals",
+    values: [string[]]
   ): string;
   encodeFunctionData(
     functionFragment: "isWhitelistedOtoken",
@@ -52,15 +68,15 @@ export interface MockWhitelistModuleInterface extends utils.Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "isWhitelistedProduct",
-    values: [string, string, string, boolean]
+    values: [string, string, string[], boolean]
   ): string;
   encodeFunctionData(
     functionFragment: "whitelistCallee",
     values: [string]
   ): string;
   encodeFunctionData(
-    functionFragment: "whitelistCollateral",
-    values: [string]
+    functionFragment: "whitelistCollaterals",
+    values: [string[]]
   ): string;
   encodeFunctionData(
     functionFragment: "whitelistOtoken",
@@ -68,11 +84,15 @@ export interface MockWhitelistModuleInterface extends utils.Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "whitelistProduct",
-    values: [string, string, string, boolean]
+    values: [string, string, string[], boolean]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "whitelistedOtoken",
+    values: [string]
   ): string;
 
   decodeFunctionResult(
-    functionFragment: "_isWhitelistedOtoken",
+    functionFragment: "addressBook",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -80,11 +100,23 @@ export interface MockWhitelistModuleInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "blacklistCollateral",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "blacklistOtoken",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "blacklistProduct",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "isWhitelistedCallee",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "isWhitelistedCollateral",
+    functionFragment: "isWhitelistedCollaterals",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -100,7 +132,7 @@ export interface MockWhitelistModuleInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "whitelistCollateral",
+    functionFragment: "whitelistCollaterals",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -109,6 +141,10 @@ export interface MockWhitelistModuleInterface extends utils.Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "whitelistProduct",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "whitelistedOtoken",
     data: BytesLike
   ): Result;
 
@@ -142,13 +178,28 @@ export interface MockWhitelistModule extends BaseContract {
   removeListener: OnEvent<this>;
 
   functions: {
-    _isWhitelistedOtoken(
-      arg0: string,
-      overrides?: CallOverrides
-    ): Promise<[boolean]>;
+    addressBook(overrides?: CallOverrides): Promise<[string]>;
 
     blacklistCallee(
       _callee: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    blacklistCollateral(
+      _collaterals: string[],
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    blacklistOtoken(
+      _otokenAddress: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    blacklistProduct(
+      _underlying: string,
+      _strike: string,
+      _collaterals: string[],
+      _isPut: boolean,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -157,8 +208,8 @@ export interface MockWhitelistModule extends BaseContract {
       overrides?: CallOverrides
     ): Promise<[boolean]>;
 
-    isWhitelistedCollateral(
-      _collateral: string,
+    isWhitelistedCollaterals(
+      _collaterals: string[],
       overrides?: CallOverrides
     ): Promise<[boolean]>;
 
@@ -170,18 +221,18 @@ export interface MockWhitelistModule extends BaseContract {
     isWhitelistedProduct(
       _underlying: string,
       _strike: string,
-      _collateral: string,
+      _collateral: string[],
       _isPut: boolean,
       overrides?: CallOverrides
-    ): Promise<[boolean] & { isValid: boolean }>;
+    ): Promise<[boolean]>;
 
     whitelistCallee(
       _callee: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    whitelistCollateral(
-      _collateral: string,
+    whitelistCollaterals(
+      _collaterals: string[],
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -193,19 +244,39 @@ export interface MockWhitelistModule extends BaseContract {
     whitelistProduct(
       _underlying: string,
       _strike: string,
-      _collateral: string,
+      _collaterals: string[],
       _isPut: boolean,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
+
+    whitelistedOtoken(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<[boolean]>;
   };
 
-  _isWhitelistedOtoken(
-    arg0: string,
-    overrides?: CallOverrides
-  ): Promise<boolean>;
+  addressBook(overrides?: CallOverrides): Promise<string>;
 
   blacklistCallee(
     _callee: string,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  blacklistCollateral(
+    _collaterals: string[],
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  blacklistOtoken(
+    _otokenAddress: string,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  blacklistProduct(
+    _underlying: string,
+    _strike: string,
+    _collaterals: string[],
+    _isPut: boolean,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -214,8 +285,8 @@ export interface MockWhitelistModule extends BaseContract {
     overrides?: CallOverrides
   ): Promise<boolean>;
 
-  isWhitelistedCollateral(
-    _collateral: string,
+  isWhitelistedCollaterals(
+    _collaterals: string[],
     overrides?: CallOverrides
   ): Promise<boolean>;
 
@@ -227,7 +298,7 @@ export interface MockWhitelistModule extends BaseContract {
   isWhitelistedProduct(
     _underlying: string,
     _strike: string,
-    _collateral: string,
+    _collateral: string[],
     _isPut: boolean,
     overrides?: CallOverrides
   ): Promise<boolean>;
@@ -237,8 +308,8 @@ export interface MockWhitelistModule extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  whitelistCollateral(
-    _collateral: string,
+  whitelistCollaterals(
+    _collaterals: string[],
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -250,26 +321,43 @@ export interface MockWhitelistModule extends BaseContract {
   whitelistProduct(
     _underlying: string,
     _strike: string,
-    _collateral: string,
+    _collaterals: string[],
     _isPut: boolean,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
+  whitelistedOtoken(arg0: string, overrides?: CallOverrides): Promise<boolean>;
+
   callStatic: {
-    _isWhitelistedOtoken(
-      arg0: string,
-      overrides?: CallOverrides
-    ): Promise<boolean>;
+    addressBook(overrides?: CallOverrides): Promise<string>;
 
     blacklistCallee(_callee: string, overrides?: CallOverrides): Promise<void>;
+
+    blacklistCollateral(
+      _collaterals: string[],
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    blacklistOtoken(
+      _otokenAddress: string,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    blacklistProduct(
+      _underlying: string,
+      _strike: string,
+      _collaterals: string[],
+      _isPut: boolean,
+      overrides?: CallOverrides
+    ): Promise<void>;
 
     isWhitelistedCallee(
       _callee: string,
       overrides?: CallOverrides
     ): Promise<boolean>;
 
-    isWhitelistedCollateral(
-      _collateral: string,
+    isWhitelistedCollaterals(
+      _collaterals: string[],
       overrides?: CallOverrides
     ): Promise<boolean>;
 
@@ -281,15 +369,15 @@ export interface MockWhitelistModule extends BaseContract {
     isWhitelistedProduct(
       _underlying: string,
       _strike: string,
-      _collateral: string,
+      _collateral: string[],
       _isPut: boolean,
       overrides?: CallOverrides
     ): Promise<boolean>;
 
     whitelistCallee(_callee: string, overrides?: CallOverrides): Promise<void>;
 
-    whitelistCollateral(
-      _collateral: string,
+    whitelistCollaterals(
+      _collaterals: string[],
       overrides?: CallOverrides
     ): Promise<void>;
 
@@ -298,22 +386,42 @@ export interface MockWhitelistModule extends BaseContract {
     whitelistProduct(
       _underlying: string,
       _strike: string,
-      _collateral: string,
+      _collaterals: string[],
       _isPut: boolean,
       overrides?: CallOverrides
-    ): Promise<string>;
+    ): Promise<void>;
+
+    whitelistedOtoken(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<boolean>;
   };
 
   filters: {};
 
   estimateGas: {
-    _isWhitelistedOtoken(
-      arg0: string,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
+    addressBook(overrides?: CallOverrides): Promise<BigNumber>;
 
     blacklistCallee(
       _callee: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    blacklistCollateral(
+      _collaterals: string[],
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    blacklistOtoken(
+      _otokenAddress: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    blacklistProduct(
+      _underlying: string,
+      _strike: string,
+      _collaterals: string[],
+      _isPut: boolean,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -322,8 +430,8 @@ export interface MockWhitelistModule extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
-    isWhitelistedCollateral(
-      _collateral: string,
+    isWhitelistedCollaterals(
+      _collaterals: string[],
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
@@ -335,7 +443,7 @@ export interface MockWhitelistModule extends BaseContract {
     isWhitelistedProduct(
       _underlying: string,
       _strike: string,
-      _collateral: string,
+      _collateral: string[],
       _isPut: boolean,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
@@ -345,8 +453,8 @@ export interface MockWhitelistModule extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    whitelistCollateral(
-      _collateral: string,
+    whitelistCollaterals(
+      _collaterals: string[],
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -358,20 +466,40 @@ export interface MockWhitelistModule extends BaseContract {
     whitelistProduct(
       _underlying: string,
       _strike: string,
-      _collateral: string,
+      _collaterals: string[],
       _isPut: boolean,
       overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    whitelistedOtoken(
+      arg0: string,
+      overrides?: CallOverrides
     ): Promise<BigNumber>;
   };
 
   populateTransaction: {
-    _isWhitelistedOtoken(
-      arg0: string,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
+    addressBook(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     blacklistCallee(
       _callee: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    blacklistCollateral(
+      _collaterals: string[],
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    blacklistOtoken(
+      _otokenAddress: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    blacklistProduct(
+      _underlying: string,
+      _strike: string,
+      _collaterals: string[],
+      _isPut: boolean,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
@@ -380,8 +508,8 @@ export interface MockWhitelistModule extends BaseContract {
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
-    isWhitelistedCollateral(
-      _collateral: string,
+    isWhitelistedCollaterals(
+      _collaterals: string[],
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
@@ -393,7 +521,7 @@ export interface MockWhitelistModule extends BaseContract {
     isWhitelistedProduct(
       _underlying: string,
       _strike: string,
-      _collateral: string,
+      _collateral: string[],
       _isPut: boolean,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
@@ -403,8 +531,8 @@ export interface MockWhitelistModule extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    whitelistCollateral(
-      _collateral: string,
+    whitelistCollaterals(
+      _collaterals: string[],
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
@@ -416,9 +544,14 @@ export interface MockWhitelistModule extends BaseContract {
     whitelistProduct(
       _underlying: string,
       _strike: string,
-      _collateral: string,
+      _collaterals: string[],
       _isPut: boolean,
       overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    whitelistedOtoken(
+      arg0: string,
+      overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
   };
 }

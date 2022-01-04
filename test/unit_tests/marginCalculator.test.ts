@@ -1,14 +1,20 @@
-import {
-  MockERC20Instance,
-  CalculatorTesterInstance,
-  MockAddressBookInstance,
-  MockOracleInstance,
-  MockOtokenInstance,
-} from '../../build/types/truffle-types'
-import { createVault, createScaledNumber as scaleNum, createTokenAmount } from '../utils'
+import { 
+  MockOracle as MockOracleInstance,
+  MockOtoken as MockOtokenInstance,
+  MockERC20 as MockERC20Instance,
+  CalculatorTester as CalculatorTesterInstance,
+  MockAddressBook as MockAddressBookInstance
+} from '../../typechain-types' 
+
+
+
+import { artifacts, contract, web3 } from 'hardhat'
+import { createVault, createScaledNumber as scaleNum, createTokenAmount } from './helpers/utils'
 import { assert } from 'chai'
 
-const { expectRevert, time } = require('@openzeppelin/test-helpers')
+import { expectRevert, time } from '@openzeppelin/test-helpers'
+
+
 const MockAddressBook = artifacts.require('MockAddressBook.sol')
 const MockOracle = artifacts.require('MockOracle.sol')
 const MockOtoken = artifacts.require('MockOtoken.sol')

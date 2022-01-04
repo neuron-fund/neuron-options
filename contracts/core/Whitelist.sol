@@ -2,13 +2,14 @@
 pragma solidity 0.8.9;
 
 import "../interfaces/AddressBookInterface.sol";
+import {WhitelistInterface} from "../interfaces/WhitelistInterface.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title Whitelist Module
  * @notice The whitelist module keeps track of all valid oToken addresses, product hashes, collateral addresses, and callee addresses.
  */
-contract Whitelist is Ownable {
+contract Whitelist is WhitelistInterface, Ownable{
     /// @notice AddressBook module address
     address public addressBook;
     /// @dev mapping to track whitelisted products
