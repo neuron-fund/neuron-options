@@ -1,16 +1,18 @@
 import {
-  MockPricerInstance,
-  MockOracleInstance,
-  MockERC20Instance,
-  MockYTokenInstance,
-  YearnPricerInstance,
-} from '../../build/types/truffle-types'
+  MockPricer as MockPricerInstance,
+  MockOracle as MockOracleInstance,
+  MockERC20 as MockERC20Instance,
+  MockYToken as MockYTokenInstance,
+  YearnPricer as YearnPricerInstance,
+} from '../../typechain-types' 
 
-import { underlyingPriceToYTokenPrice } from '../utils'
+import { underlyingPriceToYTokenPrice, createScaledNumber } from './helpers/utils'
 
-import BigNumber from 'bignumber.js'
-import { createScaledNumber } from '../utils'
-const { expectRevert, time } = require('@openzeppelin/test-helpers')
+import { artifacts, contract } from 'hardhat'
+import { assert } from 'chai'
+
+import { expectRevert, time } from '@openzeppelin/test-helpers'
+import { BigNumber } from 'ethers'
 
 const MockPricer = artifacts.require('MockPricer.sol')
 const MockOracle = artifacts.require('MockOracle.sol')
@@ -82,7 +84,7 @@ contract('YearnPricer', ([owner, random]) => {
 
   describe('getPrice for yWETH', () => {
     const ethPrice = createScaledNumber(470)
-    const pricePerShare = new BigNumber('1009262845672227655')
+    const pricePerShare = BigNumber.from('1009262845672227655')
     before('mock data in chainlink pricer and yToken', async () => {
       await oracle.setRealTimePrice(usdc.address, '100000000')
       await oracle.setRealTimePrice(weth.address, ethPrice)
@@ -92,7 +94,7 @@ contract('YearnPricer', ([owner, random]) => {
     it('should return the price in 1e8', async () => {
       // how much 1e8 yToken worth in USD
       const yTokenprice = await yvWETHPricer.getPrice()
-      const expectResult = await underlyingPriceToYTokenPrice(new BigNumber(ethPrice), pricePerShare, weth)
+      const expectResult = await underlyingPriceToYTokenPrice(BigNumber.from(ethPrice), pricePerShare, weth)
       assert.equal(yTokenprice.toString(), expectResult.toString())
       // hard coded answer
       // 1 yWETH = 9.4 USD
@@ -103,7 +105,7 @@ contract('YearnPricer', ([owner, random]) => {
       // await wethPricer.setPrice(newPrice)
       await oracle.setRealTimePrice(weth.address, newPrice)
       const yTokenPrice = await yvWETHPricer.getPrice()
-      const expectedResult = await underlyingPriceToYTokenPrice(new BigNumber(newPrice), pricePerShare, weth)
+      const expectedResult = await underlyingPriceToYTokenPrice(BigNumber.from(newPrice), pricePerShare, weth)
       assert.equal(yTokenPrice.toString(), expectedResult.toString())
     })
     it('should revert if price is lower than 0', async () => {
@@ -115,7 +117,7 @@ contract('YearnPricer', ([owner, random]) => {
 
   describe('getPrice for yUSDC', () => {
     const usdPrice = createScaledNumber(1)
-    const pricePerShare = new BigNumber('1046810')
+    const pricePerShare = BigNumber.from('1046810')
 
     before('mock data in chainlink pricer and yToken', async () => {
       await oracle.setStablePrice(usdc.address, '100000000')
@@ -125,25 +127,25 @@ contract('YearnPricer', ([owner, random]) => {
     it('should return the price in 1e8', async () => {
       // how much 1e8 yToken worth in USD
       const yTokenprice = await yvUSDCPricer.getPrice()
-      const expectResult = await underlyingPriceToYTokenPrice(new BigNumber(usdPrice), pricePerShare, usdc)
+      const expectResult = await underlyingPriceToYTokenPrice(BigNumber.from(usdPrice), pricePerShare, usdc)
       assert.equal(yTokenprice.toString(), expectResult.toString())
       // hard coded answer
       // 1 yUSDC = 0.02 USD
       assert.equal(yTokenprice.toString(), '104681000') // 0.0211 usd
     })
     it('should return the new price after resetting answer in underlying pricer', async () => {
-      const newPrice = createScaledNumber(1.1)
+      const newPrice = createScaledNumber(11, 7)
       await oracle.setStablePrice(usdc.address, newPrice)
       const yTokenPrice = await yvUSDCPricer.getPrice()
-      const expectedResult = await underlyingPriceToYTokenPrice(new BigNumber(newPrice), pricePerShare, usdc)
+      const expectedResult = await underlyingPriceToYTokenPrice(BigNumber.from(newPrice), pricePerShare, usdc)
       assert.equal(yTokenPrice.toString(), expectedResult.toString())
     })
   })
 
   describe('setExpiryPrice', () => {
     let expiry: number
-    const ethPrice = new BigNumber(createScaledNumber(300))
-    const pricePerShare = new BigNumber('1009262845672227655')
+    const ethPrice = BigNumber.from(createScaledNumber(300))
+    const pricePerShare = BigNumber.from('1009262845672227655')
 
     before('setup oracle record for weth price', async () => {
       expiry = (await time.latest()) + time.duration.days(30).toNumber()

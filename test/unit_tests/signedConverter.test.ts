@@ -1,7 +1,11 @@
-import { SignedConverterTesterInstance } from '../../build/types/truffle-types'
-import BigNumber from 'bignumber.js'
+import { SignedConverterTester as SignedConverterTesterInstance } from '../../typechain-types' 
 
-const { expectRevert } = require('@openzeppelin/test-helpers')
+import { artifacts, contract } from 'hardhat'
+import { assert } from 'chai'
+
+import { expectRevert} from '@openzeppelin/test-helpers'
+import { BigNumber } from 'ethers'
+
 
 const SignedConverterTester = artifacts.require('SignedConverterTester.sol')
 
@@ -14,8 +18,8 @@ contract('FixedPointInt256 lib', () => {
 
   describe('Test type conversion', () => {
     it('Should convert from unsigned integer to signed integer', async () => {
-      const uint = new BigNumber(5)
-      const expectedInt = new BigNumber(5)
+      const uint = BigNumber.from(5)
+      const expectedInt = BigNumber.from(5)
 
       assert.equal(
         (await lib.testFromUint(uint)).toNumber(),
@@ -25,21 +29,21 @@ contract('FixedPointInt256 lib', () => {
     })
 
     it('It should revert converting an unsigned integer greater than 2^255  signed integer', async () => {
-      const uint = new BigNumber(2).pow(255)
+      const uint = BigNumber.from(2).pow(255)
       await expectRevert(lib.testFromUint(uint), 'FixedPointInt256: out of int range')
 
-      const uint2 = new BigNumber(2).pow(255).plus(1)
+      const uint2 = BigNumber.from(2).pow(255).add(1)
       await expectRevert(lib.testFromUint(uint2), 'FixedPointInt256: out of int range')
     })
 
     it('Should convert max_int (2^255) - 1 from uint to int', async () => {
-      const uint = new BigNumber(2).pow(255).minus(1)
+      const uint = BigNumber.from(2).pow(255).sub(1)
       assert.equal((await lib.testFromUint(uint)).toString(), uint.toString(), 'conversion from int to uint mismatch')
     })
 
     it('Should convert from signed integer to unsigned integer', async () => {
-      const int = new BigNumber(-3)
-      const expectedUint = new BigNumber(3)
+      const int = BigNumber.from(-3)
+      const expectedUint = BigNumber.from(3)
 
       assert.equal(
         (await lib.testFromInt(int)).toNumber(),
@@ -48,8 +52,8 @@ contract('FixedPointInt256 lib', () => {
       )
     })
     it('Should convert from positive signed integer to unsigned integer', async () => {
-      const int = new BigNumber(3)
-      const expectedUint = new BigNumber(3)
+      const int = BigNumber.from(3)
+      const expectedUint = BigNumber.from(3)
 
       assert.equal(
         (await lib.testFromInt(int)).toNumber(),

@@ -45,8 +45,10 @@ contract('OTokenFactory', ([user1, user2, controller]) => {
 
     // Deploy and whitelist ETH:USDC product
     const mockWhitelist: MockWhitelistModuleInstance = await MockWhitelist.new()
-    await mockWhitelist.whitelistProduct(weth.address, usdc.address, usdc.address, isPut)
-    await mockWhitelist.whitelistProduct(usdc.address, weth.address, weth.address, isPut)
+    await mockWhitelist.whitelistCollaterals([usdc.address])
+    await mockWhitelist.whitelistCollaterals([weth.address])    
+    await mockWhitelist.whitelistProduct(weth.address, usdc.address, [usdc.address], isPut)
+    await mockWhitelist.whitelistProduct(usdc.address, weth.address, [weth.address], isPut)
     // Deploy addressbook
     addressBook = await MockAddressBook.new()
     await addressBook.setOtokenImpl(logic.address)

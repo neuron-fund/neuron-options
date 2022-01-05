@@ -3048,7 +3048,7 @@ contract(
       it('should revert redeem option if collateral is different from underlying, and collateral price is not finalized', async () => {
         const expiry = BigNumber.from(await time.latest()).add(BigNumber.from(60 * 60)).toNumber()
 
-        await whitelist.whitelistCollateral(weth2.address)
+        await whitelist.whitelistCollaterals([weth2.address])
         const call: MockOtokenInstance = await MockOtoken.new()
         await call.init(
           addressBook.address,

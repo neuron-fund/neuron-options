@@ -108,11 +108,13 @@ export const underlyingPriceToYTokenPrice = async (
   underlyingPrice: BigNumber,
   pricePerShare: BigNumber,
   underlying: MockERC20Instance,
-) => {
-  const underlyingDecimals = BigNumber.from(await underlying.decimals())
+) => { 
+
+  const underlyingDecimals = BigNumber.from((await underlying.decimals()).toString())
+
   return pricePerShare
     .mul(underlyingPrice)
-    .div(BigNumber.from(10).pow(underlyingDecimals))
+    .div(BigNumber.from('10').pow(underlyingDecimals))
     //.integerValue(BigNumber.ROUND_DOWN)
 }
 
