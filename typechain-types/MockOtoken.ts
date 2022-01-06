@@ -20,26 +20,30 @@ import { TypedEventFilter, TypedEvent, TypedListener, OnEvent } from "./common";
 export interface MockOtokenInterface extends utils.Interface {
   functions: {
     "DOMAIN_SEPARATOR()": FunctionFragment;
-    "addressBook()": FunctionFragment;
     "allowance(address,address)": FunctionFragment;
     "approve(address,uint256)": FunctionFragment;
     "balanceOf(address)": FunctionFragment;
     "burnOtoken(address,uint256)": FunctionFragment;
-    "collateralAsset()": FunctionFragment;
+    "collateralAssets(uint256)": FunctionFragment;
+    "collateralsAmounts(uint256)": FunctionFragment;
+    "collateralsValues(uint256)": FunctionFragment;
+    "collaterizedTotalAmount()": FunctionFragment;
     "controller()": FunctionFragment;
     "decimals()": FunctionFragment;
     "decreaseAllowance(address,uint256)": FunctionFragment;
     "expiryTimestamp()": FunctionFragment;
-    "getChainId()": FunctionFragment;
+    "getCollateralAssets()": FunctionFragment;
+    "getCollateralsAmounts()": FunctionFragment;
+    "getCollateralsValues()": FunctionFragment;
     "getOtokenDetails()": FunctionFragment;
     "increaseAllowance(address,uint256)": FunctionFragment;
-    "init(address,address,address,address,uint256,uint256,bool)": FunctionFragment;
-    "inited()": FunctionFragment;
+    "init(address,address,address,address[],uint256,uint256,bool)": FunctionFragment;
     "isPut()": FunctionFragment;
-    "mintOtoken(address,uint256)": FunctionFragment;
+    "mintOtoken(address,uint256,uint256[],uint256[])": FunctionFragment;
     "name()": FunctionFragment;
     "nonces(address)": FunctionFragment;
     "permit(address,address,uint256,uint256,uint8,bytes32,bytes32)": FunctionFragment;
+    "reduceCollaterization(uint256[],uint256[],uint256)": FunctionFragment;
     "strikeAsset()": FunctionFragment;
     "strikePrice()": FunctionFragment;
     "symbol()": FunctionFragment;
@@ -51,10 +55,6 @@ export interface MockOtokenInterface extends utils.Interface {
 
   encodeFunctionData(
     functionFragment: "DOMAIN_SEPARATOR",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
-    functionFragment: "addressBook",
     values?: undefined
   ): string;
   encodeFunctionData(
@@ -71,7 +71,19 @@ export interface MockOtokenInterface extends utils.Interface {
     values: [string, BigNumberish]
   ): string;
   encodeFunctionData(
-    functionFragment: "collateralAsset",
+    functionFragment: "collateralAssets",
+    values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "collateralsAmounts",
+    values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "collateralsValues",
+    values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "collaterizedTotalAmount",
     values?: undefined
   ): string;
   encodeFunctionData(
@@ -88,7 +100,15 @@ export interface MockOtokenInterface extends utils.Interface {
     values?: undefined
   ): string;
   encodeFunctionData(
-    functionFragment: "getChainId",
+    functionFragment: "getCollateralAssets",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getCollateralsAmounts",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getCollateralsValues",
     values?: undefined
   ): string;
   encodeFunctionData(
@@ -105,17 +125,16 @@ export interface MockOtokenInterface extends utils.Interface {
       string,
       string,
       string,
-      string,
+      string[],
       BigNumberish,
       BigNumberish,
       boolean
     ]
   ): string;
-  encodeFunctionData(functionFragment: "inited", values?: undefined): string;
   encodeFunctionData(functionFragment: "isPut", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "mintOtoken",
-    values: [string, BigNumberish]
+    values: [string, BigNumberish, BigNumberish[], BigNumberish[]]
   ): string;
   encodeFunctionData(functionFragment: "name", values?: undefined): string;
   encodeFunctionData(functionFragment: "nonces", values: [string]): string;
@@ -130,6 +149,10 @@ export interface MockOtokenInterface extends utils.Interface {
       BytesLike,
       BytesLike
     ]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "reduceCollaterization",
+    values: [BigNumberish[], BigNumberish[], BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "strikeAsset",
@@ -161,16 +184,24 @@ export interface MockOtokenInterface extends utils.Interface {
     functionFragment: "DOMAIN_SEPARATOR",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(
-    functionFragment: "addressBook",
-    data: BytesLike
-  ): Result;
   decodeFunctionResult(functionFragment: "allowance", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "approve", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "balanceOf", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "burnOtoken", data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "collateralAsset",
+    functionFragment: "collateralAssets",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "collateralsAmounts",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "collateralsValues",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "collaterizedTotalAmount",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "controller", data: BytesLike): Result;
@@ -183,7 +214,18 @@ export interface MockOtokenInterface extends utils.Interface {
     functionFragment: "expiryTimestamp",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "getChainId", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "getCollateralAssets",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "getCollateralsAmounts",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "getCollateralsValues",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "getOtokenDetails",
     data: BytesLike
@@ -193,12 +235,15 @@ export interface MockOtokenInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "init", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "inited", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "isPut", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "mintOtoken", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "name", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "nonces", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "permit", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "reduceCollaterization",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "strikeAsset",
     data: BytesLike
@@ -274,8 +319,6 @@ export interface MockOtoken extends BaseContract {
   functions: {
     DOMAIN_SEPARATOR(overrides?: CallOverrides): Promise<[string]>;
 
-    addressBook(overrides?: CallOverrides): Promise<[string]>;
-
     allowance(
       owner: string,
       spender: string,
@@ -296,7 +339,22 @@ export interface MockOtoken extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    collateralAsset(overrides?: CallOverrides): Promise<[string]>;
+    collateralAssets(
+      arg0: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<[string]>;
+
+    collateralsAmounts(
+      arg0: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<[BigNumber]>;
+
+    collateralsValues(
+      arg0: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<[BigNumber]>;
+
+    collaterizedTotalAmount(overrides?: CallOverrides): Promise<[BigNumber]>;
 
     controller(overrides?: CallOverrides): Promise<[string]>;
 
@@ -310,13 +368,26 @@ export interface MockOtoken extends BaseContract {
 
     expiryTimestamp(overrides?: CallOverrides): Promise<[BigNumber]>;
 
-    getChainId(
-      overrides?: CallOverrides
-    ): Promise<[BigNumber] & { chainId: BigNumber }>;
+    getCollateralAssets(overrides?: CallOverrides): Promise<[string[]]>;
+
+    getCollateralsAmounts(overrides?: CallOverrides): Promise<[BigNumber[]]>;
+
+    getCollateralsValues(overrides?: CallOverrides): Promise<[BigNumber[]]>;
 
     getOtokenDetails(
       overrides?: CallOverrides
-    ): Promise<[string, string, string, BigNumber, BigNumber, boolean]>;
+    ): Promise<
+      [
+        string[],
+        BigNumber[],
+        string,
+        string,
+        BigNumber,
+        BigNumber,
+        boolean,
+        BigNumber
+      ]
+    >;
 
     increaseAllowance(
       spender: string,
@@ -328,20 +399,20 @@ export interface MockOtoken extends BaseContract {
       _addressBook: string,
       _underlyingAsset: string,
       _strikeAsset: string,
-      _collateralAsset: string,
+      _collateralAssets: string[],
       _strikePrice: BigNumberish,
       _expiryTimestamp: BigNumberish,
       _isPut: boolean,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    inited(overrides?: CallOverrides): Promise<[boolean]>;
-
     isPut(overrides?: CallOverrides): Promise<[boolean]>;
 
     mintOtoken(
-      _to: string,
-      _amount: BigNumberish,
+      account: string,
+      amount: BigNumberish,
+      collateralsAmountsForMint: BigNumberish[],
+      collateralsValuesForMint: BigNumberish[],
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -357,6 +428,13 @@ export interface MockOtoken extends BaseContract {
       v: BigNumberish,
       r: BytesLike,
       s: BytesLike,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    reduceCollaterization(
+      collateralsAmountsForReduce: BigNumberish[],
+      collateralsValuesForReduce: BigNumberish[],
+      oTokenAmountBurnt: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -386,8 +464,6 @@ export interface MockOtoken extends BaseContract {
 
   DOMAIN_SEPARATOR(overrides?: CallOverrides): Promise<string>;
 
-  addressBook(overrides?: CallOverrides): Promise<string>;
-
   allowance(
     owner: string,
     spender: string,
@@ -408,7 +484,22 @@ export interface MockOtoken extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  collateralAsset(overrides?: CallOverrides): Promise<string>;
+  collateralAssets(
+    arg0: BigNumberish,
+    overrides?: CallOverrides
+  ): Promise<string>;
+
+  collateralsAmounts(
+    arg0: BigNumberish,
+    overrides?: CallOverrides
+  ): Promise<BigNumber>;
+
+  collateralsValues(
+    arg0: BigNumberish,
+    overrides?: CallOverrides
+  ): Promise<BigNumber>;
+
+  collaterizedTotalAmount(overrides?: CallOverrides): Promise<BigNumber>;
 
   controller(overrides?: CallOverrides): Promise<string>;
 
@@ -422,11 +513,26 @@ export interface MockOtoken extends BaseContract {
 
   expiryTimestamp(overrides?: CallOverrides): Promise<BigNumber>;
 
-  getChainId(overrides?: CallOverrides): Promise<BigNumber>;
+  getCollateralAssets(overrides?: CallOverrides): Promise<string[]>;
+
+  getCollateralsAmounts(overrides?: CallOverrides): Promise<BigNumber[]>;
+
+  getCollateralsValues(overrides?: CallOverrides): Promise<BigNumber[]>;
 
   getOtokenDetails(
     overrides?: CallOverrides
-  ): Promise<[string, string, string, BigNumber, BigNumber, boolean]>;
+  ): Promise<
+    [
+      string[],
+      BigNumber[],
+      string,
+      string,
+      BigNumber,
+      BigNumber,
+      boolean,
+      BigNumber
+    ]
+  >;
 
   increaseAllowance(
     spender: string,
@@ -438,20 +544,20 @@ export interface MockOtoken extends BaseContract {
     _addressBook: string,
     _underlyingAsset: string,
     _strikeAsset: string,
-    _collateralAsset: string,
+    _collateralAssets: string[],
     _strikePrice: BigNumberish,
     _expiryTimestamp: BigNumberish,
     _isPut: boolean,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  inited(overrides?: CallOverrides): Promise<boolean>;
-
   isPut(overrides?: CallOverrides): Promise<boolean>;
 
   mintOtoken(
-    _to: string,
-    _amount: BigNumberish,
+    account: string,
+    amount: BigNumberish,
+    collateralsAmountsForMint: BigNumberish[],
+    collateralsValuesForMint: BigNumberish[],
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -467,6 +573,13 @@ export interface MockOtoken extends BaseContract {
     v: BigNumberish,
     r: BytesLike,
     s: BytesLike,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  reduceCollaterization(
+    collateralsAmountsForReduce: BigNumberish[],
+    collateralsValuesForReduce: BigNumberish[],
+    oTokenAmountBurnt: BigNumberish,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -496,8 +609,6 @@ export interface MockOtoken extends BaseContract {
   callStatic: {
     DOMAIN_SEPARATOR(overrides?: CallOverrides): Promise<string>;
 
-    addressBook(overrides?: CallOverrides): Promise<string>;
-
     allowance(
       owner: string,
       spender: string,
@@ -518,7 +629,22 @@ export interface MockOtoken extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
-    collateralAsset(overrides?: CallOverrides): Promise<string>;
+    collateralAssets(
+      arg0: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<string>;
+
+    collateralsAmounts(
+      arg0: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    collateralsValues(
+      arg0: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    collaterizedTotalAmount(overrides?: CallOverrides): Promise<BigNumber>;
 
     controller(overrides?: CallOverrides): Promise<string>;
 
@@ -532,11 +658,26 @@ export interface MockOtoken extends BaseContract {
 
     expiryTimestamp(overrides?: CallOverrides): Promise<BigNumber>;
 
-    getChainId(overrides?: CallOverrides): Promise<BigNumber>;
+    getCollateralAssets(overrides?: CallOverrides): Promise<string[]>;
+
+    getCollateralsAmounts(overrides?: CallOverrides): Promise<BigNumber[]>;
+
+    getCollateralsValues(overrides?: CallOverrides): Promise<BigNumber[]>;
 
     getOtokenDetails(
       overrides?: CallOverrides
-    ): Promise<[string, string, string, BigNumber, BigNumber, boolean]>;
+    ): Promise<
+      [
+        string[],
+        BigNumber[],
+        string,
+        string,
+        BigNumber,
+        BigNumber,
+        boolean,
+        BigNumber
+      ]
+    >;
 
     increaseAllowance(
       spender: string,
@@ -548,20 +689,20 @@ export interface MockOtoken extends BaseContract {
       _addressBook: string,
       _underlyingAsset: string,
       _strikeAsset: string,
-      _collateralAsset: string,
+      _collateralAssets: string[],
       _strikePrice: BigNumberish,
       _expiryTimestamp: BigNumberish,
       _isPut: boolean,
       overrides?: CallOverrides
     ): Promise<void>;
 
-    inited(overrides?: CallOverrides): Promise<boolean>;
-
     isPut(overrides?: CallOverrides): Promise<boolean>;
 
     mintOtoken(
-      _to: string,
-      _amount: BigNumberish,
+      account: string,
+      amount: BigNumberish,
+      collateralsAmountsForMint: BigNumberish[],
+      collateralsValuesForMint: BigNumberish[],
       overrides?: CallOverrides
     ): Promise<void>;
 
@@ -577,6 +718,13 @@ export interface MockOtoken extends BaseContract {
       v: BigNumberish,
       r: BytesLike,
       s: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    reduceCollaterization(
+      collateralsAmountsForReduce: BigNumberish[],
+      collateralsValuesForReduce: BigNumberish[],
+      oTokenAmountBurnt: BigNumberish,
       overrides?: CallOverrides
     ): Promise<void>;
 
@@ -631,8 +779,6 @@ export interface MockOtoken extends BaseContract {
   estimateGas: {
     DOMAIN_SEPARATOR(overrides?: CallOverrides): Promise<BigNumber>;
 
-    addressBook(overrides?: CallOverrides): Promise<BigNumber>;
-
     allowance(
       owner: string,
       spender: string,
@@ -653,7 +799,22 @@ export interface MockOtoken extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    collateralAsset(overrides?: CallOverrides): Promise<BigNumber>;
+    collateralAssets(
+      arg0: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    collateralsAmounts(
+      arg0: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    collateralsValues(
+      arg0: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    collaterizedTotalAmount(overrides?: CallOverrides): Promise<BigNumber>;
 
     controller(overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -667,7 +828,11 @@ export interface MockOtoken extends BaseContract {
 
     expiryTimestamp(overrides?: CallOverrides): Promise<BigNumber>;
 
-    getChainId(overrides?: CallOverrides): Promise<BigNumber>;
+    getCollateralAssets(overrides?: CallOverrides): Promise<BigNumber>;
+
+    getCollateralsAmounts(overrides?: CallOverrides): Promise<BigNumber>;
+
+    getCollateralsValues(overrides?: CallOverrides): Promise<BigNumber>;
 
     getOtokenDetails(overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -681,20 +846,20 @@ export interface MockOtoken extends BaseContract {
       _addressBook: string,
       _underlyingAsset: string,
       _strikeAsset: string,
-      _collateralAsset: string,
+      _collateralAssets: string[],
       _strikePrice: BigNumberish,
       _expiryTimestamp: BigNumberish,
       _isPut: boolean,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    inited(overrides?: CallOverrides): Promise<BigNumber>;
-
     isPut(overrides?: CallOverrides): Promise<BigNumber>;
 
     mintOtoken(
-      _to: string,
-      _amount: BigNumberish,
+      account: string,
+      amount: BigNumberish,
+      collateralsAmountsForMint: BigNumberish[],
+      collateralsValuesForMint: BigNumberish[],
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -710,6 +875,13 @@ export interface MockOtoken extends BaseContract {
       v: BigNumberish,
       r: BytesLike,
       s: BytesLike,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    reduceCollaterization(
+      collateralsAmountsForReduce: BigNumberish[],
+      collateralsValuesForReduce: BigNumberish[],
+      oTokenAmountBurnt: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -740,8 +912,6 @@ export interface MockOtoken extends BaseContract {
   populateTransaction: {
     DOMAIN_SEPARATOR(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
-    addressBook(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
     allowance(
       owner: string,
       spender: string,
@@ -765,7 +935,24 @@ export interface MockOtoken extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    collateralAsset(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+    collateralAssets(
+      arg0: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    collateralsAmounts(
+      arg0: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    collateralsValues(
+      arg0: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    collaterizedTotalAmount(
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
 
     controller(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
@@ -779,7 +966,17 @@ export interface MockOtoken extends BaseContract {
 
     expiryTimestamp(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
-    getChainId(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+    getCollateralAssets(
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    getCollateralsAmounts(
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    getCollateralsValues(
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
 
     getOtokenDetails(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
@@ -793,20 +990,20 @@ export interface MockOtoken extends BaseContract {
       _addressBook: string,
       _underlyingAsset: string,
       _strikeAsset: string,
-      _collateralAsset: string,
+      _collateralAssets: string[],
       _strikePrice: BigNumberish,
       _expiryTimestamp: BigNumberish,
       _isPut: boolean,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    inited(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
     isPut(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     mintOtoken(
-      _to: string,
-      _amount: BigNumberish,
+      account: string,
+      amount: BigNumberish,
+      collateralsAmountsForMint: BigNumberish[],
+      collateralsValuesForMint: BigNumberish[],
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
@@ -825,6 +1022,13 @@ export interface MockOtoken extends BaseContract {
       v: BigNumberish,
       r: BytesLike,
       s: BytesLike,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    reduceCollaterization(
+      collateralsAmountsForReduce: BigNumberish[],
+      collateralsValuesForReduce: BigNumberish[],
+      oTokenAmountBurnt: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 

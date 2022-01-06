@@ -37,6 +37,7 @@ contract CalculatorTester is MarginCalculator {
         return FPI.toScaledUint(_findUpperBoundValue(productHash, _expiryTimestamp), 27, false);
     }
 
+  /*  
     function price(
         uint256 _vaultCollateral,
         uint256 _vaultDebt,
@@ -57,4 +58,5 @@ contract CalculatorTester is MarginCalculator {
         return
             _getDebtPrice(vaultCollateral, vaultDebt, cv, spotPrice, _auctionStartingTime, _collateralDecimals, _isPut);
     }
+*/
 }

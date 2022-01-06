@@ -67,7 +67,6 @@ export interface CalculatorTesterInterface extends utils.Interface {
     "getTimesToExpiry(address,address,address[],bool)": FunctionFragment;
     "oracle()": FunctionFragment;
     "owner()": FunctionFragment;
-    "price(uint256,uint256,uint256,uint256,uint256,uint256,bool)": FunctionFragment;
     "renounceOwnership()": FunctionFragment;
     "setCollateralDust(address,uint256)": FunctionFragment;
     "setOracleDeviation(uint256)": FunctionFragment;
@@ -127,18 +126,6 @@ export interface CalculatorTesterInterface extends utils.Interface {
   ): string;
   encodeFunctionData(functionFragment: "oracle", values?: undefined): string;
   encodeFunctionData(functionFragment: "owner", values?: undefined): string;
-  encodeFunctionData(
-    functionFragment: "price",
-    values: [
-      BigNumberish,
-      BigNumberish,
-      BigNumberish,
-      BigNumberish,
-      BigNumberish,
-      BigNumberish,
-      boolean
-    ]
-  ): string;
   encodeFunctionData(
     functionFragment: "renounceOwnership",
     values?: undefined
@@ -215,7 +202,6 @@ export interface CalculatorTesterInterface extends utils.Interface {
   ): Result;
   decodeFunctionResult(functionFragment: "oracle", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "price", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "renounceOwnership",
     data: BytesLike
@@ -429,17 +415,6 @@ export interface CalculatorTester extends BaseContract {
 
     owner(overrides?: CallOverrides): Promise<[string]>;
 
-    price(
-      _vaultCollateral: BigNumberish,
-      _vaultDebt: BigNumberish,
-      _cv: BigNumberish,
-      _spotPrice: BigNumberish,
-      _auctionStartingTime: BigNumberish,
-      _collateralDecimals: BigNumberish,
-      _isPut: boolean,
-      overrides?: CallOverrides
-    ): Promise<[BigNumber]>;
-
     renounceOwnership(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
@@ -569,17 +544,6 @@ export interface CalculatorTester extends BaseContract {
 
   owner(overrides?: CallOverrides): Promise<string>;
 
-  price(
-    _vaultCollateral: BigNumberish,
-    _vaultDebt: BigNumberish,
-    _cv: BigNumberish,
-    _spotPrice: BigNumberish,
-    _auctionStartingTime: BigNumberish,
-    _collateralDecimals: BigNumberish,
-    _isPut: boolean,
-    overrides?: CallOverrides
-  ): Promise<BigNumber>;
-
   renounceOwnership(
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
@@ -708,17 +672,6 @@ export interface CalculatorTester extends BaseContract {
     oracle(overrides?: CallOverrides): Promise<string>;
 
     owner(overrides?: CallOverrides): Promise<string>;
-
-    price(
-      _vaultCollateral: BigNumberish,
-      _vaultDebt: BigNumberish,
-      _cv: BigNumberish,
-      _spotPrice: BigNumberish,
-      _auctionStartingTime: BigNumberish,
-      _collateralDecimals: BigNumberish,
-      _isPut: boolean,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
 
     renounceOwnership(overrides?: CallOverrides): Promise<void>;
 
@@ -917,17 +870,6 @@ export interface CalculatorTester extends BaseContract {
 
     owner(overrides?: CallOverrides): Promise<BigNumber>;
 
-    price(
-      _vaultCollateral: BigNumberish,
-      _vaultDebt: BigNumberish,
-      _cv: BigNumberish,
-      _spotPrice: BigNumberish,
-      _auctionStartingTime: BigNumberish,
-      _collateralDecimals: BigNumberish,
-      _isPut: boolean,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
     renounceOwnership(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
@@ -1059,17 +1001,6 @@ export interface CalculatorTester extends BaseContract {
     oracle(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     owner(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    price(
-      _vaultCollateral: BigNumberish,
-      _vaultDebt: BigNumberish,
-      _cv: BigNumberish,
-      _spotPrice: BigNumberish,
-      _auctionStartingTime: BigNumberish,
-      _collateralDecimals: BigNumberish,
-      _isPut: boolean,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
 
     renounceOwnership(
       overrides?: Overrides & { from?: string | Promise<string> }

@@ -2,21 +2,21 @@ import {
   MockERC20 as MockERC20Instance,
 } from '../../../typechain-types' 
 
+import {VaultStruct} from '../../../typechain-types/CalculatorTester'
 
-//import BigNumber from 'bignumber.js'
 
 //import util from '@0x/protocol-utils'
 import { BigNumber } from 'ethers'
 //import ethSigUtil from 'eth-sig-util'
 
-export type vault = {
+/*export type vault = {
   shortAmounts: (BigNumber | string | number)[]
   longAmounts: (BigNumber | string | number)[]
   collateralAmounts: (BigNumber | string | number)[]
   shortOtokens: string[]
   longOtokens: string[]
   collateralAssets: string[]
-}
+}*/
 
 /**
  * Return a valid expiry timestamp that's today + # days, 0800 UTC.
@@ -28,6 +28,8 @@ export const createValidExpiry = (now: number, days: number) => {
   return (Number(multiplier.toFixed(0)) + 1) * 86400 + days * 86400 + 28800
 }
 
+
+
 /**
  * Create a vault for testing
  * @param shortOtoken
@@ -37,21 +39,26 @@ export const createValidExpiry = (now: number, days: number) => {
  * @param longAmount
  * @param collateralAmount
  */
+
+
 export const createVault = (
   shortOtoken: string | undefined,
   longOtoken: string | undefined,
-  collateralAsset: string | undefined,
+  collateralAssets: Array<string>,
   shortAmount: string | BigNumber | number | undefined,
   longAmount: string | BigNumber | number | undefined,
-  collateralAmount: string | BigNumber | number | undefined,
-): vault => {
+  collateralAmounts: Array<string | BigNumber | number | undefined>,
+): VaultStruct => {
   return {
-    shortOtokens: shortOtoken ? [shortOtoken] : [],
-    longOtokens: longOtoken ? [longOtoken] : [],
-    collateralAssets: collateralAsset ? [collateralAsset] : [],
-    shortAmounts: shortAmount !== undefined ? [shortAmount] : [],
-    longAmounts: longAmount !== undefined ? [longAmount] : [],
-    collateralAmounts: collateralAmount !== undefined ? [collateralAmount] : [],
+    shortOtoken: shortOtoken,
+    longOtokens: [longOtoken],
+    collateralAssets: collateralAssets ? collateralAssets : [],
+    shortAmount: shortAmount,
+    longAmounts: [longAmount],
+    collateralAmounts: collateralAmounts ? collateralAmounts : [],
+    usedCollateralAmounts: [],
+    usedCollateralValues: [],
+    unusedCollateralAmounts: []
   }
 }
 
