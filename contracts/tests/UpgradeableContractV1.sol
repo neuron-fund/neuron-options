@@ -6,7 +6,6 @@ pragma solidity 0.8.9;
 import {Initializable} from "../packages/oz/upgradeability/Initializable.sol";
 
 /**
- * @author Opyn Team
  * @notice Upgradeable testing contract
  */
 contract UpgradeableContractV1 is Initializable {

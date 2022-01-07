@@ -11,7 +11,6 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
- * @author Opyn Team
  * @title CalleeAllowanceTester
  * @notice contract test if we can successfully pull weth from the payable proxy
  */

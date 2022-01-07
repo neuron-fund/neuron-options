@@ -8,7 +8,6 @@ pragma experimental ABIEncoderV2;
 import "../libs/FixedPointInt256.sol";
 
 /**
- * @author Opyn Team
  * @notice FixedPointInt256 contract tester
  */
 contract FixedPointInt256Tester {
@@ -66,19 +65,11 @@ contract FixedPointInt256Tester {
         return FPI.max(a, b);
     }
 
-    function testIsEqual(FPI.FixedPointInt memory a, FPI.FixedPointInt memory b)
-        external
-        pure
-        returns (bool)
-    {
+    function testIsEqual(FPI.FixedPointInt memory a, FPI.FixedPointInt memory b) external pure returns (bool) {
         return a.isEqual(b);
     }
 
-    function testIsGreaterThan(FPI.FixedPointInt memory a, FPI.FixedPointInt memory b)
-        external
-        pure
-        returns (bool)
-    {
+    function testIsGreaterThan(FPI.FixedPointInt memory a, FPI.FixedPointInt memory b) external pure returns (bool) {
         return a.isGreaterThan(b);
     }
 
@@ -90,11 +81,7 @@ contract FixedPointInt256Tester {
         return a.isGreaterThanOrEqual(b);
     }
 
-    function testIsLessThan(FPI.FixedPointInt memory a, FPI.FixedPointInt memory b)
-        external
-        pure
-        returns (bool)
-    {
+    function testIsLessThan(FPI.FixedPointInt memory a, FPI.FixedPointInt memory b) external pure returns (bool) {
         return a.isLessThan(b);
     }
 

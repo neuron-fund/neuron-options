@@ -4,7 +4,6 @@
 pragma solidity 0.8.9;
 
 /**
- * @author Opyn Team
  * @notice Call action testing contract
  */
 contract CallTester {

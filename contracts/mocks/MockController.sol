@@ -9,7 +9,6 @@ import "../interfaces/CalleeInterface.sol";
 import "../interfaces/ERC20Interface.sol";
 
 /**
- * @author Opyn Team
  * @notice Upgradeable Controller that can mock minting and burning calls from controller.
  */
 contract MockController {
@@ -56,6 +55,5 @@ contract MockController {
      */
     function test0xCallee(address _callee, bytes memory _data) external {
         CalleeInterface(_callee).callFunction(payable(msg.sender), _data);
-        
     }
 }

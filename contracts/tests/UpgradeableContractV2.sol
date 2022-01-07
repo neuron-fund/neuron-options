@@ -6,7 +6,6 @@ pragma solidity 0.8.9;
 import {UpgradeableContractV1} from "./UpgradeableContractV1.sol";
 
 /**
- * @author Opyn Team
  * @notice Upgradeable testing contract
  */
 contract UpgradeableContractV2 is UpgradeableContractV1 {

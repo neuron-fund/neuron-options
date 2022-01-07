@@ -8,7 +8,6 @@ pragma experimental ABIEncoderV2;
 import "../libs/SignedConverter.sol";
 
 /**
- * @author Opyn Team
  * @notice SignedConverter contract tester
  */
 contract SignedConverterTester {
