@@ -528,7 +528,11 @@ export function calculateMintUsedCollaterals<T extends TestMintOTokenParams>(
   const totalCollateralsValue = collateralValues.reduce((a, b) => a + b, 0)
   assert(
     totalCollateralsValue >= strikeRequiredUsd,
-    `Not enough collateral for mint ${mintAmount}, with prices: ${prettyObjectStringify(prices)}`
+    `
+      Got total collateral value ${totalCollateralsValue} is less than required ${strikeRequiredUsd}
+      Not enough collateral for mint ${mintAmount} oToken, with prices: ${prettyObjectStringify(prices)}
+      Provided collateral amounts ${collateralAmounts}
+    `
   )
   const usedCollateralsRatios = collateralValues.map(x => x / totalCollateralsValue)
   return usedCollateralsRatios.map((x, i) => (x * strikeRequiredUsd) / prices[collateralAssets[i]])
