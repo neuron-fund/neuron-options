@@ -8,7 +8,12 @@ import { Wallet } from '@ethersproject/wallet'
 export const addTokenDecimalsToAmount = async (token: string, amount: number, signer: SignerWithAddress | Wallet) => {
   const decimals = await getERC20Decimals(signer, token)
   // toFixed is used to avoid error "fractional component exceeds decimals"
-  return parseUnits(amount.toFixed(decimals).toString(), decimals)
+  const amountInputDecimals = amount.toString().split('.')[1]?.length
+  // using toFixed only if amount accuracy exceeds decimals of token, otherwise it will lead to rounding errors
+  // for example `0.3.toFixed(18)` will return '0.299999999999999989'
+  const isAmountAccuracyExceedsDecimals = amountInputDecimals && amountInputDecimals > decimals
+  const normalizedAmount = isAmountAccuracyExceedsDecimals ? amount.toFixed(decimals) : amount
+  return parseUnits(normalizedAmount.toString(), decimals)
 }
 
 export const getERC20BalanceOf = async (
