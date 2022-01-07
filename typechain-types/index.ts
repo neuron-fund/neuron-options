@@ -65,6 +65,7 @@ export type { CalculatorTester } from "./CalculatorTester";
 export type { CalleeAllowanceTester } from "./CalleeAllowanceTester";
 export type { CallTester } from "./CallTester";
 export type { FixedPointInt256Tester } from "./FixedPointInt256Tester";
+export type { MarginVaultTester } from "./MarginVaultTester";
 export type { OtokenImplV1 } from "./OtokenImplV1";
 export type { SignedConverterTester } from "./SignedConverterTester";
 export type { UpgradeableContractV1 } from "./UpgradeableContractV1";
@@ -134,6 +135,7 @@ export { CalculatorTester__factory } from "./factories/CalculatorTester__factory
 export { CalleeAllowanceTester__factory } from "./factories/CalleeAllowanceTester__factory";
 export { CallTester__factory } from "./factories/CallTester__factory";
 export { FixedPointInt256Tester__factory } from "./factories/FixedPointInt256Tester__factory";
+export { MarginVaultTester__factory } from "./factories/MarginVaultTester__factory";
 export { OtokenImplV1__factory } from "./factories/OtokenImplV1__factory";
 export { SignedConverterTester__factory } from "./factories/SignedConverterTester__factory";
 export { UpgradeableContractV1__factory } from "./factories/UpgradeableContractV1__factory";

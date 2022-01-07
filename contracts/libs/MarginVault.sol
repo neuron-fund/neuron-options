@@ -22,7 +22,7 @@ import "hardhat/console.sol";
  * V7: invalid collateral amount
  * V8: invalid collateral token index
  * V9: collateral token address mismatch
- * v10: shortOtoken should be empty when performing addShort or the same as vault already have
+ * V10: shortOtoken should be empty when performing addShort or the same as vault already have
  * V11: _collateralAssets and _amounts length mismatch
  * V12: _collateralAssets and vault.collateralAssets length mismatch
  */

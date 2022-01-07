@@ -15,7 +15,7 @@ import { assert } from 'chai'
 const MockERC20 = artifacts.require('MockERC20.sol')
 const MockDumbERC20 = artifacts.require('MockDumbERC20.sol')
 const MockAddressBook = artifacts.require('MockAddressBook.sol')
-const WETH9 = artifacts.require('WETH9.sol')
+//const WETH9 = artifacts.require('WETH9.sol')
 const MarginPool = artifacts.require('MarginPool.sol')
 
 // address(0)
@@ -39,7 +39,7 @@ contract('MarginPool', ([owner, controllerAddress, farmer, user1, random]) => {
     // deploy USDC token
     usdc = await MockERC20.new('USDC', 'USDC', 6)
     // deploy WETH token for testing
-    weth = await WETH9.new()
+    weth = await MockERC20.new('WETH9', 'WETH9', 18)
     // deploy dumb erc20
     dumbToken = await MockDumbERC20.new('DUSDC', 'DUSDC', 6)
     // deploy AddressBook mock
@@ -52,8 +52,8 @@ contract('MarginPool', ([owner, controllerAddress, farmer, user1, random]) => {
     // mint usdc
     await usdc.mint(user1, usdcToMint)
     // wrap ETH in Controller module level
-    await weth.deposit({ from: controllerAddress, value: wethToMint })
-
+    //await weth.deposit({ from: controllerAddress, value: wethToMint })
+    await weth.mint(controllerAddress, wethToMint)
     // controller approving infinite amount of WETH to pool
     await weth.approve(marginPool.address, wethToMint, { from: controllerAddress })
   })
@@ -111,13 +111,13 @@ contract('MarginPool', ([owner, controllerAddress, farmer, user1, random]) => {
       const poolBalanceAfter = await usdc.balanceOf(marginPool.address)
 
       assert.equal(
-        BigNumber.from(usdcToTransfer).toString(),
+        BigNumber.from(usdcToTransfer.toString()).toString(),
         userBalanceBefore.sub(userBalanceAfter).toString(),
         'USDC value transfered from user mismatch',
       )
 
       assert.equal(
-        BigNumber.from(usdcToTransfer).toString(),
+        BigNumber.from(usdcToTransfer.toString()).toString(),
         poolBalanceAfter.sub(poolBalanceBefore).toString(),
         'USDC value transfered into pool mismatch',
       )
@@ -200,7 +200,7 @@ contract('MarginPool', ([owner, controllerAddress, farmer, user1, random]) => {
       // transfer to controller
       await marginPool.transferToUser(weth.address, controllerAddress, wethToTransfer, { from: controllerAddress })
       // unwrap WETH to ETH
-      await weth.withdraw(wethToTransfer, { from: controllerAddress })
+      ///// await weth.withdraw(wethToTransfer, { from: controllerAddress })
       // send ETH to user
       await web3.eth.sendTransaction({ from: controllerAddress, to: user1, value: wethToTransfer })
 
