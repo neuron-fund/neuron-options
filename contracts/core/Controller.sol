@@ -689,7 +689,7 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         vaults[_args.owner][vaultId].collateralAssets = oToken.getCollateralAssets();
 
         uint256 assetsLength = vaults[_args.owner][vaultId].collateralAssets.length;
-        // TODO 3 times reading length from struct. Possibly can be optimized by initializing uint with length
+
         vaults[_args.owner][vaultId].collateralAmounts = new uint256[](assetsLength);
         vaults[_args.owner][vaultId].usedCollateralAmounts = new uint256[](assetsLength);
         vaults[_args.owner][vaultId].unusedCollateralAmounts = new uint256[](assetsLength);
@@ -833,8 +833,6 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         // in other words -  usedCollateralsAmounts[i] * collateralAssetPriceInStrike[i]
         (uint256[] memory usedCollateralsAmounts, uint256[] memory usedCollateralsValues) = calculator
             ._getCollateralRequired(vaults[_args.owner][_args.vaultId], _args.otoken, _args.amount);
-        console.log("usedCollateralsAmounts", usedCollateralsAmounts[0]);
-        console.log("usedCollateralsAmounts", usedCollateralsAmounts[1]);
         otoken.mintOtoken(_args.to, _args.amount, usedCollateralsAmounts, usedCollateralsValues);
         vaults[_args.owner][_args.vaultId].addShort(_args.otoken, _args.amount);
         vaults[_args.owner][_args.vaultId].useCollateralBulk(usedCollateralsAmounts, usedCollateralsValues);
