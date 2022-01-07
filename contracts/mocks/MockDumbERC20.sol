@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 /* solhint-disable */
-pragma solidity 0.8.10;
+pragma solidity 0.8.9;
 
 import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
+
 
 /**
  * ERC20 Token that return false when operation failed
@@ -26,7 +27,7 @@ contract MockDumbERC20 {
         string memory name_,
         string memory symbol_,
         uint8 decimals_
-    ) public {
+    ) {
         _name = name_;
         _symbol = symbol_;
         _decimals = decimals_;

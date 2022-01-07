@@ -1,13 +1,15 @@
 /**
  * SPDX-License-Identifier: UNLICENSED
  */
-pragma solidity 0.8.10;
+pragma solidity 0.8.9;
 
-import {ERC20Interface} from "../interfaces/ERC20Interface.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {AddressBookInterface} from "../interfaces/AddressBookInterface.sol";
 import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import {SafeERC20} from "../packages/oz/SafeERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+
+import "hardhat/console.sol";
 
 /**
  * @title MarginPool
@@ -15,7 +17,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
  */
 contract MarginPool is Ownable {
     using SafeMath for uint256;
-    using SafeERC20 for ERC20Interface;
+    using SafeERC20 for IERC20;
 
     /// @notice AddressBook module
     address public addressBook;
@@ -28,7 +30,7 @@ contract MarginPool is Ownable {
      * @notice contructor
      * @param _addressBook AddressBook module
      */
-    constructor(address _addressBook) public {
+    constructor(address _addressBook) {
         require(_addressBook != address(0), "Invalid address book");
 
         addressBook = _addressBook;
@@ -79,7 +81,7 @@ contract MarginPool is Ownable {
         assetBalance[_asset] = assetBalance[_asset].add(_amount);
 
         // transfer _asset _amount from _user to pool
-        ERC20Interface(_asset).safeTransferFrom(_user, address(this), _amount);
+        IERC20(_asset).safeTransferFrom(_user, address(this), _amount);
         emit TransferToPool(_asset, _user, _amount);
     }
 
@@ -95,10 +97,12 @@ contract MarginPool is Ownable {
         uint256 _amount
     ) public onlyController {
         require(_user != address(this), "MarginPool: cannot transfer assets to oneself");
+        console.log("Asset balance before transfer", assetBalance[_asset]);
+        console.log("Amount to transfer", _amount);
         assetBalance[_asset] = assetBalance[_asset].sub(_amount);
 
         // transfer _asset _amount from pool to _user
-        ERC20Interface(_asset).safeTransfer(_user, _amount);
+        IERC20(_asset).safeTransfer(_user, _amount);
         emit TransferToUser(_asset, _user, _amount);
     }
 
@@ -169,12 +173,12 @@ contract MarginPool is Ownable {
     ) external onlyFarmer {
         require(_receiver != address(0), "MarginPool: invalid receiver address");
 
-        uint256 externalBalance = ERC20Interface(_asset).balanceOf(address(this));
+        uint256 externalBalance = IERC20(_asset).balanceOf(address(this));
         uint256 storedBalance = assetBalance[_asset];
 
         require(_amount <= externalBalance.sub(storedBalance), "MarginPool: amount to farm exceeds limit");
 
-        ERC20Interface(_asset).safeTransfer(_receiver, _amount);
+        IERC20(_asset).safeTransfer(_receiver, _amount);
 
         emit AssetFarmed(_asset, _receiver, _amount);
     }

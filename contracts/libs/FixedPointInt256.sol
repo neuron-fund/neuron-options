@@ -1,7 +1,7 @@
 /**
  * SPDX-License-Identifier: UNLICENSED
  */
-pragma solidity 0.8.10;
+pragma solidity 0.8.9;
 
 import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import {SignedSafeMath} from "@openzeppelin/contracts/utils/math/SignedSafeMath.sol";
@@ -11,7 +11,8 @@ import {SignedConverter} from "./SignedConverter.sol";
  * @title FixedPointInt256
  * @notice FixedPoint library
  */
-library FixedPointInt256 {
+//  TODO rename when fixed https://github.com/crytic/slither/issues/962
+library FPI {
     using SignedSafeMath for int256;
     using SignedConverter for int256;
     using SafeMath for uint256;

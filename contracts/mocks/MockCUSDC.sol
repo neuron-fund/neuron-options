@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.10;
+pragma solidity 0.8.9;
 
 import {ERC20Upgradeable} from "../packages/oz/upgradeability/ERC20Upgradeable.sol";
 import {ERC20Interface} from "../interfaces/ERC20Interface.sol";
@@ -10,12 +10,14 @@ contract MockCUSDC is ERC20Upgradeable {
     address public underlying;
     uint256 public scale = 1e18;
 
+    using SafeMath for uint256;
+
     constructor(
         string memory _name,
         string memory _symbol,
         address _underlying,
         uint256 _initExchangeRateStored
-    ) public {
+    ) {
         __ERC20_init_unchained(_name, _symbol);
         _setupDecimals(8);
 
@@ -35,6 +37,7 @@ contract MockCUSDC is ERC20Upgradeable {
         _burn(msg.sender, amount);
         uint256 underlyingAmount = amount.mul(exchangeRateStored).div(scale);
         ERC20Interface(underlying).transfer(msg.sender, underlyingAmount);
+        return underlyingAmount;
     }
 
     function setExchangeRate(uint256 _exchangeRateStored) external {

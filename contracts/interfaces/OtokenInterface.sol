@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.10;
+pragma solidity 0.8.9;
 
 interface OtokenInterface {
     event Approval(address indexed owner, address indexed spender, uint256 value);
@@ -15,15 +15,25 @@ interface OtokenInterface {
 
     function burnOtoken(address account, uint256 amount) external;
 
-    function collateralAssets() external view returns (address[] memory);
+    function reduceCollaterization(
+        uint256[] calldata collateralsAmountsForReduce,
+        uint256[] calldata collateralsValuesForReduce,
+        uint256 oTokenAmountBurnt
+    ) external;
 
-    function collateralAssetsValues(address) external view returns (uint256);
+    function getCollateralAssets() external view returns (address[] memory);
 
-    function collateralsAmounts(address) external view returns (uint256);
+    function getCollateralsAmounts() external view returns (uint256[] memory);
+
+    function collateralsValues(uint256) external view returns (uint256);
+
+    function getCollateralsValues() external view returns (uint256[] memory);
 
     function controller() external view returns (address);
 
     function decimals() external view returns (uint8);
+
+    function collaterizedTotalAmount() external view returns (uint256);
 
     function decreaseAllowance(address spender, uint256 subtractedValue) external returns (bool);
 
@@ -34,11 +44,13 @@ interface OtokenInterface {
         view
         returns (
             address[] memory,
+            uint256[] memory,
             address,
             address,
             uint256,
             uint256,
-            bool
+            bool,
+            uint256
         );
 
     function increaseAllowance(address spender, uint256 addedValue) external returns (bool);
@@ -81,8 +93,6 @@ interface OtokenInterface {
     function strikePrice() external view returns (uint256);
 
     function symbol() external view returns (string memory);
-
-    function totalCollateralValue() external view returns (uint256);
 
     function totalSupply() external view returns (uint256);
 

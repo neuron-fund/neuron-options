@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.10;
+pragma solidity 0.8.9;
 
 import {ERC20Upgradeable} from "../packages/oz/upgradeability/ERC20Upgradeable.sol";
 
 contract MockYToken is ERC20Upgradeable {
     uint256 public pricePerShare;
 
-    constructor(string memory _name, string memory _symbol) public {
+    constructor(string memory _name, string memory _symbol) {
         __ERC20_init_unchained(_name, _symbol);
         _setupDecimals(8);
     }

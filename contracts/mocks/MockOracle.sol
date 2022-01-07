@@ -1,7 +1,6 @@
-pragma solidity 0.8.10;
+pragma solidity 0.8.9;
 
 import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import {PricerInterface} from "../interfaces/PricerInterface.sol";
 
 /**
  * SPDX-License-Identifier: UNLICENSED

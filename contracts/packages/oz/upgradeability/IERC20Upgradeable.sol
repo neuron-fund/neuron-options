@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // openzeppelin-contracts-upgradeable v3.0.0
 
-pragma solidity 0.8.10;
+pragma solidity 0.8.9;
 
 /**
  * @dev Interface of the ERC20 standard as defined in the EIP.

@@ -1,9 +1,7 @@
 /**
  * SPDX-License-Identifier: UNLICENSED
  */
-pragma solidity 0.8.10;
-
-import {MarginVault} from "./MarginVault.sol";
+pragma solidity 0.8.9;
 
 /**
  * @title Actions
@@ -32,6 +30,12 @@ import {MarginVault} from "./MarginVault.sol";
  * A21 cannot parse liquidate action with no round id
  * A22 can only parse arguments for call actions
  * A23 target address cannot be address(0)
+ * A24 amounts for minting oToken should be array with 1 element
+ * A25 assets for minting oToken should be array with 1 element and represent addres of the oToken to mint
+ * A26 param "assets" should have 1 element for redeem action
+ * A27 param "assets" first element should not be zero address for redeem action
+ * A28 param "amounts" should have 1 element for redeem action
+ * A29 param "amounts" first element should not be zero, cant redeem zero amount
  */
 library Actions {
     // possible actions that can be performed
@@ -45,8 +49,7 @@ library Actions {
         WithdrawCollateral,
         SettleVault,
         Redeem,
-        Call,
-        Liquidate
+        Call
     }
 
     struct ActionArgs {
@@ -78,9 +81,6 @@ library Actions {
         address to;
         // oToken that is to be minted
         address otoken;
-        // each vault can hold multiple short / long / collateral assets but we are restricting the scope to only 1 of each in this version
-        // in future versions this would be the index of the short / long / collateral asset that needs to be modified
-        uint256 index;
         // amount of oTokens that is to be minted
         uint256 amount;
     }
@@ -94,9 +94,6 @@ library Actions {
         address from;
         // oToken that is to be burned
         address otoken;
-        // each vault can hold multiple short / long / collateral assets but we are restricting the scope to only 1 of each in this version
-        // in future versions this would be the index of the short / long / collateral asset that needs to be modified
-        uint256 index;
         // amount of oTokens that is to be burned
         uint256 amount;
     }
@@ -104,10 +101,10 @@ library Actions {
     struct OpenVaultArgs {
         // address of the account owner
         address owner;
+        // We restrict vault to be specific for existing oToken so it's collaterals assets will be the same as oToken's
+        address shortOtoken;
         // vault id to create
         uint256 vaultId;
-        // vault type, 0 for spread/max loss and 1 for naked margin vault
-        uint256 vaultType;
     }
 
     struct DepositArgs {
@@ -119,11 +116,8 @@ library Actions {
         address from;
         // asset that is to be deposited
         address[] assets;
-        // each vault can hold multiple short / long / collateral assets but we are restricting the scope to only 1 of each in this version
-        // in future versions this would be the index of the short / long / collateral asset that needs to be modified
-        uint256 index;
         // amount of asset that is to be deposited
-        uint256 amount;
+        uint256[] amounts;
     }
 
     struct RedeemArgs {
@@ -160,19 +154,6 @@ library Actions {
         address to;
     }
 
-    struct LiquidateArgs {
-        // address of the vault owner to liquidate
-        address owner;
-        // address of the liquidated collateral receiver
-        address receiver;
-        // vault id to liquidate
-        uint256 vaultId;
-        // amount of debt(otoken) to repay
-        uint256 amount;
-        // chainlink round id
-        uint256 roundId;
-    }
-
     struct CallArgs {
         // address of the callee contract
         address callee;
@@ -189,18 +170,11 @@ library Actions {
         require(_args.actionType == ActionType.OpenVault, "A1");
         require(_args.owner != address(0), "A2");
 
-        // if not _args.data included, vault type will be 0 by default
-        uint256 vaultType;
-
-        if (_args.data.length == 32) {
-            // decode vault type from _args.data
-            vaultType = abi.decode(_args.data, (uint256));
-        }
-
-        // for block.timestamp we only have 2 vault types
-        require(vaultType < 2, "A3");
-
-        return OpenVaultArgs({owner: _args.owner, vaultId: _args.vaultId, vaultType: vaultType});
+        return OpenVaultArgs({
+            shortOtoken: _args.secondAddress,
+            owner: _args.owner, 
+            vaultId: _args.vaultId
+        });
     }
 
     /**
@@ -211,6 +185,8 @@ library Actions {
     function _parseMintArgs(ActionArgs memory _args) internal pure returns (MintArgs memory) {
         require(_args.actionType == ActionType.MintShortOption, "A4");
         require(_args.owner != address(0), "A5");
+        require(_args.amounts.length == 1, "A24");
+        require(_args.assets.length == 1, "A25");
 
         return
             MintArgs({
@@ -218,7 +194,6 @@ library Actions {
                 vaultId: _args.vaultId,
                 to: _args.secondAddress,
                 otoken: _args.assets[0],
-                index: _args.index,
                 amount: _args.amounts[0]
             });
     }
@@ -238,7 +213,6 @@ library Actions {
                 vaultId: _args.vaultId,
                 from: _args.secondAddress,
                 otoken: _args.assets[0],
-                index: _args.index,
                 amount: _args.amounts[0]
             });
     }
@@ -261,8 +235,7 @@ library Actions {
                 vaultId: _args.vaultId,
                 from: _args.secondAddress,
                 assets: _args.assets,
-                index: _args.index,
-                amount: _args.amounts[0]
+                amounts: _args.amounts
             });
     }
 
@@ -284,6 +257,7 @@ library Actions {
                 owner: _args.owner,
                 vaultId: _args.vaultId,
                 to: _args.secondAddress,
+                // TODO is it correct to use the first asset here? If yes add check that assets and amounts is same length
                 asset: _args.assets[0],
                 index: _args.index,
                 amount: _args.amounts[0]
@@ -298,6 +272,10 @@ library Actions {
     function _parseRedeemArgs(ActionArgs memory _args) internal pure returns (RedeemArgs memory) {
         require(_args.actionType == ActionType.Redeem, "A13");
         require(_args.secondAddress != address(0), "A14");
+        require(_args.assets.length == 1, "A26");
+        require(_args.assets[0] != address(0), "A27");
+        require(_args.amounts.length == 1, "A28");
+        require(_args.amounts[0] != 0, "A29");
 
         return RedeemArgs({receiver: _args.secondAddress, otoken: _args.assets[0], amount: _args.amounts[0]});
     }
@@ -313,28 +291,6 @@ library Actions {
         require(_args.secondAddress != address(0), "A17");
 
         return SettleVaultArgs({owner: _args.owner, vaultId: _args.vaultId, to: _args.secondAddress});
-    }
-
-    function _parseLiquidateArgs(ActionArgs memory _args) internal pure returns (LiquidateArgs memory) {
-        require(_args.actionType == ActionType.Liquidate, "A18");
-        require(_args.owner != address(0), "A19");
-        require(_args.secondAddress != address(0), "A20");
-        require(_args.data.length == 32, "A21");
-
-        // decode chainlink round id from _args.data
-        uint256 roundId = abi.decode(_args.data, (uint256));
-
-        return
-            LiquidateArgs({
-                owner: _args.owner,
-                receiver: _args.secondAddress,
-                vaultId: _args.vaultId,
-                // TODO require amounts and assets to be equal
-                // TODO require amounts to be greater than 0
-                // TODO require assets and amounts to be 1 when necessary
-                amount: _args.amounts[0],
-                roundId: roundId
-            });
     }
 
     /**

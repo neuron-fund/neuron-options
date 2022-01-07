@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: UNLICENSED */
-pragma solidity 0.8.10;
+pragma solidity 0.8.9;
 
 import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
@@ -10,6 +10,8 @@ import {BokkyPooBahsDateTimeLibrary} from "../packages/BokkyPooBahsDateTimeLibra
 import {AddressBookInterface} from "../interfaces/AddressBookInterface.sol";
 import {Constants} from "./Constants.sol";
 
+import "hardhat/console.sol";
+
 /**
  * @title Otoken
  * @notice Otoken is the ERC20 token for an option
@@ -17,6 +19,10 @@ import {Constants} from "./Constants.sol";
  */
 contract Otoken is ERC20PermitUpgradeable {
     using SafeMath for uint256;
+
+    /// @notice total amount of minted oTokens, does not decrease on burn when otoken is redeemed, but decreases when burnOToken is called by vault owner
+    // used for calculating redeems and settles
+    uint256 public collaterizedTotalAmount;
 
     /// @notice address of the Controller module
     address public controller;
@@ -33,18 +39,13 @@ contract Otoken is ERC20PermitUpgradeable {
 
     /// @notice amounts of collateralAssets used for collaterization of total supply of this oToken
     /// updated upon every mint
-    mapping(address => uint256) public collateralsAmounts;
+    uint256[] public collateralsAmounts;
 
     /// @notice value of collateral assets denominated in strike asset used for mint total supply of this oToken
     /// updated upon every mint
-    mapping(address => uint256) public collateralAssetsValues;
-
-    /// @notice total value of collateral assets denominated in strike asset used for mint total supply of this oToken
-    /// updated upon every mint
-    uint256 public totalCollateralValue;
+    uint256[] public collateralsValues;
 
     /// @notice strike price with decimals = 8
-    // TODO why strike price has 8 decimals?
     uint256 public strikePrice;
 
     /// @notice expiration timestamp of the option, represented as a unix timestamp
@@ -84,6 +85,8 @@ contract Otoken is ERC20PermitUpgradeable {
         underlyingAsset = _underlyingAsset;
         strikeAsset = _strikeAsset;
         collateralAssets = _collateralAssets;
+        collateralsAmounts = new uint256[](collateralAssets.length);
+        collateralsValues = new uint256[](collateralAssets.length);
         strikePrice = _strikePrice;
         expiryTimestamp = _expiryTimestamp;
         isPut = _isPut;
@@ -101,14 +104,37 @@ contract Otoken is ERC20PermitUpgradeable {
         view
         returns (
             address[] memory,
+            uint256[] memory,
             address,
             address,
             uint256,
             uint256,
-            bool
+            bool,
+            uint256
         )
     {
-        return (collateralAssets, underlyingAsset, strikeAsset, strikePrice, expiryTimestamp, isPut);
+        return (
+            collateralAssets,
+            collateralsAmounts,
+            underlyingAsset,
+            strikeAsset,
+            strikePrice,
+            expiryTimestamp,
+            isPut,
+            collaterizedTotalAmount
+        );
+    }
+
+    function getCollateralAssets() external view returns (address[] memory) {
+        return collateralAssets;
+    }
+
+    function getCollateralsAmounts() external view returns (uint256[] memory) {
+        return collateralsAmounts;
+    }
+
+    function getCollateralsValues() external view returns (uint256[] memory) {
+        return collateralsValues;
     }
 
     /**
@@ -135,15 +161,10 @@ contract Otoken is ERC20PermitUpgradeable {
             "Otoken: collateralAssets and collateralsAmountsForMint must be of same length"
         );
         for (uint256 i = 0; i < collateralAssets.length; i++) {
-            // TODO check if right
-            collateralAssetsValues[collateralAssets[i]] = collateralsValuesForMint[i].add(
-                collateralAssetsValues[collateralAssets[i]]
-            );
-            collateralsAmounts[collateralAssets[i]] = collateralsAmountsForMint[i].add(
-                collateralsAmounts[collateralAssets[i]]
-            );
-            totalCollateralValue = totalCollateralValue.add(collateralAssetsValues[collateralAssets[i]]);
+            collateralsValues[i] = collateralsValuesForMint[i].add(collateralsValues[i]);
+            collateralsAmounts[i] = collateralsAmounts[i].add(collateralsAmountsForMint[i]);
         }
+        collaterizedTotalAmount = collaterizedTotalAmount.add(amount);
         _mint(account, amount);
     }
 
@@ -154,8 +175,33 @@ contract Otoken is ERC20PermitUpgradeable {
      * @param amount amount to burn
      */
     function burnOtoken(address account, uint256 amount) external {
+        console.log("burn amount:", amount);
+        console.log("balance", balanceOf(account));
         require(msg.sender == controller, "Otoken: Only Controller can burn Otokens");
         _burn(account, amount);
+    }
+
+    function reduceCollaterization(
+        uint256[] calldata collateralsAmountsForReduce,
+        uint256[] calldata collateralsValuesForReduce,
+        uint256 oTokenAmountBurnt
+    ) external {
+        require(msg.sender == controller, "Otoken: Only Controller can burn Otokens");
+        require(
+            collateralAssets.length == collateralsValuesForReduce.length,
+            "Otoken: collateralAssets and collateralsValuesForReduce must be of same length"
+        );
+        require(
+            collateralAssets.length == collateralsAmountsForReduce.length,
+            "Otoken: collateralAssets and collateralsAmountsForReduce must be of same length"
+        );
+        for (uint256 i = 0; i < collateralAssets.length; i++) {
+            console.log("collateralsValuesForReduce[i]", collateralsValuesForReduce[i]);
+            console.log("collateralsAmountsForReduce[i]", collateralsAmountsForReduce[i]);
+            collateralsValues[i] = collateralsValues[i].sub(collateralsValuesForReduce[i]);
+            collateralsAmounts[i] = collateralsAmounts[i].sub(collateralsAmountsForReduce[i]);
+        }
+        collaterizedTotalAmount = collaterizedTotalAmount.sub(oTokenAmountBurnt);
     }
 
     /**

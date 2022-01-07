@@ -1,4 +1,4 @@
-pragma solidity 0.8.10;
+pragma solidity 0.8.9;
 
 import {OtokenSpawner} from "./OtokenSpawner.sol";
 import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
@@ -65,6 +65,7 @@ contract OtokenFactory is OtokenSpawner {
         require(_expiry > block.timestamp, "OtokenFactory: Can't create expired option");
         require(_expiry < MAX_EXPIRY, "OtokenFactory: Can't create option with expiry > 2345/12/31");
         // 8 hours = 3600 * 8 = 28800 seconds
+        // TODO restrict expiry to fridays
         require(_expiry.sub(28800).mod(86400) == 0, "OtokenFactory: Option has to expire 08:00 UTC");
         bytes32 id = _getOptionId(_underlyingAsset, _strikeAsset, _collateralAssets, _strikePrice, _expiry, _isPut);
         require(idToAddress[id] == address(0), "OtokenFactory: Option already created");

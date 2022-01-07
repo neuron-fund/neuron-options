@@ -1,7 +1,7 @@
 /**
  * SPDX-License-Identifier: UNLICENSED
  */
-pragma solidity 0.8.10;
+pragma solidity 0.8.9;
 pragma experimental ABIEncoderV2;
 
 import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
@@ -9,10 +9,12 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {OtokenInterface} from "../interfaces/OtokenInterface.sol";
 import {OracleInterface} from "../interfaces/OracleInterface.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import {FixedPointInt256 as FPI} from "../libs/FixedPointInt256.sol";
+import {FPI} from "../libs/FixedPointInt256.sol";
 import {MarginVault} from "../libs/MarginVault.sol";
 import {ArrayAddressUtils} from "../libs/ArrayAddressUtils.sol";
 import {Constants} from "./Constants.sol";
+
+import "hardhat/console.sol";
 
 /**
  * @title MarginCalculator
@@ -34,21 +36,21 @@ contract MarginCalculator is Ownable {
 
     /// @dev struct to store all needed vault details
     struct VaultDetails {
+        address shortOtoken;
         address shortUnderlyingAsset;
         address shortStrikeAsset;
+        uint256 shortAmount;
         address[] shortCollateralAssets;
         address longUnderlyingAsset;
         address longStrikeAsset;
         address[] longCollateralAssets;
         uint256 shortStrikePrice;
         uint256 shortExpiryTimestamp;
-        // TODO shortCollateralDecimals
-        uint256[] shortCollateralsDecimals;
         uint256 longStrikePrice;
         uint256 longExpiryTimestamp;
         uint256[] longCollateralsDecimals;
+        uint256[] collateralAmounts;
         uint256[] collateralsDecimals;
-        uint256 vaultType;
         bool isShortPut;
         bool isLongPut;
         bool hasLong;
@@ -58,11 +60,13 @@ contract MarginCalculator is Ownable {
 
     struct OTokenDetails {
         address[] collaterals; // yvUSDC
+        uint256[] collateralsAmounts; // yvUSDC
         address underlying; // WETH
         address strikeAsset; // USDC
         uint256 strikePrice;
         uint256 expiry;
         bool isPut;
+        uint256 collaterizedTotalAmount;
     }
 
     /// @dev oracle deviation value (1e27)
@@ -215,6 +219,7 @@ contract MarginCalculator is Ownable {
      * @param _isPut otoken type
      * @param _shockValue spot shock value
      */
+    //  TODO where spot shock used?
     function setSpotShock(
         address _underlying,
         address _strike,
@@ -331,67 +336,94 @@ contract MarginCalculator is Ownable {
      * @param _isPut otoken type
      * @return collateral required for a naked margin vault, in collateral asset decimals
      */
-    function getNakedMarginRequired(
-        address _underlying,
-        address _strike,
-        address[] calldata _collaterals,
-        uint256 _shortAmount,
-        uint256 _strikePrice,
-        uint256 _underlyingPrice,
-        uint256 _shortExpiryTimestamp,
-        uint256 _collateralDecimals,
-        bool _isPut
-    ) external view returns (uint256) {
-        bytes32 productHash = _getProductHash(_underlying, _strike, _collaterals, _isPut);
+    // function getNakedMarginRequired(
+    //     address _underlying,
+    //     address _strike,
+    //     address[] calldata _collaterals,
+    //     uint256 _shortAmount,
+    //     uint256 _strikePrice,
+    //     uint256 _underlyingPrice,
+    //     uint256 _shortExpiryTimestamp,
+    //     uint256 _collateralDecimals,
+    //     bool _isPut
+    // ) external view returns (uint256) {
+    //     bytes32 productHash = _getProductHash(_underlying, _strike, _collaterals, _isPut);
 
-        // scale short amount from 1e8 to 1e27 (oToken is always in 1e8)
-        FPI.FixedPointInt memory shortAmount = FPI.fromScaledUint(_shortAmount, BASE);
-        // scale short strike from 1e8 to 1e27
-        FPI.FixedPointInt memory shortStrike = FPI.fromScaledUint(_strikePrice, BASE);
-        // scale short underlying price from 1e8 to 1e27
-        FPI.FixedPointInt memory shortUnderlyingPrice = FPI.fromScaledUint(_underlyingPrice, BASE);
+    //     // scale short amount from 1e8 to 1e27 (oToken is always in 1e8)
+    //     FPI.FixedPointInt memory shortAmount = FPI.fromScaledUint(_shortAmount, BASE);
+    //     // scale short strike from 1e8 to 1e27
+    //     FPI.FixedPointInt memory shortStrike = FPI.fromScaledUint(_strikePrice, BASE);
+    //     // scale short underlying price from 1e8 to 1e27
+    //     FPI.FixedPointInt memory shortUnderlyingPrice = FPI.fromScaledUint(_underlyingPrice, BASE);
 
-        // return required margin, scaled by collateral asset decimals, explicitly rounded up
-        return
-            FPI.toScaledUint(
-                _getNakedMarginRequired(
-                    productHash,
-                    shortAmount,
-                    shortUnderlyingPrice,
-                    shortStrike,
-                    _shortExpiryTimestamp,
-                    _isPut
-                ),
-                _collateralDecimals,
-                false
-            );
+    //     // return required margin, scaled by collateral asset decimals, explicitly rounded up
+    //     return
+    //         FPI.toScaledUint(
+    //             _getNakedMarginRequired(
+    //                 productHash,
+    //                 shortAmount,
+    //                 shortUnderlyingPrice,
+    //                 shortStrike,
+    //                 _shortExpiryTimestamp,
+    //                 _isPut
+    //             ),
+    //             _collateralDecimals,
+    //             false
+    //         );
+    // }
+
+    /**
+     * @notice get an oToken's payout/cash value after expiry, in the collateral asset
+     * @param _otoken oToken address
+     * @param _amount amount of the oToken to calculate the payout for, always represented in 1e8
+     * @return amount of collateral to pay out for provided amount rate
+     */
+    function getPayout(address _otoken, uint256 _amount) public view returns (uint256[] memory) {
+        // payoutsRaw is amounts of each of collateral asset in collateral asset decimals to be paid out for 1e8 of the oToken
+        uint256[] memory payoutsRaw = getExpiredPayoutRate(_otoken);
+        uint256[] memory payouts = new uint256[](payoutsRaw.length);
+
+        for (uint256 i = 0; i < payoutsRaw.length; i++) {
+            // TODO is it possible to have significant precision loss here?
+            // TODO can it overflow uint256 on multiplication?
+            console.log("payoutsRaw[i]", payoutsRaw[i]);
+            console.log("_amount", _amount);
+            console.log("10**BASE", 10**BASE);
+            payouts[i] = payoutsRaw[i].mul(_amount).div(10**BASE);
+            console.log("payouts[i]", payouts[i]);
+        }
+
+        return payouts;
     }
 
     /**
      * @notice return the cash value of an expired oToken, denominated in collateral
      * @param _otoken oToken address
-     * @return how much collateral can be taken out by 1 otoken unit, scaled by 1e8,
+     * @return collateralsPayoutRate how much collateral can be taken out by 1 otoken unit, scaled by 1e8,
      * or how much collateral can be taken out for 1 (1e8) oToken
      */
-    function getExpiredPayoutRate(address _otoken) external view returns (uint256[] memory) {
+    function getExpiredPayoutRate(address _otoken) public view returns (uint256[] memory collateralsPayoutRate) {
         require(_otoken != address(0), "MarginCalculator: Invalid token address");
 
         OTokenDetails memory oTokenDetails = OTokenDetails(
-            new address[](0), // yvUSDC
+            new address[](0), // [yvUSDC, cUSDC, ...etc]
+            new uint256[](0), // [0, 200, ...etc]
             address(0), // WETH
             address(0), // USDC
             0,
             0,
-            false
+            false,
+            0
         );
-
         (
             oTokenDetails.collaterals, // yvUSDC
+            oTokenDetails.collateralsAmounts,
             oTokenDetails.underlying, // WETH
             oTokenDetails.strikeAsset, // USDC
             oTokenDetails.strikePrice,
             oTokenDetails.expiry,
-            oTokenDetails.isPut
+            oTokenDetails.isPut,
+            oTokenDetails.collaterizedTotalAmount
         ) = _getOtokenDetails(_otoken);
 
         require(block.timestamp >= oTokenDetails.expiry, "MarginCalculator: Otoken not expired yet");
@@ -405,33 +437,65 @@ contract MarginCalculator is Ownable {
             oTokenDetails.isPut
         );
 
-        // Amounts of collateral to transfer for 1 oToken
-        uint256[] memory collateralsPayoutRate = new uint256[](oTokenDetails.collaterals.length);
+        console.log("cashValueInStrike round down", cashValueInStrike.toScaledUint(BASE, true));
+        console.log("cashValueInStrike round up", cashValueInStrike.toScaledUint(BASE, false));
 
+        uint256[] memory otokenCollateralValues = OtokenInterface(_otoken).getCollateralsValues();
+        uint256 oTokenTotalCollateralValue = uint256ArraySum(otokenCollateralValues);
+        console.log("oTokenTotalCollateralValue", oTokenTotalCollateralValue);
+
+        console.log("oTokenDetails.collaterizedTotalAmount", oTokenDetails.collaterizedTotalAmount);
+        // FPI.FixedPointInt memory strikePriceFpi = FPI.fromScaledUint(oTokenDetails.strikePrice, BASE);
+        // TODO this is only put calculations, add for call
+        // Amounts of collateral to transfer for 1 oToken
+        collateralsPayoutRate = new uint256[](oTokenDetails.collaterals.length);
+        // TODO this calculations should be done only once after oToken expiry but not on every redeem as its now. It will help save gas for redeemers
         for (uint256 i = 0; i < oTokenDetails.collaterals.length; i++) {
             // the exchangeRate was scaled by 1e8, if 1e8 otoken can take out 1 USDC, the exchangeRate is currently 1e8
             // we want to return: how much USDC units can be taken out by 1 (1e8 units) oToken
             uint256 collateralDecimals = uint256(IERC20Metadata(oTokenDetails.collaterals[i]).decimals());
 
-            // TODO should we calculate this ratio right in oToken on mint?
-            FPI.FixedPointInt memory collateralRatio = _getCollateralizationRatio(
-                _otoken,
-                oTokenDetails.collaterals[i]
+            // TODO possible gas optimization, get rid of external call for each collateral and get values as array with "_getOtokenDetails"
+            // Collateral value is calculated in strike asset, used BASE decimals only for convinience
+            FPI.FixedPointInt memory collateralValue = FPI.fromScaledUint(otokenCollateralValues[i], BASE);
+            console.log("otokenCollateralValues[i]", otokenCollateralValues[i]);
+            FPI.FixedPointInt memory collateralPayoutValueInStrike = collateralValue.mul(cashValueInStrike).div(
+                FPI.fromScaledUint(oTokenTotalCollateralValue, BASE)
             );
-            // How much cash of total cash paid for 1 oToken should be payed by this collateral
-            FPI.FixedPointInt memory cashValueInStrikeForCollateral = cashValueInStrike.mul(collateralRatio);
 
-            // How much this collateral amount should we transfer for 1 oToken
+            console.log("collateralPayoutValueInStrike", collateralPayoutValueInStrike.toScaledUint(BASE, false));
+
             collateralsPayoutRate[i] = _convertAmountOnExpiryPrice(
-                cashValueInStrikeForCollateral,
+                collateralPayoutValueInStrike,
                 oTokenDetails.strikeAsset,
                 oTokenDetails.collaterals[i],
                 oTokenDetails.expiry
-            ).toScaledUint(collateralDecimals, true);
+            ).toScaledUint(collateralDecimals, false);
         }
-
         return collateralsPayoutRate;
     }
+
+    /**
+     * @notice returns the cash value of provided amount of assets on expiry price, denominated in usd
+     * @param _assets - array of addresses of assets
+     * @param _assetsAmounts - amounts of assets, should be same length array as assets
+     * @param _expiry - timestamp to get price at
+     * @return totalValue - total value in usd of all provided assets
+     */
+    // function getAssetsTotalValueExpiry(
+    //     address[] memory _assets,
+    //     uint256[] memory _assetsAmounts,
+    //     uint256 _expiry
+    // ) internal view returns (FPI.FixedPointInt memory totalValue) {
+    //     for (uint256 i = 0; i < _assets.length; i++) {
+    //         uint256 assetDecimals = uint256(IERC20Metadata(_assets[i]).decimals());
+    //         (uint256 price, bool priceFinalized) = oracle.getExpiryPrice(_assets[i], _expiry);
+    //         require(priceFinalized, "MarginCalculator: price at expiry not finalized yet");
+    //         totalValue = totalValue.add(
+    //             FPI.fromScaledUint(price, BASE).mul(FPI.fromScaledUint(_assetsAmounts[i], assetDecimals))
+    //         );
+    //     }
+    // }
 
     /**
       @notice return the amounts of collateral from the vault to use for minting amount of oToken
@@ -446,191 +510,180 @@ contract MarginCalculator is Ownable {
     }
 
     /**
-     * @notice check if a specific vault is undercollateralized at a specific chainlink round
-     * @dev if the vault is of type 0, the function will revert
-     * @param _vault vault struct
-     * @param _vaultType vault type (0 for max loss/spread and 1 for naked margin vault)
-     * @param _vaultLatestUpdate vault latest update (timestamp when latest vault state change happened)
-     * @param _roundId chainlink round id
-     * @return isLiquidatable, true if vault is undercollateralized, liquidation price and collateral dust amount
-     */
-    function isLiquidatable(
-        MarginVault.Vault memory _vault,
-        uint256 _vaultType,
-        uint256 _vaultLatestUpdate,
-        uint256 _roundId
-    )
-        external
-        view
-        returns (
-            bool,
-            uint256,
-            uint256[] memory
-        )
-    {
-        // liquidation is only supported for naked margin vault
-        require(_vaultType == 1, "MarginCalculator: invalid vault type to liquidate");
-
-        VaultDetails memory vaultDetails = _getVaultDetails(_vault, _vaultType);
-
-        // can not liquidate vault that have no short position
-        if (!vaultDetails.hasShort) {
-            // uint256[] memory emptyArray = ;
-            return (false, 0, new uint256[](vaultDetails.shortCollateralAssets.length));
-        }
-
-        require(
-            block.timestamp < vaultDetails.shortExpiryTimestamp,
-            "MarginCalculator: can not liquidate expired position"
-        );
-
-        (uint256 price, uint256 timestamp) = oracle.getChainlinkRoundData(
-            vaultDetails.shortUnderlyingAsset,
-            uint80(_roundId)
-        );
-
-        // check that price timestamp is after latest timestamp the vault was updated at
-        require(
-            timestamp > _vaultLatestUpdate,
-            "MarginCalculator: auction timestamp should be post vault latest update"
-        );
-
-        // another struct to store some useful short otoken details, to avoid stack to deep error
-        ShortScaledDetails memory shortDetails = ShortScaledDetails({
-            shortAmount: FPI.fromScaledUint(_vault.shortAmounts[0], BASE),
-            shortStrike: FPI.fromScaledUint(vaultDetails.shortStrikePrice, BASE),
-            shortUnderlyingPrice: FPI.fromScaledUint(price, BASE)
-        });
-
-        bytes32 productHash = _getProductHash(
-            vaultDetails.shortUnderlyingAsset,
-            vaultDetails.shortStrikeAsset,
-            vaultDetails.shortCollateralAssets,
-            vaultDetails.isShortPut
-        );
-
-        // convert vault collateral to a fixed point (1e27) from collateral decimals
-        // TODO rewrite correctly without using zero index
-        FPI.FixedPointInt memory depositedCollateral = FPI.fromScaledUint(
-            _vault.collateralAmounts[0],
-            vaultDetails.collateralsDecimals[0]
-        );
-
-        FPI.FixedPointInt memory collateralRequired = _getNakedMarginRequired(
-            productHash,
-            shortDetails.shortAmount,
-            shortDetails.shortUnderlyingPrice,
-            shortDetails.shortStrike,
-            vaultDetails.shortExpiryTimestamp,
-            vaultDetails.isShortPut
-        );
-
-        // if collateral required <= collateral in the vault, the vault is not liquidatable
-        if (collateralRequired.isLessThanOrEqual(depositedCollateral)) {
-            return (false, 0, new uint256[](vaultDetails.shortCollateralAssets.length));
-        }
-
-        FPI.FixedPointInt memory cashValue = _getCashValue(
-            shortDetails.shortStrike,
-            shortDetails.shortUnderlyingPrice,
-            vaultDetails.isShortPut
-        );
-
-        // get the amount of collateral per 1 repaid otoken
-        uint256 debtPrice = _getDebtPrice(
-            depositedCollateral,
-            shortDetails.shortAmount,
-            cashValue,
-            shortDetails.shortUnderlyingPrice,
-            timestamp,
-            vaultDetails.collateralsDecimals[0],
-            vaultDetails.isShortPut
-        );
-
-        // dusts array of all shortCollateralAssets
-        uint256[] memory dusts = new uint256[](vaultDetails.shortCollateralAssets.length);
-        for (uint256 i = 0; i < vaultDetails.shortCollateralAssets.length; i++) {
-            dusts[i] = dust[vaultDetails.shortCollateralAssets[i]];
-        }
-
-        return (true, debtPrice, dusts);
-    }
-
-    /**
      * @notice calculate required collateral margin for a vault
      * @param _vault theoretical vault that needs to be checked
-     * @param _vaultType vault type
      * @return the vault collateral amount, and marginRequired the minimal amount of collateral needed in a vault, scaled to 1e27
      */
-    function getMarginRequired(MarginVault.Vault memory _vault, uint256 _vaultType)
-        external
-        view
-        returns (
-            bool,
-            FPI.FixedPointInt[] memory,
-            FPI.FixedPointInt[] memory
-        )
-    {
-        VaultDetails memory vaultDetail = _getVaultDetails(_vault, _vaultType);
-        return _getMarginRequired(_vault, vaultDetail);
-    }
+    // TODO this function is unused
+    // function getMarginRequired(MarginVault.Vault memory _vault)
+    //     external
+    //     view
+    //     returns (
+    //         bool,
+    //         FPI.FixedPointInt[] memory,
+    //         FPI.FixedPointInt[] memory
+    //     )
+    // {
+    //     VaultDetails memory vaultDetail = _getVaultDetails(_vault);
+    //     return _getMarginRequired(_vault, vaultDetail);
+    // }
 
     /**
      * @notice returns the amount of collateral that can be removed from an actual or a theoretical vault
      * @dev return amount is denominated in the collateral asset for the oToken in the vault, or the collateral asset in the vault
      * @param _vault theoretical vault that needs to be checked
-     * @param _vaultType vault type (0 for spread/max loss, 1 for naked margin)
      * @return excessCollateral the amount by which the margin is above or below the required amount
      * @return isExcess True if there is excess margin in the vault, False if there is a deficit of margin in the vault
     //  TODO return amounts which margin bellow the required amount
      * if True, collateral can be taken out from the vault, if False, additional collateral needs to be added to vault
      */
-    function getExcessCollateral(MarginVault.Vault memory _vault, uint256 _vaultType)
-        public
-        view
-        returns (uint256[] memory, bool)
-    {
-        // TODO just use vault's usedCollateralAmounts
-        VaultDetails memory vaultDetails = _getVaultDetails(_vault, _vaultType);
+    function getExcessCollateral(MarginVault.Vault memory _vault) public view returns (uint256[] memory, bool) {
+        // TODO should use usedCollateralAmounts or sub amounts from getPayout
+        VaultDetails memory vaultDetails = _getVaultDetails(_vault);
 
         // include all the checks for to ensure the vault is valid
         _checkIsValidVault(_vault, vaultDetails);
 
+        bool hasExpiredShort = vaultDetails.hasShort &&
+            OtokenInterface(vaultDetails.shortOtoken).expiryTimestamp() <= block.timestamp;
+
+        uint256[] memory excessCollateral = _vault.unusedCollateralAmounts;
+
         // if the vault contains no oTokens, return the amount of collateral
-        if (!vaultDetails.hasShort && !vaultDetails.hasLong) {
-            uint256[] memory amount = vaultDetails.hasCollateral
-                ? _vault.collateralAmounts
-                : new uint256[](_vault.collateralAmounts.length);
-            return (amount, true);
+        if (!hasExpiredShort) {
+            // TODO check hasCollateral everywhere used it or not
+            return (excessCollateral, true);
         }
 
-        // get required margin, denominated in collateral, scaled in 1e27
+        OTokenDetails memory oTokenDetails = OTokenDetails(
+            new address[](0), // [yvUSDC, cUSDC, ...etc]
+            new uint256[](0), // [0, 200, ...etc]
+            address(0), // WETH
+            address(0), // USDC
+            0,
+            0,
+            false,
+            0
+        );
         (
-            bool isExcess,
-            FPI.FixedPointInt[] memory collateralsAmounts,
-            FPI.FixedPointInt[] memory collateralRequired
-        ) = _getMarginRequired(_vault, vaultDetails);
-        FPI.FixedPointInt[] memory excessCollaterals = new FPI.FixedPointInt[](collateralsAmounts.length);
+            oTokenDetails.collaterals, // yvUSDC
+            oTokenDetails.collateralsAmounts,
+            oTokenDetails.underlying, // WETH
+            oTokenDetails.strikeAsset, // USDC
+            oTokenDetails.strikePrice,
+            oTokenDetails.expiry,
+            oTokenDetails.isPut,
+            oTokenDetails.collaterizedTotalAmount
+        ) = _getOtokenDetails(_vault.shortOtoken);
 
-        for (uint256 i = 0; i < collateralsAmounts.length; i++) {
-            excessCollaterals[i] = collateralsAmounts[i].sub(collateralRequired[i]);
+        // Strike - current price USDC
+        // How much strike to redeem for one (10**8) oToken
+        FPI.FixedPointInt memory cashValueInStrikeForOneToken = _getExpiredCashValue(
+            oTokenDetails.underlying,
+            oTokenDetails.strikeAsset,
+            oTokenDetails.expiry,
+            oTokenDetails.strikePrice,
+            oTokenDetails.isPut
+        );
+
+        uint256 oTokenTotalCollaterizedAmount = OtokenInterface(vaultDetails.shortOtoken).collaterizedTotalAmount();
+
+        if (vaultDetails.hasShort) {
+            // This payout represents how much redeemer will get for each 1e8 of oToken. But from the vault side we should also calculate ratio
+            // of amounts of each collateral provided by vault to same total amount used for mint total number of oTokens
+            // For example: one vault provided [200 USDC, 0 DAI], and another vault [0 USDC, 200 DAI] for the oToken mint
+            // and get payout returns [100 USDC, 100 DAI] first vault pays all the 100 USDC and the second one all the 100 DAI
+            uint256[] memory payoutsRaw = getExpiredPayoutRate(vaultDetails.shortOtoken);
+            uint256[] memory oTokenCollateralsValues = OtokenInterface(vaultDetails.shortOtoken).getCollateralsValues();
+
+            for (uint256 i = 0; i < _vault.collateralAssets.length; i++) {
+                console.log("----------------------------------", i);
+                console.log("PAYOUTS RAW ", payoutsRaw[i]);
+                uint256 collateralAmountProvidedByVault = _vault.usedCollateralAmounts[i];
+                uint256 collateralValueProvidedByVault = _vault.usedCollateralValues[i];
+                console.log("oTokenCollateralsAmounts", oTokenCollateralsValues[i]);
+                console.log("collateralValueProvidedByVault", collateralValueProvidedByVault);
+                if (oTokenCollateralsValues[i] == 0 || collateralValueProvidedByVault == 0) {
+                    continue;
+                }
+
+                uint256 collateralDecimals = IERC20Metadata(_vault.collateralAssets[i]).decimals();
+
+                // This ratio represents for specific collateral what part does this vault cover total collaterization of oToken by this collateral
+                FPI.FixedPointInt memory vaultCollateralRatio = FPI
+                    .fromScaledUint(collateralValueProvidedByVault, BASE)
+                    .div(FPI.fromScaledUint(oTokenCollateralsValues[i], BASE));
+
+                // FPI.FixedPointInt memory payoutsFPI = FPI.fromScaledUint(payoutsRaw[i], collateralDecimals);
+                // FPI.FixedPointInt memory oTokenTotalMintedFPI = FPI.fromScaledUint(oTokenTotalMinted, BASE);
+
+                console.log(
+                    "TOTAL OPTION COLLATERAL PAYOUT",
+                    FPI
+                        .fromScaledUint(payoutsRaw[i], collateralDecimals)
+                        .mul(FPI.fromScaledUint(oTokenTotalCollaterizedAmount, BASE))
+                        .toScaledUint(collateralDecimals, false)
+                );
+
+                // TODO possible gas optimization getExpiredPayoutRate returns payoutsRaw and just before return transforms it to uint
+                // Can add second return to prevent transform to FPI back here
+                uint256 redeemableCollateral = FPI
+                    .fromScaledUint(payoutsRaw[i], collateralDecimals)
+                    .mul(FPI.fromScaledUint(oTokenTotalCollaterizedAmount, BASE))
+                    .mul(vaultCollateralRatio)
+                    .toScaledUint(collateralDecimals, false);
+
+                excessCollateral[i] = excessCollateral[i].add(collateralAmountProvidedByVault).sub(
+                    redeemableCollateral
+                );
+            }
+            return (excessCollateral, true);
+        } else {
+            // TODO hasLong?
         }
+    }
 
-        uint256[] memory collateralsDecimals = vaultDetails.hasLong
-            ? new uint256[](1)
-            : new uint256[](vaultDetails.shortCollateralAssets.length);
+    function calculatePutVaultCollateralRedeem(
+        address collateralAddress,
+        uint256 usedCollateralValue,
+        FPI.FixedPointInt memory vaultTotalCollateralValue,
+        FPI.FixedPointInt memory cashValueInStrikeForVaultMinted,
+        address strikeAsset,
+        uint256 expiry
+    ) internal view returns (uint256) {
+        uint256 collateralDecimals = IERC20Metadata(collateralAddress).decimals();
+        FPI.FixedPointInt memory collateralRatio = FPI.fromScaledUint(usedCollateralValue, BASE).div(
+            vaultTotalCollateralValue
+        );
 
-        uint256[] memory excessCollateralExternal = new uint256[](collateralsDecimals.length);
+        FPI.FixedPointInt memory valueInStrikeToPayWithCollateral = collateralRatio.mul(
+            cashValueInStrikeForVaultMinted
+        );
+        console.log("valueInStrikeToPayWithCollateral", valueInStrikeToPayWithCollateral.toScaledUint(BASE, false));
+        FPI.FixedPointInt memory redeemableCollateral = _convertAmountOnExpiryPrice(
+            valueInStrikeToPayWithCollateral,
+            strikeAsset,
+            collateralAddress,
+            expiry
+        );
+        console.log(
+            "redeemableCollateral.toScaledUint(collateralDecimals, false);",
+            redeemableCollateral.toScaledUint(collateralDecimals, false)
+        );
+        return redeemableCollateral.toScaledUint(collateralDecimals, false);
+    }
 
-        for (uint256 i = 0; i < collateralsDecimals.length; i++) {
-            // if is excess, truncate the tailing digits in excessCollateralExternal calculation
-            excessCollateralExternal[i] = excessCollaterals[i].toScaledUint(
-                vaultDetails.hasLong ? vaultDetails.longCollateralsDecimals[i] : vaultDetails.collateralsDecimals[i],
-                isExcess
-            );
+    /**
+     * @notice calculates sum of uint256 array
+     * @param _array uint256[] memory
+     * @return uint256 sum of all elements in _array
+     */
+    function uint256ArraySum(uint256[] memory _array) internal pure returns (uint256) {
+        uint256 sum = 0;
+        for (uint256 i = 0; i < _array.length; i++) {
+            sum = sum.add(_array[i]);
         }
-
-        return (excessCollateralExternal, isExcess);
+        return sum;
     }
 
     /**
@@ -662,7 +715,7 @@ contract MarginCalculator is Ownable {
             _strike,
             _expiryTimestamp
         );
-
+        console.log("underlyingPriceInStrike", underlyingPriceInStrike.toScaledUint(BASE, false));
         return _getCashValue(strikePrice, underlyingPriceInStrike, _isPut);
     }
 
@@ -683,164 +736,121 @@ contract MarginCalculator is Ownable {
      * @return the vault collateral amount, and marginRequired the minimal amount of collateral needed in a vault,
      * scaled to 1e27
      */
-    function _getMarginRequired(MarginVault.Vault memory _vault, VaultDetails memory _vaultDetails)
-        internal
-        view
-        returns (
-            bool,
-            FPI.FixedPointInt[] memory,
-            FPI.FixedPointInt[] memory
-        )
-    {
-        FPI.FixedPointInt memory shortAmount = _vaultDetails.hasShort
-            ? FPI.fromScaledUint(_vault.shortAmounts[0], BASE)
-            : ZERO;
-        FPI.FixedPointInt memory longAmount = _vaultDetails.hasLong
-            ? FPI.fromScaledUint(_vault.longAmounts[0], BASE)
-            : ZERO;
-        FPI.FixedPointInt[] memory collateralsAmounts;
-        for (uint256 i = 0; i < _vault.collateralAmounts.length; i++) {
-            collateralsAmounts[i] = _vaultDetails.hasCollateral
-                ? FPI.fromScaledUint(_vault.collateralAmounts[i], _vaultDetails.collateralsDecimals[i])
-                : ZERO;
-        }
-        FPI.FixedPointInt memory shortStrike = _vaultDetails.hasShort // TODO is BASE right amount of decimals for strike price? strike price asset can have not 8 decimals
-            ? FPI.fromScaledUint(_vaultDetails.shortStrikePrice, BASE)
-            : ZERO;
+    // function _getMarginRequired(MarginVault.Vault memory _vault, VaultDetails memory _vaultDetails)
+    //     internal
+    //     view
+    //     returns (
+    //         bool,
+    //         FPI.FixedPointInt[] memory,
+    //         FPI.FixedPointInt[] memory
+    //     )
+    // {
+    //     FPI.FixedPointInt memory shortAmount = _vaultDetails.hasShort
+    //         ? FPI.fromScaledUint(_vault.shortAmount, BASE)
+    //         : ZERO;
+    //     FPI.FixedPointInt memory longAmount = _vaultDetails.hasLong
+    //         ? FPI.fromScaledUint(_vault.longAmounts[0], BASE)
+    //         : ZERO;
+    //     FPI.FixedPointInt[] memory collateralsAmounts;
+    //     for (uint256 i = 0; i < _vault.collateralAmounts.length; i++) {
+    //         collateralsAmounts[i] = _vaultDetails.hasCollateral
+    //             ? FPI.fromScaledUint(_vault.collateralAmounts[i], _vaultDetails.collateralsDecimals[i])
+    //             : ZERO;
+    //     }
+    //     FPI.FixedPointInt memory shortStrike = _vaultDetails.hasShort // TODO is BASE right amount of decimals for strike price? strike price asset can have not 8 decimals
+    //         ? FPI.fromScaledUint(_vaultDetails.shortStrikePrice, BASE)
+    //         : ZERO;
 
-        // struct to avoid stack too deep error
-        OtokenDetails memory otokenDetails = OtokenDetails(
-            _vaultDetails.hasShort ? _vaultDetails.shortUnderlyingAsset : _vaultDetails.longUnderlyingAsset,
-            _vaultDetails.hasShort ? _vaultDetails.shortCollateralAssets : new address[](0),
-            _vaultDetails.hasShort ? _vaultDetails.longCollateralAssets : new address[](0),
-            _vaultDetails.hasShort ? _vaultDetails.shortStrikeAsset : _vaultDetails.longStrikeAsset,
-            _vaultDetails.hasShort ? _vaultDetails.shortExpiryTimestamp : _vaultDetails.longExpiryTimestamp,
-            _vaultDetails.hasShort ? _vaultDetails.isShortPut : _vaultDetails.isLongPut
-        );
+    //     // struct to avoid stack too deep error
+    //     OtokenDetails memory otokenDetails = OtokenDetails(
+    //         _vaultDetails.hasShort ? _vaultDetails.shortUnderlyingAsset : _vaultDetails.longUnderlyingAsset,
+    //         _vaultDetails.hasShort ? _vaultDetails.shortCollateralAssets : new address[](0),
+    //         _vaultDetails.hasShort ? _vaultDetails.longCollateralAssets : new address[](0),
+    //         _vaultDetails.hasShort ? _vaultDetails.shortStrikeAsset : _vaultDetails.longStrikeAsset,
+    //         _vaultDetails.hasShort ? _vaultDetails.shortExpiryTimestamp : _vaultDetails.longExpiryTimestamp,
+    //         _vaultDetails.hasShort ? _vaultDetails.isShortPut : _vaultDetails.isLongPut
+    //     );
 
-        if (block.timestamp < otokenDetails.otokenExpiry) {
-            // it's not expired, return amount of margin required based on vault type
-            // TODO undercollaterized vault
-            if (_vaultDetails.vaultType == 1) {
-                // this is a naked margin vault
-                // fetch dust amount for otoken collateral asset as FixedPointInt, assuming dust is already scaled by collateral decimals
-                // TODO re-enable
-                // FPI.FixedPointInt memory dustAmount = FPI.fromScaledUint(
-                //     dust[_vaultDetails.shortCollateralAsset],
-                //     _vaultDetails.collateralDecimals
-                // );
-                // // check that collateral deposited in naked margin vault is greater than dust amount for that particular collateral asset
-                // if (collateralsAmount.isGreaterThan(ZERO)) {
-                //     require(
-                //         collateralAmount.isGreaterThan(dustAmount),
-                //         "MarginCalculator: naked margin vault should have collateral amount greater than dust amount"
-                //     );
-                // }
-                // // get underlying asset price for short option
-                // FPI.FixedPointInt memory shortUnderlyingPrice = FPI
-                //     .fromScaledUint(
-                //         oracle.getPrice(_vaultDetails.shortUnderlyingAsset),
-                //         BASE
-                //     );
-                // // encode product hash
-                // bytes32 productHash = _getProductHash(
-                //     _vaultDetails.shortUnderlyingAsset,
-                //     _vaultDetails.shortStrikeAsset,
-                //     _vaultDetails.shortCollateralAsset,
-                //     _vaultDetails.isShortPut
-                // );
-                // // return amount of collateral in vault and needed collateral amount for margin
-                // return (
-                //     collateralAmount,
-                //     _getNakedMarginRequired(
-                //         productHash,
-                //         shortAmount,
-                //         shortUnderlyingPrice,
-                //         shortStrike,
-                //         otokenDetails.otokenExpiry,
-                //         otokenDetails.isPut
-                //     )
-                // );
-            } else {
-                // this is a fully collateralized vault
-                FPI.FixedPointInt memory longStrike = _vaultDetails.hasLong
-                    ? FPI.fromScaledUint(_vaultDetails.longStrikePrice, BASE)
-                    : ZERO;
-                if (otokenDetails.isPut) {
-                    FPI.FixedPointInt memory strikeNeeded = _getPutSpreadMarginRequired(
-                        shortAmount,
-                        longAmount,
-                        shortStrike,
-                        longStrike
-                    );
-                    // convert amount to be denominated in collateral
+    //     if (block.timestamp < otokenDetails.otokenExpiry) {
+    //         // it's not expired, return amount of margin required based on vault type
+    //         // this is a fully collateralized vault
+    //         FPI.FixedPointInt memory longStrike = _vaultDetails.hasLong
+    //             ? FPI.fromScaledUint(_vaultDetails.longStrikePrice, BASE)
+    //             : ZERO;
+    //         if (otokenDetails.isPut) {
+    //             FPI.FixedPointInt memory strikeNeeded = _getPutSpreadMarginRequired(
+    //                 shortAmount,
+    //                 longAmount,
+    //                 shortStrike,
+    //                 longStrike
+    //             );
+    //             // convert amount to be denominated in collateral
 
-                    (bool isEnoughCollaterized, FPI.FixedPointInt[] memory collateralsRequired) = _getEnoughToCover(
-                        strikeNeeded,
-                        otokenDetails.otokenStrikeAsset,
-                        _vaultDetails.shortCollateralAssets,
-                        collateralsAmounts
-                    );
-                    return (isEnoughCollaterized, collateralsAmounts, collateralsRequired);
-                } else {
-                    FPI.FixedPointInt memory underlyingNeeded = _getCallSpreadMarginRequired(
-                        shortAmount,
-                        longAmount,
-                        shortStrike,
-                        longStrike
-                    );
-                    FPI.FixedPointInt[] memory requiredAmounts = new FPI.FixedPointInt[](1);
-                    requiredAmounts[0] = _convertAmountOnLivePrice(
-                        underlyingNeeded,
-                        otokenDetails.otokenUnderlyingAsset,
-                        // TODO not use first value of array
-                        otokenDetails.otokenLongCollateralAssets[0]
-                    );
-                    // convert amount to be denominated in collateral
-                    // TODO Call option
-                    return (false, collateralsAmounts, requiredAmounts);
-                }
-            }
-        } else {
-            // TODO when expired
-            // the vault has expired. calculate the cash value of all the minted short options
-            FPI.FixedPointInt memory shortCashValue = _vaultDetails.hasShort
-                ? _getExpiredCashValue(
-                    _vaultDetails.shortUnderlyingAsset,
-                    _vaultDetails.shortStrikeAsset,
-                    _vaultDetails.shortExpiryTimestamp,
-                    _vaultDetails.shortStrikePrice,
-                    otokenDetails.isPut
-                )
-                : ZERO;
-            FPI.FixedPointInt memory longCashValue = _vaultDetails.hasLong
-                ? _getExpiredCashValue(
-                    _vaultDetails.longUnderlyingAsset,
-                    _vaultDetails.longStrikeAsset,
-                    _vaultDetails.longExpiryTimestamp,
-                    _vaultDetails.longStrikePrice,
-                    otokenDetails.isPut
-                )
-                : ZERO;
+    //             (bool isEnoughCollaterized, FPI.FixedPointInt[] memory collateralsRequired) = _getEnoughToCover(
+    //                 strikeNeeded,
+    //                 otokenDetails.otokenStrikeAsset,
+    //                 _vaultDetails.shortCollateralAssets,
+    //                 collateralsAmounts
+    //             );
+    //             return (isEnoughCollaterized, collateralsAmounts, collateralsRequired);
+    //         } else {
+    //             FPI.FixedPointInt memory underlyingNeeded = _getCallSpreadMarginRequired(
+    //                 shortAmount,
+    //                 longAmount,
+    //                 shortStrike,
+    //                 longStrike
+    //             );
+    //             FPI.FixedPointInt[] memory requiredAmounts = new FPI.FixedPointInt[](1);
+    //             requiredAmounts[0] = _convertAmountOnLivePrice(
+    //                 underlyingNeeded,
+    //                 otokenDetails.otokenUnderlyingAsset,
+    //                 // TODO not use first value of array
+    //                 otokenDetails.otokenLongCollateralAssets[0]
+    //             );
+    //             // convert amount to be denominated in collateral
+    //             // TODO Call option
+    //             return (false, collateralsAmounts, requiredAmounts);
+    //         }
+    //     } else {
+    //         // TODO when expired
+    //         // the vault has expired. calculate the cash value of all the minted short options
+    //         FPI.FixedPointInt memory shortCashValue = _vaultDetails.hasShort
+    //             ? _getExpiredCashValue(
+    //                 _vaultDetails.shortUnderlyingAsset,
+    //                 _vaultDetails.shortStrikeAsset,
+    //                 _vaultDetails.shortExpiryTimestamp,
+    //                 _vaultDetails.shortStrikePrice,
+    //                 otokenDetails.isPut
+    //             )
+    //             : ZERO;
+    //         FPI.FixedPointInt memory longCashValue = _vaultDetails.hasLong
+    //             ? _getExpiredCashValue(
+    //                 _vaultDetails.longUnderlyingAsset,
+    //                 _vaultDetails.longStrikeAsset,
+    //                 _vaultDetails.longExpiryTimestamp,
+    //                 _vaultDetails.longStrikePrice,
+    //                 otokenDetails.isPut
+    //             )
+    //             : ZERO;
 
-            FPI.FixedPointInt memory valueInStrike = _getExpiredSpreadCashValue(
-                shortAmount,
-                longAmount,
-                shortCashValue,
-                longCashValue
-            );
+    //         FPI.FixedPointInt memory valueInStrike = _getExpiredSpreadCashValue(
+    //             shortAmount,
+    //             longAmount,
+    //             shortCashValue,
+    //             longCashValue
+    //         );
 
-            FPI.FixedPointInt[] memory requiredAmounts = new FPI.FixedPointInt[](1);
-            requiredAmounts[0] = _convertAmountOnExpiryPrice(
-                valueInStrike,
-                otokenDetails.otokenStrikeAsset,
-                otokenDetails.otokenShortCollateralAssets[0],
-                otokenDetails.otokenExpiry
-            );
-            // convert amount to be denominated in collateral
-            return (false, collateralsAmounts, requiredAmounts);
-        }
-    }
+    //         FPI.FixedPointInt[] memory requiredAmounts = new FPI.FixedPointInt[](1);
+    //         requiredAmounts[0] = _convertAmountOnExpiryPrice(
+    //             valueInStrike,
+    //             otokenDetails.otokenStrikeAsset,
+    //             otokenDetails.otokenShortCollateralAssets[0],
+    //             otokenDetails.otokenExpiry
+    //         );
+    //         // convert amount to be denominated in collateral
+    //         return (false, collateralsAmounts, requiredAmounts);
+    //     }
+    // }
 
     /**
      * @notice calculates is total price of aseets in array B is greater or equal to total price of asset A amount, based on live price
@@ -1148,29 +1158,25 @@ contract MarginCalculator is Ownable {
     /**
      * @notice get vault details to save us from making multiple external calls
      * @param _vault vault struct
-     * @param _vaultType vault type, 0 for max loss/spreads and 1 for naked margin vault
      * @return vault details in VaultDetails struct
      */
-    function _getVaultDetails(MarginVault.Vault memory _vault, uint256 _vaultType)
-        internal
-        view
-        returns (VaultDetails memory)
-    {
+    function _getVaultDetails(MarginVault.Vault memory _vault) internal view returns (VaultDetails memory) {
         VaultDetails memory vaultDetails = VaultDetails(
+            address(0), // address shortOtoken;
             address(0), // address shortUnderlyingAsset;
             address(0), // address shortStrikeAsset;
+            0, // uint256[] shortAmount;
             new address[](0), // address[] shortCollateralAssets;
             address(0), // address longUnderlyingAsset;
             address(0), // address longStrikeAsset;
             new address[](0), // address longCollateralAsset;
             0, // uint256 shortStrikePrice;
             0, // uint256 shortExpiryTimestamp;
-            new uint256[](0), // uint256[] shortCollateralsDecimals;
             0, // uint256 longStrikePrice;
             0, // uint256 longExpiryTimestamp;
             new uint256[](0), // uint256 longCollateralDecimals;
+            new uint256[](0), // uint256[] collateralAmounts;
             new uint256[](0), // uint256[] collateralsDecimals;
-            0, // uint256 vaultType;
             false, // bool isShortPut;
             false, // bool isLongPut;
             false, // bool hasLong;
@@ -1180,21 +1186,25 @@ contract MarginCalculator is Ownable {
 
         // check if vault has long, short otoken and collateral asset
         vaultDetails.hasLong = _isNotEmpty(_vault.longOtokens);
-        vaultDetails.hasShort = _isNotEmpty(_vault.shortOtokens);
+        vaultDetails.hasShort = _vault.shortOtoken != address(0);
         vaultDetails.hasCollateral = _isNotEmpty(_vault.collateralAssets);
 
-        vaultDetails.vaultType = _vaultType;
+        vaultDetails.shortOtoken = _vault.shortOtoken;
+        vaultDetails.shortAmount = _vault.shortAmount;
+        vaultDetails.collateralAmounts = _vault.collateralAmounts;
 
         // get vault long otoken if available
         if (vaultDetails.hasLong) {
             OtokenInterface long = OtokenInterface(_vault.longOtokens[0]);
             (
                 vaultDetails.longCollateralAssets,
+                ,
                 vaultDetails.longUnderlyingAsset,
                 vaultDetails.longStrikeAsset,
                 vaultDetails.longStrikePrice,
                 vaultDetails.longExpiryTimestamp,
-                vaultDetails.isLongPut
+                vaultDetails.isLongPut,
+
             ) = _getOtokenDetails(address(long));
             vaultDetails.longCollateralsDecimals = new uint256[](vaultDetails.longCollateralAssets.length);
             for (uint256 i = 0; i < vaultDetails.longCollateralAssets.length; i++) {
@@ -1205,26 +1215,22 @@ contract MarginCalculator is Ownable {
 
         // get vault short otoken if available
         if (vaultDetails.hasShort) {
-            OtokenInterface short = OtokenInterface(_vault.shortOtokens[0]);
+            OtokenInterface short = OtokenInterface(_vault.shortOtoken);
             (
                 vaultDetails.shortCollateralAssets,
+                ,
                 vaultDetails.shortUnderlyingAsset,
                 vaultDetails.shortStrikeAsset,
                 vaultDetails.shortStrikePrice,
                 vaultDetails.shortExpiryTimestamp,
-                vaultDetails.isShortPut
+                vaultDetails.isShortPut,
+
             ) = _getOtokenDetails(address(short));
-            vaultDetails.shortCollateralsDecimals = new uint256[](vaultDetails.shortCollateralAssets.length);
-            for (uint256 i = 0; i < vaultDetails.shortCollateralAssets.length; i++) {
-                vaultDetails.shortCollateralsDecimals[i] = IERC20Metadata(vaultDetails.shortCollateralAssets[i])
-                    .decimals();
-            }
         }
 
-        if (vaultDetails.hasCollateral) {
-            for (uint256 i = 0; i < _vault.collateralAssets.length; i++) {
-                vaultDetails.collateralsDecimals[i] = uint256(IERC20Metadata(_vault.collateralAssets[i]).decimals());
-            }
+        vaultDetails.collateralsDecimals = new uint256[](_vault.collateralAssets.length);
+        for (uint256 i = 0; i < _vault.collateralAssets.length; i++) {
+            vaultDetails.collateralsDecimals[i] = uint256(IERC20Metadata(_vault.collateralAssets[i]).decimals());
         }
 
         return vaultDetails;
@@ -1266,17 +1272,12 @@ contract MarginCalculator is Ownable {
      */
     function _checkIsValidVault(MarginVault.Vault memory _vault, VaultDetails memory _vaultDetails) internal pure {
         // ensure all the arrays in the vault are valid
-        require(_vault.shortOtokens.length <= 1, "MarginCalculator: Too many short otokens in the vault");
         require(_vault.longOtokens.length <= 1, "MarginCalculator: Too many long otokens in the vault");
         require(
             _vault.collateralAssets.length <= Constants.MAX_COLLATERAL_ASSETS,
             "MarginCalculator: Too many collateral assets in the vault"
         );
 
-        require(
-            _vault.shortOtokens.length == _vault.shortAmounts.length,
-            "MarginCalculator: Short asset and amount mismatch"
-        );
         require(
             _vault.longOtokens.length == _vault.longAmounts.length,
             "MarginCalculator: Long asset and amount mismatch"
@@ -1287,10 +1288,10 @@ contract MarginCalculator is Ownable {
         );
 
         // ensure the long asset is valid for the short asset
-        require(
-            _isMarginableLong(_vault, _vaultDetails),
-            "MarginCalculator: long asset not marginable for short asset"
-        );
+        // require(
+        //     _isMarginableLong(_vault, _vaultDetails),
+        //     "MarginCalculator: long asset not marginable for short asset"
+        // );
 
         // ensure that the collateral asset is valid for the short asset
         require(
@@ -1305,34 +1306,31 @@ contract MarginCalculator is Ownable {
      * @param _vaultDetails vault details struct
      * @return true if long is marginable or false if not
      */
-    function _isMarginableLong(MarginVault.Vault memory _vault, VaultDetails memory _vaultDetails)
-        internal
-        pure
-        returns (bool)
-    {
-        if (_vaultDetails.vaultType == 1)
-            require(!_vaultDetails.hasLong, "MarginCalculator: naked margin vault cannot have long otoken");
+    // function _isMarginableLong(MarginVault.Vault memory _vault, VaultDetails memory _vaultDetails)
+    //     internal
+    //     pure
+    //     returns (bool)
+    // {
+    //     // if vault is missing a long or a short, return True
+    //     if (!_vaultDetails.hasLong || !_vaultDetails.hasShort) return true;
 
-        // if vault is missing a long or a short, return True
-        if (!_vaultDetails.hasLong || !_vaultDetails.hasShort) return true;
+    //     bool isSameLengthLongShort = _vaultDetails.longCollateralAssets.length ==
+    //         _vaultDetails.shortCollateralAssets.length;
+    //     if (!isSameLengthLongShort) return false;
 
-        bool isSameLengthLongShort = _vaultDetails.longCollateralAssets.length ==
-            _vaultDetails.shortCollateralAssets.length;
-        if (!isSameLengthLongShort) return false;
+    //     // check if longCollateralAssets has same as shorCollateralAssets
+    //     // TODO check if array equal is right here
+    //     for (uint256 i = 0; i < _vaultDetails.longCollateralAssets.length; i++) {
+    //         if (_vaultDetails.longCollateralAssets[i] != _vaultDetails.shortCollateralAssets[i]) return false;
+    //     }
 
-        // check if longCollateralAssets has same as shorCollateralAssets
-        // TODO check if array equal is right here
-        for (uint256 i = 0; i < _vaultDetails.longCollateralAssets.length; i++) {
-            if (_vaultDetails.longCollateralAssets[i] != _vaultDetails.shortCollateralAssets[i]) return false;
-        }
-
-        return
-            _vault.longOtokens[0] != _vault.shortOtokens[0] &&
-            _vaultDetails.longUnderlyingAsset == _vaultDetails.shortUnderlyingAsset &&
-            _vaultDetails.longStrikeAsset == _vaultDetails.shortStrikeAsset &&
-            _vaultDetails.longExpiryTimestamp == _vaultDetails.shortExpiryTimestamp &&
-            _vaultDetails.isLongPut == _vaultDetails.isShortPut;
-    }
+    //     return
+    //         _vault.longOtokens[0] != _vault.shortOtoken &&
+    //         _vaultDetails.longUnderlyingAsset == _vaultDetails.shortUnderlyingAsset &&
+    //         _vaultDetails.longStrikeAsset == _vaultDetails.shortStrikeAsset &&
+    //         _vaultDetails.longExpiryTimestamp == _vaultDetails.shortExpiryTimestamp &&
+    //         _vaultDetails.isLongPut == _vaultDetails.isShortPut;
+    // }
 
     /**
      * @dev if there is short option and collateral asset in the vault, ensure that the collateral asset is valid for the short option
@@ -1403,11 +1401,13 @@ contract MarginCalculator is Ownable {
         view
         returns (
             address[] memory,
+            uint256[] memory,
             address,
             address,
             uint256,
             uint256,
-            bool
+            bool,
+            uint256
         )
     {
         OtokenInterface otoken = OtokenInterface(_otoken);
@@ -1418,28 +1418,35 @@ contract MarginCalculator is Ownable {
      * @notice ratio representing how much does is oToken collaterized by certain collateral asset
      * @param _otoken the oToken address
      * @param _collateralAsset the collateral asset
-     * @return the ratio of collateral asset value to total value of collaterals
+     * @return numerator - numerator of fraction of ratio, represents value of _collateralAsset for all minted _otoken's
+     * @return denominator - denominator of fraction of ratio, represents totalValue of all collateral assets for all minted _otoken's
      */
-    //  TODO maybe return FPI instead of uint256. Maybe uint256 is not the best choice due to precision loss
-    function _getCollateralizationRatio(address _otoken, address _collateralAsset)
-        public
-        view
-        returns (FPI.FixedPointInt memory)
-    {
-        require(_collateralAsset != address(0), "collateral asset address cannot be 0");
-        OtokenInterface otoken = OtokenInterface(_otoken);
-        uint256 value = otoken.collateralAssetsValues(_collateralAsset);
-        uint256 totalCollateralValue = otoken.totalCollateralValue();
-        address strikeAsset = otoken.strikeAsset();
-        uint256 strikeAssetDecimals = IERC20Metadata(strikeAsset).decimals();
-        if (value == 0 || totalCollateralValue == 0) {
-            return ZERO;
-        }
-        return
-            FPI.fromScaledUint(value, strikeAssetDecimals).div(
-                FPI.fromScaledUint(totalCollateralValue, strikeAssetDecimals)
-            );
-    }
+    // function _getCollateralizationRatio(address _otoken, address _collateralAsset)
+    //     public
+    //     view
+    //     returns (FPI.FixedPointInt memory numerator, FPI.FixedPointInt memory denominator)
+    // {
+    //     // TODO Possible gas optimization: totalCollateralValue related calculations are caled several times for each collateral when this function called
+    //     require(_collateralAsset != address(0), "collateral asset address cannot be 0");
+    //     OtokenInterface otoken = OtokenInterface(_otoken);
+    //     address strikeAsset = otoken.strikeAsset();
+    //     // TODO move total collateral to oToken as external function
+    //     uint256 strikeAssetDecimals = IERC20Metadata(strikeAsset).decimals();
+    //     uint256 oTokenTotalSupply = otoken.collaterizedTotalAmount();
+    //     uint256 strikePrice = otoken.strikePrice();
+    //     // TODO its put only calculation, add call
+    //     // totalCollateralValue is valuated in strike asset
+    //     FPI.FixedPointInt memory totalCollateralValue = oTokenTotalSupply != 0
+    //         ? FPI.fromScaledUint(strikePrice, BASE).mul(FPI.fromScaledUint(oTokenTotalSupply, BASE))
+    //         : FPI.fromScaledUint(1, 0);
+    //     // This value is valuated in strike asset
+    //     uint256 value = otoken.collateralsValues(_collateralAsset);
+    //     // TODO Possible gas optimization: strikeAsset is called several times for each collateral when this function called
+    //     if (value == 0) {
+    //         return (ZERO, totalCollateralValue);
+    //     }
+    //     return (FPI.fromScaledUint(value, strikeAssetDecimals), totalCollateralValue);
+    // }
 
     /**
      * @notice calculates collateral required to mint amount of oToken for a given vault
@@ -1448,80 +1455,79 @@ contract MarginCalculator is Ownable {
         MarginVault.Vault memory _vault,
         address _otoken,
         uint256 _amount
-    ) public view returns (uint256[] memory collateralsAmountsRequired, uint256[] memory collateralsValuesRequired) {
+    ) public view returns (uint256[] memory, uint256[] memory) {
         require(_otoken != address(0), "otoken address cannot be 0");
         require(_amount > 0, "amount must be greater than 0");
 
         // TODO should be better to get all details at once with getOtokenDetails?
         OtokenInterface otoken = OtokenInterface(_otoken);
-        address strikeAsset = otoken.strikeAsset();
-        uint256 strikeDecimals = IERC20Metadata(strikeAsset).decimals();
+        bool isPut = otoken.isPut();
 
-        if (otoken.isPut()) {
-            FPI.FixedPointInt[] memory availableCollateralsValues = new FPI.FixedPointInt[](
-                _vault.collateralAssets.length
-            );
-            FPI.FixedPointInt memory availableCollateralTotalValue;
-            uint256[] memory collateralsDecimals = new uint256[](_vault.collateralAssets.length);
-            FPI.FixedPointInt[] memory collateralsAmountsFPI = new FPI.FixedPointInt[](_vault.collateralAssets.length);
-            // TODO we assume here that collateral assets is the same assets addresses
-            // as oToken's but they can differ so we should restrict vault to have asset or filter by asssets from oToken
-            // it can have different length and different tokens in it
-            for (uint256 i = 0; i < _vault.collateralAssets.length; i++) {
-                collateralsDecimals[i] = IERC20Metadata(_vault.collateralAssets[i]).decimals();
-                if (_vault.unusedCollateralAmounts[i] == 0) {
-                    availableCollateralsValues[i] = ZERO;
-                    continue;
-                }
-                collateralsAmountsFPI[i] = FPI.fromScaledUint(
-                    _vault.unusedCollateralAmounts[i],
-                    collateralsDecimals[i]
-                );
-                availableCollateralsValues[i] = _convertAmountOnLivePrice(
-                    collateralsAmountsFPI[i],
-                    _vault.collateralAssets[i],
-                    strikeAsset
-                );
-                availableCollateralTotalValue.add(availableCollateralsValues[i]);
+        // strike asset for put and underlying asset for call
+        address valueAsset = isPut ? otoken.strikeAsset() : otoken.underlyingAsset();
+        // For Put its strike asset amounts as strikePrice, for Call its _amount of oTokens to mint in underlying
+        FPI.FixedPointInt memory valueRequired = isPut
+            ? FPI.fromScaledUint(_amount, BASE).mul(FPI.fromScaledUint(otoken.strikePrice(), BASE))
+            : FPI.fromScaledUint(_amount, BASE);
+
+        // availableCollateralsValues is how much worth available collateral in strike asset for put and underlying asset for call
+        FPI.FixedPointInt[] memory availableCollateralsValues = new FPI.FixedPointInt[](_vault.collateralAssets.length);
+        // availableCollateralTotalValue - how much value totally available in vault in valueAsset
+        FPI.FixedPointInt memory availableCollateralTotalValue;
+
+        uint256[] memory collateralsDecimals = new uint256[](_vault.collateralAssets.length);
+        FPI.FixedPointInt[] memory availableCollateralsAmountsFPI = new FPI.FixedPointInt[](
+            _vault.collateralAssets.length
+        );
+
+        for (uint256 i = 0; i < _vault.collateralAssets.length; i++) {
+            collateralsDecimals[i] = IERC20Metadata(_vault.collateralAssets[i]).decimals();
+            if (_vault.unusedCollateralAmounts[i] == 0) {
+                availableCollateralsValues[i] = ZERO;
+                continue;
             }
-
-            require(
-                availableCollateralTotalValue.isGreaterThan(ZERO),
-                "Cant calculate collateral required for zero vault"
+            availableCollateralsAmountsFPI[i] = FPI.fromScaledUint(
+                _vault.unusedCollateralAmounts[i],
+                collateralsDecimals[i]
             );
-
-            // TODO check calculations mul strikeRequiredForOneOToken to _amountFPI is for 1.0 oToken
-            FPI.FixedPointInt memory strikeRequired = FPI.fromScaledUint(_amount, BASE).mul(
-                FPI.fromScaledUint(otoken.strikePrice(), strikeDecimals)
+            availableCollateralsValues[i] = _convertAmountOnLivePrice(
+                availableCollateralsAmountsFPI[i],
+                _vault.collateralAssets[i],
+                valueAsset
             );
-
-            require(
-                availableCollateralTotalValue.isGreaterThanOrEqual(strikeRequired),
-                "Vault value is not enough to collaterize the amount"
-            );
-            FPI.FixedPointInt memory requiredRatio = strikeRequired.div(availableCollateralTotalValue);
-            // TODO can we avoid second loop?
-            for (uint256 i = 0; i < _vault.collateralAssets.length; i++) {
-                if (availableCollateralsValues[i].isGreaterThan(ZERO)) {
-                    // TODO decide which rounding should we use down or up, now we use down (toScaledUint last argument true)
-                    collateralsValuesRequired[i] = availableCollateralsValues[i].mul(requiredRatio).toScaledUint(
-                        collateralsDecimals[i],
-                        true
-                    );
-                    collateralsAmountsRequired[i] = collateralsAmountsFPI[i].mul(requiredRatio).toScaledUint(
-                        collateralsDecimals[i],
-                        true
-                    );
-                } else {
-                    collateralsAmountsRequired[i] = 0;
-                    collateralsValuesRequired[i] = 0;
-                }
-            }
-
-            return (collateralsAmountsRequired, collateralsValuesRequired);
-        } else {
-            // TODO calc call option case
-            return (new uint256[](_vault.collateralAssets.length), new uint256[](_vault.collateralAssets.length));
+            console.log("availableCollateralTotalValue", i, availableCollateralsValues[i].toScaledUint(BASE, false));
+            availableCollateralTotalValue = availableCollateralTotalValue.add(availableCollateralsValues[i]);
         }
+
+        console.log("availableCollateralTotalValue", availableCollateralTotalValue.toScaledUint(BASE, false));
+        console.log("valueRequired", valueRequired.toScaledUint(BASE, false));
+        require(
+            availableCollateralTotalValue.isGreaterThanOrEqual(valueRequired),
+            "Vault value is not enough to collaterize the amount"
+        );
+
+        uint256[] memory collateralsValuesRequired = new uint256[](_vault.collateralAssets.length);
+        uint256[] memory collateralsAmountsRequired = new uint256[](_vault.collateralAssets.length);
+        // TODO can we avoid second loop?
+        for (uint256 i = 0; i < _vault.collateralAssets.length; i++) {
+            if (availableCollateralsValues[i].isGreaterThan(ZERO)) {
+                // TODO decide which rounding should we use down or up, now we use down (toScaledUint last argument true)
+                // TODO we use dynamic zero length array for collateralsValuesRequired and collateralsAmountsRequired
+                // initialized in function returns maybe save gas and value by initilizing inside
+                collateralsValuesRequired[i] = availableCollateralsValues[i]
+                    .mul(valueRequired)
+                    .div(availableCollateralTotalValue)
+                    .toScaledUint(BASE, false);
+                // TODO in collateralsValuesRequired[i] should decimals be BASE for Call option or underlying decimals?
+                collateralsAmountsRequired[i] = availableCollateralsAmountsFPI[i]
+                    .mul(valueRequired)
+                    .div(availableCollateralTotalValue)
+                    .toScaledUint(collateralsDecimals[i], false);
+            } else {
+                collateralsAmountsRequired[i] = 0;
+                collateralsValuesRequired[i] = 0;
+            }
+        }
+        return (collateralsAmountsRequired, collateralsValuesRequired);
     }
 }

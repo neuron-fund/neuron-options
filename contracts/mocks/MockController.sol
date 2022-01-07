@@ -1,7 +1,7 @@
 /**
  * SPDX-License-Identifier: UNLICENSED
  */
-pragma solidity 0.8.10;
+pragma solidity 0.8.9;
 
 // import "../packages/oz/upgradeability/VersionedInitializable.sol";
 import "../interfaces/OtokenInterface.sol";
@@ -32,9 +32,11 @@ contract MockController {
     function testMintOtoken(
         address _otoken,
         address _account,
-        uint256 _amount
+        uint256 _amount,
+        uint256[] memory collateralsAmountsForMint,
+        uint256[] memory collateralsValuesForMint
     ) external {
-        OtokenInterface(_otoken).mintOtoken(_account, _amount);
+        OtokenInterface(_otoken).mintOtoken(_account, _amount, collateralsAmountsForMint, collateralsValuesForMint);
     }
 
     /**
@@ -52,6 +54,6 @@ contract MockController {
      * @dev this function is used to test if controller can be the only msg.sender to the 0xcallee
      */
     function test0xCallee(address _callee, bytes memory _data) external {
-        CalleeInterface(_callee).callFunction(msg.sender, _data);
+        CalleeInterface(_callee).callFunction(payable(msg.sender), _data);
     }
 }

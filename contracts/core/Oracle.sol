@@ -1,7 +1,7 @@
 /**
  * SPDX-License-Identifier: UNLICENSED
  */
-pragma solidity 0.8.10;
+pragma solidity 0.8.9;
 
 import {PricerInterface} from "../interfaces/PricerInterface.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
@@ -332,15 +332,15 @@ contract Oracle is Ownable {
 
         if (price == 0) {
             // check if the pricer has a price for this expiry timestamp
-            Price memory price = storedPrice[_asset][_expiryTimestamp];
-            if (price.timestamp == 0) {
+            Price memory priceStored = storedPrice[_asset][_expiryTimestamp];
+            if (priceStored.timestamp == 0) {
                 return false;
             }
 
             address pricer = assetPricer[_asset];
             uint256 disputePeriod = pricerDisputePeriod[pricer];
 
-            return block.timestamp > price.timestamp.add(disputePeriod);
+            return block.timestamp > priceStored.timestamp.add(disputePeriod);
         }
 
         return true;

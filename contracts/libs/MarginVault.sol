@@ -1,11 +1,15 @@
 /**
  * SPDX-License-Identifier: UNLICENSED
  */
-pragma solidity 0.8.10;
+pragma solidity 0.8.9;
 
 pragma experimental ABIEncoderV2;
 
 import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import {FPI} from "../libs/FixedPointInt256.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+
+import "hardhat/console.sol";
 
 /**
  * MarginVault Error Codes
@@ -18,6 +22,9 @@ import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
  * V7: invalid collateral amount
  * V8: invalid collateral token index
  * V9: collateral token address mismatch
+ * V10: shortOtoken should be empty when performing addShort or the same as vault already have
+ * V11: _collateralAssets and _amounts length mismatch
+ * V12: _collateralAssets and vault.collateralAssets length mismatch
  */
 
 /**
@@ -27,28 +34,33 @@ import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
  */
 library MarginVault {
     using SafeMath for uint256;
+    using FPI for FPI.FixedPointInt;
+
+    uint256 internal constant BASE = 8;
 
     // vault is a struct of 6 arrays that describe a position a user has, a user can have multiple vaults.
     struct Vault {
+        address shortOtoken;
         // addresses of oTokens a user has shorted (i.e. written) against this vault
-        // TODO maybe make this non array since we alaways consider vault has only one oToken
-        address[] shortOtokens;
         // addresses of oTokens a user has bought and deposited in this vault
         // user can be long oTokens without opening a vault (e.g. by buying on a DEX)
         // generally, long oTokens will be 'deposited' in vaults to act as collateral in order to write oTokens against (i.e. in spreads)
+        // TODO get rid of longOTokens since we dont use it anymore?
         address[] longOtokens;
         // addresses of other ERC-20s a user has deposited as collateral in this vault
         address[] collateralAssets;
-        // quantity of oTokens minted/written for each oToken address in shortOtokens
-        uint256[] shortAmounts;
+        // quantity of oTokens minted/written for each oToken address in oTokenAddress
+        // TODO replace with just uint256 cause we have only one oToken for each vault
+        uint256 shortAmount;
         // quantity of oTokens owned and held in the vault for each oToken address in longOtokens
         uint256[] longAmounts;
         // quantity of ERC-20 deposited as collateral in the vault for each ERC-20 address in collateralAssets
         uint256[] collateralAmounts;
         // Collateral which is currently used for minting oTokens and can't be used until expiry
-        // TODO on expiry of shortOtokens update this variable
+        // TODO on expiry of oTokenAddress update this variable
         // TODO should we use this new variable or maybe sub from collaeralAmounts when using collateral?
         uint256[] usedCollateralAmounts;
+        uint256[] usedCollateralValues;
         uint256[] unusedCollateralAmounts;
     }
 
@@ -57,28 +69,20 @@ library MarginVault {
      * @param _vault vault to add or increase the short position in
      * @param _shortOtoken address of the _shortOtoken being minted from the user's vault
      * @param _amount number of _shortOtoken being minted from the user's vault
-     * @param _index index of _shortOtoken in the user's vault.shortOtokens array
      */
     function addShort(
         Vault storage _vault,
         address _shortOtoken,
-        uint256 _amount,
-        uint256 _index
+        uint256 _amount
     ) external {
         require(_amount > 0, "V1");
+        require(_vault.shortOtoken == address(0) || _vault.shortOtoken == _shortOtoken, "V10");
 
-        // valid indexes in any array are between 0 and array.length - 1.
-        // if adding an amount to an preexisting short oToken, check that _index is in the range of 0->length-1
-        if ((_index == _vault.shortOtokens.length) && (_index == _vault.shortAmounts.length)) {
-            _vault.shortOtokens.push(_shortOtoken);
-            _vault.shortAmounts.push(_amount);
+        if (_vault.shortOtoken == _shortOtoken) {
+            _vault.shortAmount = _vault.shortAmount.add(_amount);
         } else {
-            require((_index < _vault.shortOtokens.length) && (_index < _vault.shortAmounts.length), "V2");
-            address existingShort = _vault.shortOtokens[_index];
-            require((existingShort == _shortOtoken) || (existingShort == address(0)), "V3");
-
-            _vault.shortAmounts[_index] = _vault.shortAmounts[_index].add(_amount);
-            _vault.shortOtokens[_index] = _shortOtoken;
+            _vault.shortOtoken = _shortOtoken;
+            _vault.shortAmount = _amount;
         }
     }
 
@@ -87,24 +91,82 @@ library MarginVault {
      * @param _vault vault to decrease short position in
      * @param _shortOtoken address of the _shortOtoken being reduced in the user's vault
      * @param _amount number of _shortOtoken being reduced in the user's vault
-     * @param _index index of _shortOtoken in the user's vault.shortOtokens array
      */
     function removeShort(
+        // TODO Will using memory here will save gas since we have a lot of reading from _vault opearations?
         Vault storage _vault,
         address _shortOtoken,
-        uint256 _amount,
-        uint256 _index
-    ) external {
+        uint256 _amount
+    ) external returns (uint256[] memory freedCollateralAmounts, uint256[] memory freedCollateralValues) {
         // check that the removed short oToken exists in the vault at the specified index
-        require(_index < _vault.shortOtokens.length, "V2");
-        require(_vault.shortOtokens[_index] == _shortOtoken, "V3");
+        require(_vault.shortOtoken == _shortOtoken, "V3");
 
-        uint256 newShortAmount = _vault.shortAmounts[_index].sub(_amount);
+        uint256 newShortAmount = _vault.shortAmount.sub(_amount);
 
+        uint256[] memory newUsedCollateralAmounts = new uint256[](_vault.collateralAssets.length);
+        uint256[] memory newUsedCollateralValues = new uint256[](_vault.collateralAssets.length);
+        freedCollateralAmounts = new uint256[](_vault.collateralAssets.length);
+        freedCollateralValues = new uint256[](_vault.collateralAssets.length);
+        uint256[] memory newUnusedCollateralAmounts = _vault.unusedCollateralAmounts;
         if (newShortAmount == 0) {
-            delete _vault.shortOtokens[_index];
+            newUnusedCollateralAmounts = _vault.collateralAmounts;
+            for (uint256 i = 0; i < _vault.collateralAssets.length; i++) {
+                newUsedCollateralAmounts[i] = 0;
+                newUsedCollateralValues[i] = 0;
+                freedCollateralAmounts[i] = _vault.usedCollateralAmounts[i];
+                freedCollateralValues[i] = _vault.usedCollateralValues[i];
+            }
+        } else {
+            // usedLeftRatio is multiplier which is used to calculate the new used collateral values and used amounts
+            FPI.FixedPointInt memory usedLeftRatio = FPI.fromScaledUint(1, 0).sub(
+                FPI.fromScaledUint(newShortAmount, BASE).div(FPI.fromScaledUint(_vault.shortAmount, BASE))
+            );
+            for (uint256 i = 0; i < _vault.collateralAssets.length; i++) {
+                uint256 collateralDecimals = uint256(IERC20Metadata(_vault.collateralAssets[i]).decimals());
+                newUsedCollateralAmounts[i] = toFPImulAndBack(
+                    _vault.usedCollateralAmounts[i],
+                    collateralDecimals,
+                    usedLeftRatio,
+                    false
+                );
+
+                newUsedCollateralValues[i] = toFPImulAndBack(
+                    _vault.usedCollateralValues[i],
+                    BASE,
+                    usedLeftRatio,
+                    false
+                );
+                freedCollateralAmounts[i] = _vault.usedCollateralAmounts[i].sub(newUsedCollateralAmounts[i]);
+                freedCollateralValues[i] = _vault.usedCollateralValues[i].sub(newUsedCollateralValues[i]);
+                newUnusedCollateralAmounts[i] = newUnusedCollateralAmounts[i].add(freedCollateralAmounts[i]);
+                console.log("------------------", i);
+                console.log("Old used collateral values", _vault.usedCollateralValues[i]);
+                console.log("New used collateral values", newUsedCollateralValues[i]);
+                console.log("Freed colllateral values", freedCollateralValues[i]);
+
+                console.log("Vault total collateral amounts", _vault.collateralAmounts[i]);
+                console.log("Old used collateral amounts", _vault.usedCollateralAmounts[i]);
+                console.log("New used collateral amounts", newUsedCollateralAmounts[i]);
+                console.log("Freed collateral amounts", freedCollateralAmounts[i]);
+
+                console.log("Old unused collateral amounts", _vault.unusedCollateralAmounts[i]);
+                console.log("New unused collateral amounts", newUnusedCollateralAmounts[i]);
+            }
         }
-        _vault.shortAmounts[_index] = newShortAmount;
+        _vault.shortAmount = newShortAmount;
+        _vault.usedCollateralAmounts = newUsedCollateralAmounts;
+        _vault.unusedCollateralAmounts = newUnusedCollateralAmounts;
+        _vault.usedCollateralValues = newUsedCollateralValues;
+        console.log("----------END OF removeShort---------");
+    }
+
+    function toFPImulAndBack(
+        uint256 _value,
+        uint256 _decimals,
+        FPI.FixedPointInt memory _multiplicator,
+        bool roundDown
+    ) internal pure returns (uint256) {
+        return FPI.fromScaledUint(_value, _decimals).mul(_multiplicator).toScaledUint(_decimals, roundDown);
     }
 
     /**
@@ -163,32 +225,21 @@ library MarginVault {
     }
 
     /**
-     * @dev increase the collateral balance in a vault
+     * @dev increase the collaterals balances in a vault
      * @param _vault vault to add collateral to
-     * @param _collateralAsset address of the _collateralAsset being added to the user's vault
-     * @param _amount number of _collateralAssets being added to the user's vault
-     * @param _index index of _collateralAssets in the user's vault.collateralAssets array
+     * @param _collateralAssets addresses of the _collateralAssets being added to the user's vault
+     * @param _amounts number of _collateralAssets being added to the user's vault
      */
-    function addCollateral(
+    function addCollaterals(
         Vault storage _vault,
-        address _collateralAsset,
-        uint256 _amount,
-        uint256 _index
+        address[] calldata _collateralAssets,
+        uint256[] calldata _amounts
     ) external {
-        require(_amount > 0, "V7");
-
-        // valid indexes in any array are between 0 and array.length - 1.
-        // if adding an amount to an preexisting short oToken, check that _index is in the range of 0->length-1
-        if ((_index == _vault.collateralAssets.length) && (_index == _vault.collateralAmounts.length)) {
-            _vault.collateralAssets.push(_collateralAsset);
-            _vault.collateralAmounts.push(_amount);
-        } else {
-            require((_index < _vault.collateralAssets.length) && (_index < _vault.collateralAmounts.length), "V8");
-            address existingCollateral = _vault.collateralAssets[_index];
-            require((existingCollateral == _collateralAsset) || (existingCollateral == address(0)), "V9");
-
-            _vault.collateralAmounts[_index] = _vault.collateralAmounts[_index].add(_amount);
-            _vault.collateralAssets[_index] = _collateralAsset;
+        require(_collateralAssets.length == _amounts.length, "V11");
+        require(_collateralAssets.length == _vault.collateralAssets.length, "V12");
+        for (uint256 i = 0; i < _collateralAssets.length; i++) {
+            _vault.collateralAmounts[i] = _vault.collateralAmounts[i].add(_amounts[i]);
+            _vault.unusedCollateralAmounts[i] = _vault.unusedCollateralAmounts[i].add(_amounts[i]);
         }
     }
 
@@ -211,45 +262,35 @@ library MarginVault {
 
         uint256 newCollateralAmount = _vault.collateralAmounts[_index].sub(_amount);
 
-        if (newCollateralAmount == 0) {
-            delete _vault.collateralAssets[_index];
-        }
         _vault.collateralAmounts[_index] = newCollateralAmount;
     }
 
-    // TODO remove if useCollatralBulk only
-    function useCollateral(
+    function useCollateralBulk(
         Vault storage _vault,
-        address _collateralAsset,
-        uint256 _amount,
-        uint256 _index
+        uint256[] memory _amounts,
+        uint256[] memory _values
     ) external {
-        // check that the removed collateral exists in the vault at the specified index
-        require(_index < _vault.collateralAssets.length, "V10");
-        require(_vault.collateralAssets[_index] == _collateralAsset, "V11");
-
-        uint256 newUsedCollateralAmount = _vault.usedCollateralAmounts[_index].add(_amount);
-
-        if (newUsedCollateralAmount == 0) {
-            delete _vault.collateralAssets[_index];
-        }
-        _vault.usedCollateralAmounts[_index] = newUsedCollateralAmount;
-        _vault.collateralAmounts[_index] = _vault.collateralAmounts[_index].sub(_amount);
-    }
-
-    function useCollateralBulk(Vault storage _vault, uint256[] memory _amounts) external {
         require(
-            _amounts.length != _vault.collateralAssets.length,
+            _amounts.length == _vault.collateralAssets.length,
             "Amounts for collateral is not same length as collateral assets"
         );
 
+        console.log("values.length", _values.length);
+        console.log("_amounts.length", _amounts.length);
+        console.log("_vault.usedCollateralAmounts.length", _vault.usedCollateralAmounts.length);
         for (uint256 i = 0; i < _amounts.length; i++) {
+            console.log("i", i);
+            console.log("_vault.usedCollateralAmounts[i]", _vault.usedCollateralAmounts[i]);
+            console.log("_vault.usedCollateralValues[i]", _vault.usedCollateralValues[i]);
             uint256 newUsedCollateralAmount = _vault.usedCollateralAmounts[i].add(_amounts[i]);
+            uint256 newUsedCollateralValue = _vault.usedCollateralValues[i].add(_values[i]);
 
-            if (newUsedCollateralAmount == 0) {
-                delete _vault.collateralAssets[i];
-            }
             _vault.usedCollateralAmounts[i] = newUsedCollateralAmount;
+            _vault.usedCollateralValues[i] = newUsedCollateralValue;
+            require(
+                _vault.usedCollateralAmounts[i] <= _vault.collateralAmounts[i],
+                "Trying to use collateral which exceeds vault's balance"
+            );
             _vault.unusedCollateralAmounts[i] = _vault.collateralAmounts[i].sub(newUsedCollateralAmount);
         }
     }

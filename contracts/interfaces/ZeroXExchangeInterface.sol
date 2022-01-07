@@ -1,7 +1,7 @@
 /**
  * SPDX-License-Identifier: UNLICENSED
  */
-pragma solidity 0.8.10;
+pragma solidity 0.8.9;
 
 pragma experimental ABIEncoderV2;
 
@@ -9,7 +9,6 @@ pragma experimental ABIEncoderV2;
  * @dev ZeroX Exchange contract interface.
  */
 interface ZeroXExchangeInterface {
-    
     /// @dev Canonical order structure
     struct LimitOrder {
         address makerToken; // The ERC20 token the maker is selling and the maker is selling to the taker.

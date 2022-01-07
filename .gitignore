@@ -9,3 +9,4 @@ abi
 .DS_Store
 zapper
 bin
+deployments/localhost

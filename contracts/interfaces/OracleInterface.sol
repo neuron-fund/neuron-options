@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.10;
+pragma solidity 0.8.9;
 
 interface OracleInterface {
     function isLockingPeriodOver(address _asset, uint256 _expiryTimestamp) external view returns (bool);

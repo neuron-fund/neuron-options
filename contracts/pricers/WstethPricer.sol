@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.10;
+pragma solidity 0.8.9;
 
 import {OracleInterface} from "../interfaces/OracleInterface.sol";
 import {PricerInterface} from "../interfaces/PricerInterface.sol";
@@ -85,7 +85,7 @@ contract WstethPricer is PricerInterface {
         return stEthPerWsteth.mul(_underlyingPrice).div(1e18);
     }
 
-    function getHistoricalPrice(uint80) external view override returns (uint256, uint256) {
+    function getHistoricalPrice(uint80) external pure override returns (uint256, uint256) {
         revert("W6");
     }
 }

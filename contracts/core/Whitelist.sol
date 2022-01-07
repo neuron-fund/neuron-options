@@ -1,20 +1,21 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.10;
+pragma solidity 0.8.9;
 
 import "../interfaces/AddressBookInterface.sol";
-import "../packages/oz/Ownable.sol";
+import {WhitelistInterface} from "../interfaces/WhitelistInterface.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title Whitelist Module
  * @notice The whitelist module keeps track of all valid oToken addresses, product hashes, collateral addresses, and callee addresses.
  */
-contract Whitelist is Ownable {
+contract Whitelist is WhitelistInterface, Ownable{
     /// @notice AddressBook module address
     address public addressBook;
     /// @dev mapping to track whitelisted products
     mapping(bytes32 => bool) internal whitelistedProduct;
-    /// @dev mapping to track whitelisted collateral
-    mapping(address => bool) internal whitelistedCollateral;
+    /// @dev mapping to track whitelisted collaterals
+    mapping(bytes32 => bool) internal whitelistedCollaterals;
     /// @dev mapping to track whitelisted oTokens
     mapping(address => bool) internal whitelistedOtoken;
     /// @dev mapping to track whitelisted callee addresses for the call action
@@ -24,7 +25,7 @@ contract Whitelist is Ownable {
      * @dev constructor
      * @param _addressBook AddressBook module address
      */
-    constructor(address _addressBook) public {
+    constructor(address _addressBook) {
         require(_addressBook != address(0), "Invalid address book");
 
         addressBook = _addressBook;
@@ -35,7 +36,8 @@ contract Whitelist is Ownable {
         bytes32 productHash,
         address indexed underlying,
         address indexed strike,
-        address indexed collateral,
+        // TODO will indexing array work?
+        address[] indexed collaterals,
         bool isPut
     );
     /// @notice emits an event a product is blacklisted by the owner address
@@ -43,13 +45,13 @@ contract Whitelist is Ownable {
         bytes32 productHash,
         address indexed underlying,
         address indexed strike,
-        address indexed collateral,
+        address[] indexed collateral,
         bool isPut
     );
     /// @notice emits an event when a collateral address is whitelisted by the owner address
-    event CollateralWhitelisted(address indexed collateral);
+    event CollateralWhitelisted(address[] indexed collateral);
     /// @notice emits an event when a collateral address is blacklist by the owner address
-    event CollateralBlacklisted(address indexed collateral);
+    event CollateralBlacklisted(address[] indexed collateral);
     /// @notice emits an event when an oToken is whitelisted by the OtokenFactory module
     event OtokenWhitelisted(address indexed otoken);
     /// @notice emits an event when an oToken is blacklisted by the OtokenFactory module
@@ -93,11 +95,11 @@ contract Whitelist is Ownable {
 
     /**
      * @notice check if a collateral asset is whitelisted
-     * @param _collateral asset that is held as collateral against short/written options
+     * @param _collaterals assets that is held as collateral against short/written options
      * @return boolean, True if the collateral is whitelisted
      */
-    function isWhitelistedCollateral(address _collateral) external view returns (bool) {
-        return whitelistedCollateral[_collateral];
+    function isWhitelistedCollaterals(address[] calldata _collaterals) external view returns (bool) {
+        return whitelistedCollaterals[keccak256(abi.encode(_collaterals))];
     }
 
     /**
@@ -118,32 +120,32 @@ contract Whitelist is Ownable {
         return whitelistedCallee[_callee];
     }
 
+    // TODO why do we need whitelisting products?
     /**
      * @notice allows the owner to whitelist a product
      * @dev product is the hash of underlying asset, strike asset, collateral asset, and isPut
      * can only be called from the owner address
      * @param _underlying asset that the option references
      * @param _strike asset that the strike price is denominated in
-     * @param _collateral asset that is held as collateral against short/written options
+     * @param _collaterals assets that is held as collateral against short/written options
      * @param _isPut True if a put option, False if a call option
      */
     function whitelistProduct(
         address _underlying,
         address _strike,
-        address _collateral,
+        address[] calldata _collaterals,
         bool _isPut
     ) external onlyOwner {
-        require(whitelistedCollateral[_collateral], "Whitelist: Collateral is not whitelisted");
         require(
-            (_isPut && (_strike == _collateral)) || (!_isPut && (_collateral == _underlying)),
-            "Whitelist: Only allow fully collateralized products"
+            whitelistedCollaterals[keccak256(abi.encode(_collaterals))],
+            "Whitelist: Collateral is not whitelisted"
         );
 
-        bytes32 productHash = keccak256(abi.encode(_underlying, _strike, _collateral, _isPut));
+        bytes32 productHash = keccak256(abi.encode(_underlying, _strike, _collaterals, _isPut));
 
         whitelistedProduct[productHash] = true;
 
-        emit ProductWhitelisted(productHash, _underlying, _strike, _collateral, _isPut);
+        emit ProductWhitelisted(productHash, _underlying, _strike, _collaterals, _isPut);
     }
 
     /**
@@ -152,42 +154,42 @@ contract Whitelist is Ownable {
      * can only be called from the owner address
      * @param _underlying asset that the option references
      * @param _strike asset that the strike price is denominated in
-     * @param _collateral asset that is held as collateral against short/written options
+     * @param _collaterals assets that is held as collateral against short/written options
      * @param _isPut True if a put option, False if a call option
      */
     function blacklistProduct(
         address _underlying,
         address _strike,
-        address _collateral,
+        address[] calldata _collaterals,
         bool _isPut
     ) external onlyOwner {
-        bytes32 productHash = keccak256(abi.encode(_underlying, _strike, _collateral, _isPut));
+        bytes32 productHash = keccak256(abi.encode(_underlying, _strike, _collaterals, _isPut));
 
         whitelistedProduct[productHash] = false;
 
-        emit ProductBlacklisted(productHash, _underlying, _strike, _collateral, _isPut);
+        emit ProductBlacklisted(productHash, _underlying, _strike, _collaterals, _isPut);
     }
 
     /**
      * @notice allows the owner to whitelist a collateral address
      * @dev can only be called from the owner address. This function is used to whitelist any asset other than Otoken as collateral. WhitelistOtoken() is used to whitelist Otoken contracts.
-     * @param _collateral collateral asset address
+     * @param _collaterals collateral assets addresses
      */
-    function whitelistCollateral(address _collateral) external onlyOwner {
-        whitelistedCollateral[_collateral] = true;
+    function whitelistCollaterals(address[] calldata _collaterals) external onlyOwner {
+        whitelistedCollaterals[keccak256(abi.encode(_collaterals))] = true;
 
-        emit CollateralWhitelisted(_collateral);
+        emit CollateralWhitelisted(_collaterals);
     }
 
     /**
      * @notice allows the owner to blacklist a collateral address
      * @dev can only be called from the owner address
-     * @param _collateral collateral asset address
+     * @param _collaterals collateral assets addresses
      */
-    function blacklistCollateral(address _collateral) external onlyOwner {
-        whitelistedCollateral[_collateral] = false;
+    function blacklistCollateral(address[] calldata _collaterals) external onlyOwner {
+        whitelistedCollaterals[keccak256(abi.encode(_collaterals))] = false;
 
-        emit CollateralBlacklisted(_collateral);
+        emit CollateralBlacklisted(_collaterals);
     }
 
     /**

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // openzeppelin-contracts-upgradeable v3.0.0
 
-pragma solidity 0.8.10;
+pragma solidity 0.8.9;
 
 import "./GSN/ContextUpgradeable.sol";
 import "./Initializable.sol";
