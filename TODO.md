@@ -28,3 +28,7 @@ For burning oTokens give vault owner ability to burn oToken to get collateral. T
 Restrict ratios for collateral to restrict minting a lot of oTokens for non liquid assets
 
 TODO make helper function to help users of vault to calculate how much of collateral they should deposit to cover the collaterization of provided oToken amount, depends on their wallet balances
+
+TODO restrict zero strike
+
+TODO if one of collateral drastically falls in price we should still allow redeemer to redeem atleast other collaterals. Check calculations if expiry price is zero or very small and not enough balance.
