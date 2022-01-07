@@ -79,7 +79,8 @@ export type TestMintRedeemSettleParams<
 }
 
 // Maxiumum deviation of usd value of redeem and vault settle. Calculated from balances of redeemer and vault owner respectively
-const expectedRedeemUsdDeviation = 0.1
+const expectedRedeemOneCollateralUsdDeviation = 1.7
+const expectedRedeemTotalUsdDeviation = 0.1
 const expectedSettleCollateralUsdDeviation = 0.1
 
 export const testMintRedeemSettleFactory = (getDeployResults: () => TestDeployResult) => {
@@ -142,8 +143,8 @@ export const testMintRedeemSettleFactory = (getDeployResults: () => TestDeployRe
       await oToken.connect(vault.owner).transfer(redeemer.address, mintedAmount)
     }
 
-    const checkpoints = Object.keys(params.checkpointsDays || [])
     // Mint oTokens for checkpoints and wait time
+    const checkpoints = Object.keys(params.checkpointsDays || [])
     for (const checkpoint of checkpoints) {
       await waitNDays(Number(checkpoint), network.provider)
       await setStablePrices(oracle, deployer, params.checkpointsDays[checkpoint].prices)
@@ -176,6 +177,7 @@ export const testMintRedeemSettleFactory = (getDeployResults: () => TestDeployRe
       `Redeemer balance of oToken is not correct\n Expected: ${totalOtokenRedeemable}\n Got: ${redeemerBalanceAfterMint}`
     )
 
+    // TODO it waits more days then needed when checkpoinDays provided in params
     await waitNDays(expiryDays + 1, network.provider)
     await setStablePrices(oracle, deployer, params.expiryPrices)
 
@@ -194,20 +196,36 @@ export const testMintRedeemSettleFactory = (getDeployResults: () => TestDeployRe
     const totalRedeem = await calculateRedeemForOtokenAmount(params, totalOtokenRedeemableFormatted, redeemer)
 
     // Assert user gets right redeem
-    for (const [i, collateralAmount] of totalRedeem.collaterals.entries()) {
+    let totalRedeemUsd = 0
+    for (const [i, expectedCollateralAmount] of totalRedeem.collaterals.entries()) {
       const userCollateralBalance = await getERC20BalanceOf(redeemer, oTokenParams.collateralAssets[i])
       const collateralDecimals = await getERC20Decimals(redeemer, oTokenParams.collateralAssets[i])
-      const deviationAmount = userCollateralBalance.sub(collateralAmount).abs()
+      const expireCollateralPrice = params.expiryPrices[oTokenParams.collateralAssets[i]]
+      totalRedeemUsd =
+        totalRedeemUsd + Number(formatUnits(userCollateralBalance, collateralDecimals)) * expireCollateralPrice
+      const deviationAmount = userCollateralBalance.sub(expectedCollateralAmount).abs()
       const deviationAmountFormatted = Number(formatUnits(deviationAmount, collateralDecimals))
-      const deviationUsdValue = deviationAmountFormatted * params.expiryPrices[oTokenParams.collateralAssets[i]]
+      const deviationUsdValue = deviationAmountFormatted * expireCollateralPrice
       assert(
-        deviationUsdValue < expectedRedeemUsdDeviation,
-        `Collateral ${i} redeem with wrong amount.\n
-         Expected: ${collateralAmount}, got: ${userCollateralBalance}\n
-         Expected deviation: ${expectedRedeemUsdDeviation}, got:  ${deviationUsdValue}\n
+        deviationUsdValue < expectedRedeemOneCollateralUsdDeviation,
+        `
+         Collateral ${i} redeem with wrong amount.
+         Expected: ${expectedCollateralAmount}, got: ${userCollateralBalance}
+         Expected usd deviation: ${expectedRedeemOneCollateralUsdDeviation}, got:  ${deviationUsdValue}\n
         `
       )
     }
+
+    // Check total redeem in usd is same as expected
+    const totalRedeemUsdDeviation = totalRedeemUsd - totalRedeem.usd
+    assert(
+      totalRedeemUsdDeviation < expectedRedeemTotalUsdDeviation,
+      `
+       Redeem with wrong total USD value.
+       Expected: ${totalRedeem.usd}, got: ${totalRedeemUsdDeviation}
+       Expected usd deviation: ${expectedRedeemOneCollateralUsdDeviation}, got:  ${totalRedeemUsdDeviation}\n
+      `
+    )
 
     const usdRedeemForOneOtoken = getUsdRedeemForOneOtoken(params)
 
@@ -221,9 +239,6 @@ export const testMintRedeemSettleFactory = (getDeployResults: () => TestDeployRe
         params.checkpointsDays
       )
       console.log(`testMintRedeemSettleFactory ~ usedCollaterals`, usedCollaterals)
-      const redeemableAlternativeRatio = totalRedeem.collateralsFormatted.map((x, i) => usedCollaterals[i] / x)
-      const redeeableAlternative = totalRedeem.collateralsFormatted
-      console.log(`testMintRedeemSettleFactory ~ redeemableAlternative`, redeemableAlternativeRatio)
       const totalOTokenMintAfterBurn = totalOTokenMint - (vault.burnAmountFormatted || 0)
       console.log(`testMintRedeemSettleFactory ~ totalOTokenMintAfterBurn`, totalOTokenMintAfterBurn)
       const totalUsedCollateralsValue = usedCollateralsValues.reduce((acc, b, i) => (acc += b), 0)
@@ -261,7 +276,7 @@ export const testMintRedeemSettleFactory = (getDeployResults: () => TestDeployRe
            Settle vault № ${vaults.indexOf(vault)}
            Collateral ${i}, ${collateralAsset} settled with wrong usd value.
            Expected: ${expectedCollateralsLeftValuesFormatted[i]}, got: ${collateralsLeftValuesFormatted[i]}
-           Expected deviation: ${expectedSettleCollateralUsdDeviation}, got:  ${deviationValue}
+           Expected usd deviation: ${expectedSettleCollateralUsdDeviation}, got:  ${deviationValue}
           `
         )
       }
@@ -288,6 +303,10 @@ export async function openVaultAndMint<
 
   const collateralAmounts = await Promise.all(
     collateralAmountsFormatted.map(async (amount, i) => addTokenDecimalsToAmount(collateralAssets[i], amount, owner))
+  )
+  console.log(
+    `collateralAmounts`,
+    collateralAmounts.map(x => x.toString())
   )
   const vaultId = 1
   const isVaultAlreadyOpened = (await controller.accountVaultCounter(owner.address)).toNumber() === vaultId
@@ -362,9 +381,11 @@ export function getStrikeRedeemForOneOtoken<
   C extends TestMintRedeemSettleParamsCheckpoints<T>
 >(params: TestMintRedeemSettleParams<T, C>) {
   const { expiryPrices } = params
-  const { strikePriceFormatted, underlyingAsset, strikeAsset } = params.oTokenParams
+  const { strikePriceFormatted, underlyingAsset, strikeAsset, isPut } = params.oTokenParams
   const expiryPriceInStrike = expiryPrices[underlyingAsset] / expiryPrices[strikeAsset]
-  return Math.max(strikePriceFormatted - expiryPriceInStrike, 0)
+  return isPut
+    ? Math.max(strikePriceFormatted - expiryPriceInStrike, 0)
+    : Math.max(expiryPriceInStrike - strikePriceFormatted, 0)
 }
 
 export function getUsdRedeemForOneOtoken<
@@ -388,47 +409,42 @@ export async function calculateRedeemForOtokenAmount<
     collaterals: collateralAssets.map(() => BigNumber.from(0)),
     collateralsFormatted: collateralAssets.map(() => 0),
   }
-  if (isPut) {
-    const usdRedeemForOneOtoken = getUsdRedeemForOneOtoken(params)
+  const usdRedeemForOneOtoken = getUsdRedeemForOneOtoken(params)
 
-    if (usdRedeemForOneOtoken === 0) {
-      return zero
-    }
-
-    const collateralValuesFormatted = vaults
-      .map(vault => {
-        const { usedCollateralsValues } = calculateVaultTotalMint(
-          params.oTokenParams,
-          initialPrices,
-          vault,
-          checkpointsDays
-        )
-        return usedCollateralsValues
-      })
-      .reduce((acc, b) => {
-        b.forEach((amount, i) => (acc[i] = (acc[i] || 0) + amount))
-        return acc
-      }, [])
-
-    const totalReservedCollateralValue = collateralValuesFormatted.reduce((acc, b) => acc + b, 0)
-
-    const redeemCollateralRatios = collateralValuesFormatted.map(x => x / totalReservedCollateralValue)
-    const redeemUsd = usdRedeemForOneOtoken * oTokenAmountFormatted
-    const redeemCollateralValuesUsd = redeemCollateralRatios.map(x => x * redeemUsd)
-    const redeemCollateralAmountsFormatted = redeemCollateralValuesUsd.map(
-      (x, i) => x / expiryPrices[collateralAssets[i]]
-    )
-    const redeemCollateralAmounts = await Promise.all(
-      collateralAssets.map((asset, i) => addTokenDecimalsToAmount(asset, redeemCollateralAmountsFormatted[i], signer))
-    )
-    return {
-      usd: redeemUsd,
-      collaterals: redeemCollateralAmounts,
-      collateralsFormatted: redeemCollateralAmountsFormatted,
-    }
-  } else {
-    // TODO call
+  if (usdRedeemForOneOtoken === 0) {
     return zero
+  }
+
+  const collateralValuesFormatted = vaults
+    .map(vault => {
+      const { usedCollateralsValues } = calculateVaultTotalMint(
+        params.oTokenParams,
+        initialPrices,
+        vault,
+        checkpointsDays
+      )
+      return usedCollateralsValues
+    })
+    .reduce((acc, b) => {
+      b.forEach((amount, i) => (acc[i] = (acc[i] || 0) + amount))
+      return acc
+    }, [])
+
+  const totalReservedCollateralValue = collateralValuesFormatted.reduce((acc, b) => acc + b, 0)
+
+  const redeemCollateralRatios = collateralValuesFormatted.map(x => x / totalReservedCollateralValue)
+  const redeemUsd = usdRedeemForOneOtoken * oTokenAmountFormatted
+  const redeemCollateralValuesUsd = redeemCollateralRatios.map(x => x * redeemUsd)
+  const redeemCollateralAmountsFormatted = redeemCollateralValuesUsd.map(
+    (x, i) => x / expiryPrices[collateralAssets[i]]
+  )
+  const redeemCollateralAmounts = await Promise.all(
+    collateralAssets.map((asset, i) => addTokenDecimalsToAmount(asset, redeemCollateralAmountsFormatted[i], signer))
+  )
+  return {
+    usd: redeemUsd,
+    collaterals: redeemCollateralAmounts,
+    collateralsFormatted: redeemCollateralAmountsFormatted,
   }
 }
 
@@ -504,8 +520,10 @@ export function calculateMintUsedCollaterals<T extends TestMintOTokenParams>(
   collateralAmounts: VaultDepositsAmounts<T>,
   prices: OTokenPrices<T>
 ) {
-  const { strikePriceFormatted, collateralAssets, strikeAsset } = oTokenParams
-  const strikeRequiredUsd = strikePriceFormatted * mintAmount * prices[strikeAsset]
+  const { strikePriceFormatted, collateralAssets, strikeAsset, underlyingAsset, isPut } = oTokenParams
+  const strikeRequiredUsd = isPut
+    ? strikePriceFormatted * mintAmount * prices[strikeAsset]
+    : mintAmount * prices[underlyingAsset]
   const collateralValues = collateralAmounts.map((x, i) => prices[collateralAssets[i]] * x)
   const totalCollateralsValue = collateralValues.reduce((a, b) => a + b, 0)
   assert(

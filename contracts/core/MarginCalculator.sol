@@ -444,10 +444,6 @@ contract MarginCalculator is Ownable {
         uint256 oTokenTotalCollateralValue = uint256ArraySum(otokenCollateralValues);
         console.log("oTokenTotalCollateralValue", oTokenTotalCollateralValue);
 
-        FPI.FixedPointInt memory collaterizedTotalAmountFpi = FPI.fromScaledUint(
-            oTokenDetails.collaterizedTotalAmount,
-            BASE
-        );
         console.log("oTokenDetails.collaterizedTotalAmount", oTokenDetails.collaterizedTotalAmount);
         // FPI.FixedPointInt memory strikePriceFpi = FPI.fromScaledUint(oTokenDetails.strikePrice, BASE);
         // TODO this is only put calculations, add for call
@@ -1292,10 +1288,10 @@ contract MarginCalculator is Ownable {
         );
 
         // ensure the long asset is valid for the short asset
-        require(
-            _isMarginableLong(_vault, _vaultDetails),
-            "MarginCalculator: long asset not marginable for short asset"
-        );
+        // require(
+        //     _isMarginableLong(_vault, _vaultDetails),
+        //     "MarginCalculator: long asset not marginable for short asset"
+        // );
 
         // ensure that the collateral asset is valid for the short asset
         require(
@@ -1310,31 +1306,31 @@ contract MarginCalculator is Ownable {
      * @param _vaultDetails vault details struct
      * @return true if long is marginable or false if not
      */
-    function _isMarginableLong(MarginVault.Vault memory _vault, VaultDetails memory _vaultDetails)
-        internal
-        pure
-        returns (bool)
-    {
-        // if vault is missing a long or a short, return True
-        if (!_vaultDetails.hasLong || !_vaultDetails.hasShort) return true;
+    // function _isMarginableLong(MarginVault.Vault memory _vault, VaultDetails memory _vaultDetails)
+    //     internal
+    //     pure
+    //     returns (bool)
+    // {
+    //     // if vault is missing a long or a short, return True
+    //     if (!_vaultDetails.hasLong || !_vaultDetails.hasShort) return true;
 
-        bool isSameLengthLongShort = _vaultDetails.longCollateralAssets.length ==
-            _vaultDetails.shortCollateralAssets.length;
-        if (!isSameLengthLongShort) return false;
+    //     bool isSameLengthLongShort = _vaultDetails.longCollateralAssets.length ==
+    //         _vaultDetails.shortCollateralAssets.length;
+    //     if (!isSameLengthLongShort) return false;
 
-        // check if longCollateralAssets has same as shorCollateralAssets
-        // TODO check if array equal is right here
-        for (uint256 i = 0; i < _vaultDetails.longCollateralAssets.length; i++) {
-            if (_vaultDetails.longCollateralAssets[i] != _vaultDetails.shortCollateralAssets[i]) return false;
-        }
+    //     // check if longCollateralAssets has same as shorCollateralAssets
+    //     // TODO check if array equal is right here
+    //     for (uint256 i = 0; i < _vaultDetails.longCollateralAssets.length; i++) {
+    //         if (_vaultDetails.longCollateralAssets[i] != _vaultDetails.shortCollateralAssets[i]) return false;
+    //     }
 
-        return
-            _vault.longOtokens[0] != _vault.shortOtoken &&
-            _vaultDetails.longUnderlyingAsset == _vaultDetails.shortUnderlyingAsset &&
-            _vaultDetails.longStrikeAsset == _vaultDetails.shortStrikeAsset &&
-            _vaultDetails.longExpiryTimestamp == _vaultDetails.shortExpiryTimestamp &&
-            _vaultDetails.isLongPut == _vaultDetails.isShortPut;
-    }
+    //     return
+    //         _vault.longOtokens[0] != _vault.shortOtoken &&
+    //         _vaultDetails.longUnderlyingAsset == _vaultDetails.shortUnderlyingAsset &&
+    //         _vaultDetails.longStrikeAsset == _vaultDetails.shortStrikeAsset &&
+    //         _vaultDetails.longExpiryTimestamp == _vaultDetails.shortExpiryTimestamp &&
+    //         _vaultDetails.isLongPut == _vaultDetails.isShortPut;
+    // }
 
     /**
      * @dev if there is short option and collateral asset in the vault, ensure that the collateral asset is valid for the short option
@@ -1465,76 +1461,73 @@ contract MarginCalculator is Ownable {
 
         // TODO should be better to get all details at once with getOtokenDetails?
         OtokenInterface otoken = OtokenInterface(_otoken);
-        address strikeAsset = otoken.strikeAsset();
+        bool isPut = otoken.isPut();
 
-        if (otoken.isPut()) {
-            // availableCollateralsValues is how much worth available collateral in strike asset.
-            FPI.FixedPointInt[] memory availableCollateralsValues = new FPI.FixedPointInt[](
-                _vault.collateralAssets.length
-            );
-            FPI.FixedPointInt memory availableCollateralTotalValue;
-            uint256[] memory collateralsDecimals = new uint256[](_vault.collateralAssets.length);
-            FPI.FixedPointInt[] memory availableCollateralsAmountsFPI = new FPI.FixedPointInt[](
-                _vault.collateralAssets.length
-            );
+        // strike asset for put and underlying asset for call
+        address valueAsset = isPut ? otoken.strikeAsset() : otoken.underlyingAsset();
+        // For Put its strike asset amounts as strikePrice, for Call its _amount of oTokens to mint in underlying
+        FPI.FixedPointInt memory valueRequired = isPut
+            ? FPI.fromScaledUint(_amount, BASE).mul(FPI.fromScaledUint(otoken.strikePrice(), BASE))
+            : FPI.fromScaledUint(_amount, BASE);
 
-            for (uint256 i = 0; i < _vault.collateralAssets.length; i++) {
-                collateralsDecimals[i] = IERC20Metadata(_vault.collateralAssets[i]).decimals();
-                if (_vault.unusedCollateralAmounts[i] == 0) {
-                    availableCollateralsValues[i] = ZERO;
-                    continue;
-                }
-                availableCollateralsAmountsFPI[i] = FPI.fromScaledUint(
-                    _vault.unusedCollateralAmounts[i],
-                    collateralsDecimals[i]
-                );
-                availableCollateralsValues[i] = _convertAmountOnLivePrice(
-                    availableCollateralsAmountsFPI[i],
-                    _vault.collateralAssets[i],
-                    strikeAsset
-                );
-                availableCollateralTotalValue = availableCollateralTotalValue.add(availableCollateralsValues[i]);
+        // availableCollateralsValues is how much worth available collateral in strike asset for put and underlying asset for call
+        FPI.FixedPointInt[] memory availableCollateralsValues = new FPI.FixedPointInt[](_vault.collateralAssets.length);
+        // availableCollateralTotalValue - how much value totally available in vault in valueAsset
+        FPI.FixedPointInt memory availableCollateralTotalValue;
+
+        uint256[] memory collateralsDecimals = new uint256[](_vault.collateralAssets.length);
+        FPI.FixedPointInt[] memory availableCollateralsAmountsFPI = new FPI.FixedPointInt[](
+            _vault.collateralAssets.length
+        );
+
+        for (uint256 i = 0; i < _vault.collateralAssets.length; i++) {
+            collateralsDecimals[i] = IERC20Metadata(_vault.collateralAssets[i]).decimals();
+            if (_vault.unusedCollateralAmounts[i] == 0) {
+                availableCollateralsValues[i] = ZERO;
+                continue;
             }
-
-            require(
-                availableCollateralTotalValue.isGreaterThan(ZERO),
-                "Cant calculate collateral required for zero vault"
+            availableCollateralsAmountsFPI[i] = FPI.fromScaledUint(
+                _vault.unusedCollateralAmounts[i],
+                collateralsDecimals[i]
             );
-
-            FPI.FixedPointInt memory strikeRequired = FPI.fromScaledUint(_amount, BASE).mul(
-                FPI.fromScaledUint(otoken.strikePrice(), BASE)
+            availableCollateralsValues[i] = _convertAmountOnLivePrice(
+                availableCollateralsAmountsFPI[i],
+                _vault.collateralAssets[i],
+                valueAsset
             );
-
-            require(
-                availableCollateralTotalValue.isGreaterThanOrEqual(strikeRequired),
-                "Vault value is not enough to collaterize the amount"
-            );
-            uint256[] memory collateralsValuesRequired = new uint256[](_vault.collateralAssets.length);
-            uint256[] memory collateralsAmountsRequired = new uint256[](_vault.collateralAssets.length);
-            // TODO can we avoid second loop?
-            for (uint256 i = 0; i < _vault.collateralAssets.length; i++) {
-                if (availableCollateralsValues[i].isGreaterThan(ZERO)) {
-                    // TODO decide which rounding should we use down or up, now we use down (toScaledUint last argument true)
-                    // TODO we use dynamic zero length array for collateralsValuesRequired and collateralsAmountsRequired
-                    // initialized in function returns maybe save gas and value by initilizing inside
-                    collateralsValuesRequired[i] = availableCollateralsValues[i]
-                        .mul(strikeRequired)
-                        .div(availableCollateralTotalValue)
-                        .toScaledUint(BASE, false);
-
-                    collateralsAmountsRequired[i] = availableCollateralsAmountsFPI[i]
-                        .mul(strikeRequired)
-                        .div(availableCollateralTotalValue)
-                        .toScaledUint(collateralsDecimals[i], false);
-                } else {
-                    collateralsAmountsRequired[i] = 0;
-                    collateralsValuesRequired[i] = 0;
-                }
-            }
-            return (collateralsAmountsRequired, collateralsValuesRequired);
-        } else {
-            // TODO calc call option case
-            return (new uint256[](_vault.collateralAssets.length), new uint256[](_vault.collateralAssets.length));
+            console.log("availableCollateralTotalValue", i, availableCollateralsValues[i].toScaledUint(BASE, false));
+            availableCollateralTotalValue = availableCollateralTotalValue.add(availableCollateralsValues[i]);
         }
+
+        console.log("availableCollateralTotalValue", availableCollateralTotalValue.toScaledUint(BASE, false));
+        console.log("valueRequired", valueRequired.toScaledUint(BASE, false));
+        require(
+            availableCollateralTotalValue.isGreaterThanOrEqual(valueRequired),
+            "Vault value is not enough to collaterize the amount"
+        );
+
+        uint256[] memory collateralsValuesRequired = new uint256[](_vault.collateralAssets.length);
+        uint256[] memory collateralsAmountsRequired = new uint256[](_vault.collateralAssets.length);
+        // TODO can we avoid second loop?
+        for (uint256 i = 0; i < _vault.collateralAssets.length; i++) {
+            if (availableCollateralsValues[i].isGreaterThan(ZERO)) {
+                // TODO decide which rounding should we use down or up, now we use down (toScaledUint last argument true)
+                // TODO we use dynamic zero length array for collateralsValuesRequired and collateralsAmountsRequired
+                // initialized in function returns maybe save gas and value by initilizing inside
+                collateralsValuesRequired[i] = availableCollateralsValues[i]
+                    .mul(valueRequired)
+                    .div(availableCollateralTotalValue)
+                    .toScaledUint(BASE, false);
+                // TODO in collateralsValuesRequired[i] should decimals be BASE for Call option or underlying decimals?
+                collateralsAmountsRequired[i] = availableCollateralsAmountsFPI[i]
+                    .mul(valueRequired)
+                    .div(availableCollateralTotalValue)
+                    .toScaledUint(collateralsDecimals[i], false);
+            } else {
+                collateralsAmountsRequired[i] = 0;
+                collateralsValuesRequired[i] = 0;
+            }
+        }
+        return (collateralsAmountsRequired, collateralsValuesRequired);
     }
 }

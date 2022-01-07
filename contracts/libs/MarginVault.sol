@@ -283,7 +283,6 @@ library MarginVault {
             console.log("_vault.usedCollateralAmounts[i]", _vault.usedCollateralAmounts[i]);
             console.log("_vault.usedCollateralValues[i]", _vault.usedCollateralValues[i]);
             uint256 newUsedCollateralAmount = _vault.usedCollateralAmounts[i].add(_amounts[i]);
-
             uint256 newUsedCollateralValue = _vault.usedCollateralValues[i].add(_values[i]);
 
             _vault.usedCollateralAmounts[i] = newUsedCollateralAmount;
