@@ -79,7 +79,7 @@ export type TestMintRedeemSettleParams<
 }
 
 // Maxiumum deviation of usd value of redeem and vault settle. Calculated from balances of redeemer and vault owner respectively
-const expectedRedeemOneCollateralUsdDeviation = 1.7
+const expectedRedeemOneCollateralUsdDeviation = 2.5
 const expectedRedeemTotalUsdDeviation = 0.1
 const expectedSettleCollateralUsdDeviation = 0.1
 
