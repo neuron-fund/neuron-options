@@ -18,6 +18,8 @@ import { BigNumber } from 'ethers'
   collateralAssets: string[]
 }*/
 
+const ZERO_ADDR = '0x0000000000000000000000000000000000000000'
+
 /**
  * Return a valid expiry timestamp that's today + # days, 0800 UTC.
  * @param now
@@ -50,11 +52,11 @@ export const createVault = (
   collateralAmounts: Array<string | BigNumber | number | undefined>,
 ): VaultStruct => {
   return {
-    shortOtoken: shortOtoken,
-    longOtokens: [longOtoken],
+    shortOtoken: shortOtoken !== undefined ? shortOtoken : ZERO_ADDR,
+    longOtokens: longOtoken !== undefined ? [longOtoken] : [],
     collateralAssets: collateralAssets ? collateralAssets : [],
-    shortAmount: shortAmount,
-    longAmounts: [longAmount],
+    shortAmount: shortAmount !== undefined ? shortAmount: '0',
+    longAmounts: longAmount !== undefined ? [longAmount] : [],
     collateralAmounts: collateralAmounts ? collateralAmounts : [],
     usedCollateralAmounts: [],
     usedCollateralValues: [],
@@ -62,7 +64,16 @@ export const createVault = (
   }
 }
 
-export const createTokenAmount = (num: number | BigNumber, decimals = 8) => {
+export const createTokenAmount = (_num: number, _decimals = 8) => {
+  let num = _num
+  let decimals = _decimals
+  
+  while(decimals>0){
+    if((num % 1) === 0) break
+    decimals--
+    num *= 10
+  }
+
   const amount = BigNumber.from(num).mul(BigNumber.from(10).pow(decimals))
   return amount.toString()
 }

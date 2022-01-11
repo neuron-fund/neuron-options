@@ -243,14 +243,7 @@ contract(
         let otoken: MockOtokenInstance
         otoken = await MockOtoken.new()
         await whitelist.whitelistOtoken(otoken.address, { from: owner })
-
         await addressBook.setWhitelist(whitelist.address)
-
-        // const controller_ab = await addressBook.getController()
-        // const controller_wl = await controllerProxy.whitelist()        
-        // console.log('controllerProxy.address controller_ab', controllerProxy.address, controller_ab)
-        // console.log('controllerProxy.whitelist.toString() whitelist.address', controller_wl.toString(), whitelist.address)
-
         assert.isTrue(await whitelist.isWhitelistedOtoken(otoken.address))
 
         const actionArgs: ActionArgsStruct[] = [
@@ -278,9 +271,9 @@ contract(
             actionType: ActionType.OpenVault,
             owner: accountOwner1,
             secondAddress: accountOwner1,
-            assets: [ZERO_ADDR,],
+            assets: [ZERO_ADDR],
             vaultId: '1',
-            amounts: ['0',],
+            amounts: ['0'],
             index: '0',
             data: invalidVault,
           },
@@ -289,16 +282,42 @@ contract(
         await expectRevert(controllerProxy.operate(actionArgs, { from: accountOwner1 }), 'A3')
       })
 
-      xit('should revert opening multiple vaults for different owners in the same operate call', async () => {
+      it('should revert opening a vault with vault type other than 0 or 1', async () => {
+        const invalidVault = web3.eth.abi.encodeParameter('uint256', 2)
+        
+        let otoken: MockOtokenInstance
+        otoken = await MockOtoken.new()
+        await whitelist.whitelistOtoken(otoken.address, { from: owner })
+        await addressBook.setWhitelist(whitelist.address)
+        assert.isTrue(await whitelist.isWhitelistedOtoken(otoken.address))
+
+        const actionArgs = [
+          {
+            actionType: ActionType.OpenVault,
+            owner: accountOwner1,
+            secondAddress: accountOwner1,
+            assets: [ZERO_ADDR],
+            shortOtoken: otoken.address, 
+            vaultId: '1',
+            amounts: ['0'],
+            index: '0',
+            data: invalidVault,
+          },
+        ]
+
+        await expectRevert(controllerProxy.operate(actionArgs, { from: accountOwner1 }), 'A3')
+      })
+
+      it('should revert opening multiple vaults for different owners in the same operate call', async () => {
         await controllerProxy.setOperator(accountOwner1, true, { from: accountOwner2 })
         const actionArgs = [
           {
             actionType: ActionType.OpenVault,
             owner: accountOwner1,
             secondAddress: accountOwner1,
-            assets: [ZERO_ADDR,],
+            assets: [ZERO_ADDR],
             vaultId: '1',
-            amounts: ['0',],
+            amounts: ['0'],
             index: '0',
             data: ZERO_ADDR,
           },
@@ -306,9 +325,9 @@ contract(
             actionType: ActionType.OpenVault,
             owner: accountOwner2,
             secondAddress: accountOwner1,
-            assets: [ZERO_ADDR,],
+            assets: [ZERO_ADDR],
             vaultId: '1',
-            amounts: ['0',],
+            amounts: ['0'],
             index: '0',
             data: ZERO_ADDR,
           },
@@ -317,8 +336,7 @@ contract(
         await expectRevert(controllerProxy.operate(actionArgs, { from: accountOwner1 }), 'C12')
       })
 
-      xit('should open vault', async () => {
-        /*
+      it('should open vault', async () => {
         const vaultCounterBefore = BigNumber.from (await controllerProxy.accountVaultCounter(accountOwner1))
         assert.equal(vaultCounterBefore.toString(), '0', 'vault counter before mismatch')
 
@@ -327,9 +345,9 @@ contract(
             actionType: ActionType.OpenVault,
             owner: accountOwner1,
             secondAddress: accountOwner1,
-            assets: [ZERO_ADDR,],
+            assets: [ZERO_ADDR],
             vaultId: vaultCounterBefore.toNumber() + 1,
-            amounts: ['0',],
+            amounts: ['0'],
             index: '0',
             data: ZERO_ADDR,
           },
@@ -338,11 +356,9 @@ contract(
 
         const vaultCounterAfter = BigNumber.from(await controllerProxy.accountVaultCounter(accountOwner1))
         assert.equal(vaultCounterAfter.sub(vaultCounterBefore).toString(), '1', 'vault counter after mismatch')
-        */
       })
 
-      xit('should open vault from account operator', async () => {
-        /*
+      it('should open vault from account operator', async () => {
         await controllerProxy.setOperator(accountOperator1, true, { from: accountOwner1 })
         assert.equal(
           await controllerProxy.isOperator(accountOwner1, accountOperator1),
@@ -357,9 +373,9 @@ contract(
             actionType: ActionType.OpenVault,
             owner: accountOwner1,
             secondAddress: accountOperator1,
-            assets: [ZERO_ADDR, ],
+            assets: [ZERO_ADDR],
             vaultId: vaultCounterBefore.toNumber() + 1,
-            amounts: ['0', ],
+            amounts: ['0'],
             index: '0',
             data: ZERO_ADDR,
           },
@@ -368,7 +384,6 @@ contract(
 
         const vaultCounterAfter = BigNumber.from(await controllerProxy.accountVaultCounter(accountOwner1))
         assert.equal(vaultCounterAfter.sub(vaultCounterBefore).toString(), '1', 'vault counter after mismatch')
-        */
       })
     })
 
@@ -440,7 +455,7 @@ contract(
           await expectRevert(controllerProxy.operate(actionArgs, { from: accountOwner1 }), 'C35')
         })
 
-        xit('should revert depositing long from an address that is not the msg.sender nor the owner account address', async () => {
+        it('should revert depositing long from an address that is not the msg.sender nor the owner account address', async () => {
           const vaultCounter = BigNumber.from(await controllerProxy.accountVaultCounter(accountOwner1))
 
           const longToDeposit = createTokenAmount(20)
@@ -463,7 +478,7 @@ contract(
 
         })
 
-        xit('should deposit long otoken into vault from account owner', async () => {
+        it('should deposit long otoken into vault from account owner', async () => {
           const vaultCounter = BigNumber.from(await controllerProxy.accountVaultCounter(accountOwner1))
           const longToDeposit = createTokenAmount(20)
           const actionArgs = [
@@ -511,7 +526,7 @@ contract(
           )
         })
 
-        xit('should deposit long otoken into vault from account operator', async () => {
+        it('should deposit long otoken into vault from account operator', async () => {
           assert.equal(
             await controllerProxy.isOperator(accountOwner1, accountOperator1),
             true,
@@ -627,7 +642,7 @@ contract(
           )
         })
 
-        xit('should revert depositing long otoken with amount equal to zero', async () => {
+        it('should revert depositing long otoken with amount equal to zero', async () => {
           const vaultCounter = BigNumber.from(await controllerProxy.accountVaultCounter(accountOwner1))
           const longToDeposit = createTokenAmount(20)
           const actionArgs = [
@@ -647,7 +662,7 @@ contract(
           await expectRevert(controllerProxy.operate(actionArgs, { from: accountOwner1 }), 'V4')
         })
 
-        xit('should revert depositing an expired long otoken', async () => {
+        it('should revert depositing an expired long otoken', async () => {
           // deploy expired Otoken
           const expiredLongOtoken: MockOtokenInstance = await MockOtoken.new()
           // init otoken
@@ -685,7 +700,7 @@ contract(
 
         })
 
-        xit('should revert when vault have more than 1 long otoken', async () => {
+        it('should revert when vault have more than 1 long otoken', async () => {
           const expiryTime = BigNumber.from(60 * 60) // after 1 hour
           const longToDeposit = createTokenAmount(20)
           // deploy second Otoken
@@ -760,7 +775,7 @@ contract(
       })
 
       describe('withdraw long otoken', () => {
-        xit('should revert withdrawing long otoken with wrong index from a vault', async () => {
+        it('should revert withdrawing long otoken with wrong index from a vault', async () => {
           const vaultCounter = BigNumber.from(await controllerProxy.accountVaultCounter(accountOwner1))
           assert.isAbove(vaultCounter.toNumber(), 0, 'Account owner have no vault')
 
@@ -781,7 +796,7 @@ contract(
           await expectRevert(controllerProxy.operate(actionArgs, { from: accountOwner1 }), 'V5')
         })
 
-        xit('should revert withdrawing long otoken from random address other than account owner or operator', async () => {
+        it('should revert withdrawing long otoken from random address other than account owner or operator', async () => {
           const vaultCounter = BigNumber.from(await controllerProxy.accountVaultCounter(accountOwner1))
           assert.isAbove(vaultCounter.toNumber(), 0, 'Account owner have no vault')
 
@@ -802,7 +817,7 @@ contract(
           await expectRevert(controllerProxy.operate(actionArgs, { from: random }), 'C6')
         })
 
-        xit('should revert withdrawing long otoken amount greater than the vault balance', async () => {
+        it('should revert withdrawing long otoken amount greater than the vault balance', async () => {
           const vaultCounter = BigNumber.from(await controllerProxy.accountVaultCounter(accountOwner1))
           assert.isAbove(vaultCounter.toNumber(), 0, 'Account owner have no vault')
 
@@ -847,7 +862,7 @@ contract(
           await expectRevert(controllerProxy.operate(actionArgs, { from: accountOwner1 }), 'C35')
         })
 
-        xit('should withdraw long otoken to any random address where msg.sender is account owner', async () => {
+        it('should withdraw long otoken to any random address where msg.sender is account owner', async () => {
           const vaultCounter = BigNumber.from(await controllerProxy.accountVaultCounter(accountOwner1))
           assert.isAbove(vaultCounter.toNumber(), 0, 'Account owner have no vault')
 
@@ -892,7 +907,7 @@ contract(
           )
         })
 
-        xit('should withdraw long otoken to any random address where msg.sender is account operator', async () => {
+        it('should withdraw long otoken to any random address where msg.sender is account operator', async () => {
           assert.equal(
             await controllerProxy.isOperator(accountOwner1, accountOperator1),
             true,
@@ -943,7 +958,7 @@ contract(
           )
         })
 
-        xit('should execute withdrawing long otoken in mutliple actions', async () => {
+        it('should execute withdrawing long otoken in mutliple actions', async () => {
           const vaultCounter = BigNumber.from(await controllerProxy.accountVaultCounter(accountOwner1))
           assert.isAbove(vaultCounter.toNumber(), 0, 'Account owner have no vault')
 
@@ -998,7 +1013,7 @@ contract(
           )
         })
 
-        xit('should remove otoken address from otoken array if amount is equal to zero after withdrawing', async () => {
+        it('should remove otoken address from otoken array if amount is equal to zero after withdrawing', async () => {
           const vaultCounter = BigNumber.from(await controllerProxy.accountVaultCounter(accountOwner1))
           assert.isAbove(vaultCounter.toNumber(), 0, 'Account owner have no vault')
 
@@ -1099,7 +1114,7 @@ contract(
 
           })
 
-          xit('should revert withdrawing an expired long otoken', async () => {
+          it('should revert withdrawing an expired long otoken', async () => {
 
             // increment time after expiredLongOtoken expiry
             await time.increase(3601) // increase time with one hour in seconds
@@ -1134,7 +1149,7 @@ contract(
 
     describe('Collateral asset', () => {
       describe('Deposit collateral asset', () => {
-        xit('should deposit a whitelisted collateral asset from account owner', async () => {
+        it('should deposit a whitelisted collateral asset from account owner', async () => {
           // whitelist usdc
           await whitelist.whitelistCollateral(usdc.address)
           const vaultCounter = BigNumber.from(await controllerProxy.accountVaultCounter(accountOwner1))
@@ -1187,7 +1202,7 @@ contract(
           )
         })
 
-        xit('should deposit a whitelisted collateral asset from account operator', async () => {
+        it('should deposit a whitelisted collateral asset from account operator', async () => {
           const vaultCounter = BigNumber.from(await controllerProxy.accountVaultCounter(accountOwner1))
           assert.isAbove(vaultCounter.toNumber(), 0, 'Account owner have no vault')
 
@@ -1262,7 +1277,7 @@ contract(
           await expectRevert(controllerProxy.operate(actionArgs, { from: accountOwner1 }), 'C35')
         })
 
-        xit('should revert depositing long from an address that is not the msg.sender nor the owner account address', async () => {
+        it('should revert depositing long from an address that is not the msg.sender nor the owner account address', async () => {
           const vaultCounter = BigNumber.from(await controllerProxy.accountVaultCounter(accountOwner1))
 
           const collateralToDeposit = createTokenAmount(10, usdcDecimals)
@@ -1307,7 +1322,7 @@ contract(
           await expectRevert(controllerProxy.operate(actionArgs, { from: accountOwner1 }), 'V7')
         })
 
-        xit('should execute depositing collateral into vault in multiple actions', async () => {
+        it('should execute depositing collateral into vault in multiple actions', async () => {
           //const vaultCounter = BigNumber.from(await controllerProxy.accountVaultCounter(accountOwner1))
           const vaultCounter = BigNumber.from(await controllerProxy.accountVaultCounter(accountOwner1))
           const collateralToDeposit = BigNumber.from(createTokenAmount(20, usdcDecimals))
@@ -1468,7 +1483,7 @@ contract(
           await expectRevert(controllerProxy.operate(actionArgs, { from: accountOwner1 }), 'C35')
         })
 
-        xit('should revert withdrawing collateral asset amount greater than the vault balance', async () => {
+        it('should revert withdrawing collateral asset amount greater than the vault balance', async () => {
           /*
           const vaultCounter = BigNumber.from(await controllerProxy.accountVaultCounter(accountOwner1))
           assert.isAbove(vaultCounter.toNumber(), 0, 'Account owner have no vault')
@@ -1495,7 +1510,7 @@ contract(
 
         })
 
-        xit('should withdraw collateral to any random address where msg.sender is account owner', async () => {
+        it('should withdraw collateral to any random address where msg.sender is account owner', async () => {
           const vaultCounter = BigNumber.from(await controllerProxy.accountVaultCounter(accountOwner1))
           assert.isAbove(vaultCounter.toNumber(), 0, 'Account owner have no vault')
 
@@ -1542,7 +1557,7 @@ contract(
           )
         })
 
-        xit('should withdraw collateral asset to any random address where msg.sender is account operator', async () => {
+        it('should withdraw collateral asset to any random address where msg.sender is account operator', async () => {
           assert.equal(
             await controllerProxy.isOperator(accountOwner1, accountOperator1),
             true,
@@ -1595,7 +1610,7 @@ contract(
           )
         })
 
-        xit('should execute withdrawing collateral asset in mutliple actions', async () => {
+        it('should execute withdrawing collateral asset in mutliple actions', async () => {
           const vaultCounter = BigNumber.from(await controllerProxy.accountVaultCounter(accountOwner1))
           assert.isAbove(vaultCounter.toNumber(), 0, 'Account owner have no vault')
 
@@ -1652,7 +1667,7 @@ contract(
           )
         })
 
-        xit('should remove collateral asset address from collateral array if amount is equal to zero after withdrawing', async () => {
+        it('should remove collateral asset address from collateral array if amount is equal to zero after withdrawing', async () => {
           const vaultCounter = BigNumber.from(await controllerProxy.accountVaultCounter(accountOwner1))
           assert.isAbove(vaultCounter.toNumber(), 0, 'Account owner have no vault')
 
@@ -1724,7 +1739,7 @@ contract(
           addressBook.address,
           weth.address,
           usdc.address,
-          usdc.address,
+          [usdc.address],
           createTokenAmount(250),
           BigNumber.from((await time.latest()).toString()).add(expiryTime),
           true,
@@ -1733,7 +1748,7 @@ contract(
           addressBook.address,
           weth.address,
           usdc.address,
-          usdc.address,
+          [usdc.address],
           createTokenAmount(200),
           BigNumber.from((await time.latest()).toString()).add(expiryTime),
           true,
@@ -1743,8 +1758,11 @@ contract(
         await whitelist.whitelistOtoken(shortOtoken.address, { from: owner })
 
         // give free money
-        await longOtoken.mintOtoken(accountOwner1, BigNumber.from('100'))
-        await longOtoken.mintOtoken(accountOperator1, BigNumber.from('100'))
+        const collateralAmount = 10
+        const collateralValue = 5
+
+        await longOtoken.mintOtoken(accountOwner1, BigNumber.from('100'), [collateralAmount], [collateralValue])
+        await longOtoken.mintOtoken(accountOperator1, BigNumber.from('100'), [collateralAmount], [collateralValue])
         await usdc.mint(accountOwner1, BigNumber.from('1000000'))
         await usdc.mint(accountOperator1, BigNumber.from('1000000'))
         await usdc.mint(random, BigNumber.from('1000000'))
@@ -1832,7 +1850,7 @@ contract(
           await expectRevert(controllerProxy.operate(actionArgs, { from: accountOwner1 }), 'C35')
         })
 
-        xit('mint naked short otoken from owner', async () => {
+        it('mint naked short otoken from owner', async () => {
           /*
           const vaultCounter = BigNumber.from(await controllerProxy.accountVaultCounter(accountOwner1))
           assert.isAbove(vaultCounter.toNumber(), 0, 'Account owner have no vault')
@@ -2039,7 +2057,7 @@ contract(
 
         })
 
-        xit('should withdraw exceeded collateral from naked short position when net value > 0 ', async () => {
+        it('should withdraw exceeded collateral from naked short position when net value > 0 ', async () => {
 
           /*
           const vaultCounter = BigNumber.from(await controllerProxy.accountVaultCounter(accountOwner1))
@@ -2153,7 +2171,7 @@ contract(
               addressBook.address,
               weth.address,
               usdc.address,
-              usdc.address,
+              [usdc.address],
               createTokenAmount(200),
               BigNumber.from((await time.latest()).toString()).add(expiryTime),
               true,
@@ -2210,7 +2228,7 @@ contract(
               addressBook.address,
               weth.address,
               usdc.address,
-              usdc.address,
+              [usdc.address],
               createTokenAmount(1),
               BigNumber.from((await time.latest()).toString()).add(86400),
               true,
@@ -2219,7 +2237,7 @@ contract(
               addressBook.address,
               weth.address,
               usdc.address,
-              usdc.address,
+              [usdc.address],
               1,
               BigNumber.from((await time.latest()).toString()).add(86400),
               true,
@@ -2398,9 +2416,7 @@ contract(
           await expectRevert(controllerProxy.operate(actionArgs, { from: accountOperator1 }), 'C25')
         })
 
-        xit('should burn short otoken when called from account operator', async () => {
-
-          /*
+        it('should burn short otoken when called from account operator', async () => {
           const vaultCounter = BigNumber.from(await controllerProxy.accountVaultCounter(accountOwner1))
           assert.isAbove(vaultCounter.toNumber(), 0, 'Account owner have no vault')
 
@@ -2431,70 +2447,26 @@ contract(
             shortOtokenToBurn.toString(),
             'Short otoken burned amount mismatch',
           )
-          assert.equal(vaultAfter.shortOtokens.length, 1, 'Vault short otoken array length mismatch')
+          assert.equal(vaultAfter.shortOtoken.length, 1, 'Vault short otoken array length mismatch')
           assert.equal(
-            vaultAfter.shortOtokens[0],
+            vaultAfter.shortOtoken,
             shortOtoken.address,
             'Vault short otoken address after burning mismatch',
           )
           assert.equal(
-            BigNumber.from(vaultBefore.shortAmounts[0]).sub(BigNumber.from(vaultAfter.shortAmounts[0])).toString(),
+            BigNumber.from(vaultBefore.shortAmount).sub(BigNumber.from(vaultAfter.shortAmount)).toString(),
+            shortOtokenToBurn.toString(),
+            'Short otoken amount in vault after burn mismatch')
+          assert.equal(vaultAfter.shortOtoken, ZERO_ADDR, 'Vault short otoken address after clearing mismatch')
+          assert.equal(
+            BigNumber.from(vaultBefore.shortAmount).sub(BigNumber.from(vaultAfter.shortAmount)).toString(),
             shortOtokenToBurn.toString(),
             'Short otoken amount in vault after burn mismatch',
           )
-          */
+
         })
 
-        xit('should remove short otoken address from short otokens array if amount is equal to zero after burning', async () => {
-          /*
-          // send back all short otoken to owner
-          const operatorShortBalance = BigNumber.from(await shortOtoken.balanceOf(accountOperator1))
-          await shortOtoken.transfer(accountOwner1, operatorShortBalance, { from: accountOperator1 })
-
-          const vaultCounter = BigNumber.from(await controllerProxy.accountVaultCounter(accountOwner1))
-          assert.isAbove(vaultCounter.toNumber(), 0, 'Account owner have no vault')
-
-          const vaultBefore = await controllerProxy.vaults(accountOwner1, vaultCounter)
-
-          const shortOtokenToBurn = BigNumber.from(vaultBefore.shortAmounts[0])
-          const actionArgs = [
-            {
-              actionType: ActionType.BurnShortOption,
-              owner: accountOwner1,
-              secondAddress: accountOwner1,
-              asset: shortOtoken.address,
-              vaultId: vaultCounter.toNumber(),
-              amount: shortOtokenToBurn.toString(),
-              index: '0',
-              data: ZERO_ADDR,
-            },
-          ]
-          const sellerBalanceBefore = BigNumber.from(await shortOtoken.balanceOf(accountOwner1))
-
-          await controllerProxy.operate(actionArgs, { from: accountOwner1 })
-
-          const sellerBalanceAfter = BigNumber.from(await shortOtoken.balanceOf(accountOwner1))
-          const vaultAfter = await controllerProxy.vaults(accountOwner1, vaultCounter)
-
-          assert.equal(
-            sellerBalanceBefore.sub(sellerBalanceAfter).toString(),
-            shortOtokenToBurn.toString(),
-            'Short otoken burned amount mismatch',
-          )
-          assert.equal(vaultAfter.shortOtokens.length, 1, 'Vault short otoken array length mismatch')
-          assert.equal(vaultAfter.shortOtokens[0], ZERO_ADDR, 'Vault short otoken address after clearing mismatch')
-          assert.equal(
-            BigNumber.from(vaultBefore.shortAmounts[0]).sub(BigNumber.from(vaultAfter.shortAmounts[0])).toString(),
-            shortOtokenToBurn.toString(),
-            'Short otoken amount in vault after burn mismatch',
-          )
-          */
-        })
-
-        xit('should mint and burn at the same transaction', async () => {
-
-          /*
-
+        it('should mint and burn at the same transaction', async () => {
           const vaultCounter = BigNumber.from(await controllerProxy.accountVaultCounter(accountOwner1)).add(1)
           // const vaultCounter = 1
           const amountToMint = createScaledNumber(1)
@@ -2534,15 +2506,12 @@ contract(
           await controllerProxy.operate(actionArgs, { from: accountOwner1 })
           const senderShortBalanceAfter = BigNumber.from(await shortOtoken.balanceOf(accountOwner1))
           const vaultAfter = await controllerProxy.vaults(accountOwner1, vaultCounter)
-          assert.equal(vaultAfter.shortOtokens.length, 1, 'Vault short otoken array length mismatch')
-          assert.equal(vaultAfter.shortOtokens[0], ZERO_ADDR)
+          assert.equal(vaultAfter.shortOtoken, ZERO_ADDR)
           assert.equal(
             senderShortBalanceBefore.toString(),
             senderShortBalanceAfter.toString(),
             'Sender short otoken amount mismatch',
           )
-
-          */
         })
 
         describe('Expired otoken', () => {
@@ -2557,7 +2526,7 @@ contract(
               addressBook.address,
               weth.address,
               usdc.address,
-              usdc.address,
+              [usdc.address],
               createTokenAmount(200),
               BigNumber.from((await time.latest()).toString()).add(expiryTime),
               true,
@@ -2622,10 +2591,7 @@ contract(
             )
           })
 
-          xit('should revert burning an expired short otoken', async () => {
-            /*
-
-
+          it('should revert burning an expired short otoken', async () => {
             // increment time after expiredLongOtoken expiry
             await time.increase(3601) // increase time with one hour in seconds
 
@@ -2644,16 +2610,22 @@ contract(
               },
             ]
 
+            const expiryTimestamp = await expiredShortOtoken.expiryTimestamp()
+            const curTime = BigNumber.from((await time.latest()).toString())
+
+            
+
+            assert.isTrue(curTime > expiryTimestamp, 'Long otoken is not expired yet')
+
+            /*
             assert.equal(
               await controllerProxy.hasExpired(expiredShortOtoken.address),
               true,
               'Long otoken is not expired yet',
-            )
+            )*/
 
             await expectRevert(controllerProxy.operate(actionArgs, { from: accountOwner1 }), 'C26')
 
-
-            */
           })
 
           it('should revert minting an expired short otoken', async () => {
@@ -2726,7 +2698,7 @@ contract(
           addressBook.address,
           weth.address,
           usdc.address,
-          usdc.address,
+          [usdc.address],
           createTokenAmount(200),
           BigNumber.from((await time.latest()).toString()).add(expiryTime),
           true,
@@ -2738,7 +2710,7 @@ contract(
           addressBook.address,
           weth.address,
           usdc.address,
-          usdc.address,
+          [usdc.address],
           createTokenAmount(200),
           BigNumber.from((await time.latest()).toString()).add(expiryTime),
           true,
@@ -2805,32 +2777,35 @@ contract(
         await expectRevert(controllerProxy.operate(actionArgs, { from: holder1 }), 'C27')
       })
 
-      xit('should revert exercising un-expired otoken', async () => {
-        /*
+      it('should revert exercising un-expired otoken', async () => {
         const shortAmountToBurn = BigNumber.from('1')
         const actionArgs = [
           {
             actionType: ActionType.Redeem,
             owner: ZERO_ADDR,
             secondAddress: holder1,
-            asset: shortOtoken.address,
+            assets: [shortOtoken.address],
             vaultId: '0',
-            amount: shortAmountToBurn.toNumber(),
+            amounts: [shortAmountToBurn.toNumber()],
             index: '0',
             data: ZERO_ADDR,
           },
         ]
 
-        assert.equal(await controllerProxy.hasExpired(shortOtoken.address), false, 'Short otoken has already expired')
+        const expiryTimestamp = await shortOtoken.expiryTimestamp()
+        const curTime = BigNumber.from((await time.latest()).toString())
+
+        assert.isTrue(curTime < expiryTimestamp, 'Short otoken has already expired')
+
+        /*assert.equal(await controllerProxy.hasExpired(shortOtoken.address), false, 'Short otoken has already expired')*/
+
+
 
         await expectRevert(controllerProxy.operate(actionArgs, { from: holder1 }), 'C28')
-        */
+
       })
 
-      xit('should revert exercising after expiry, when underlying price is not finalized yet', async () => {
-
-        /*
-
+      it('should revert exercising after expiry, when underlying price is not finalized yet', async () => {
         // past time after expiry
         await time.increase(60 * 61 * 24) // increase time with one hour in seconds
         // set price in Oracle Mock, 150$ at expiry, expire ITM
@@ -2868,24 +2843,20 @@ contract(
           },
         ]
 
-        assert.equal(await controllerProxy.hasExpired(shortOtoken.address), true, 'Short otoken is not expired yet')
+
+        const expiryTimestamp = await shortOtoken.expiryTimestamp()
+        const curTime = BigNumber.from((await time.latest()).toString())
+
+        assert.isTrue(curTime > expiryTimestamp, 'Short otoken is not expired yet')
+
+
+        // assert.equal(await controllerProxy.hasExpired(shortOtoken.address), true, 'Short otoken is not expired yet')
 
         await expectRevert(controllerProxy.operate(actionArgs, { from: holder1 }), 'C29')
-        
-
-
-        */
-
-
-
+      
       })
 
-      xit('should revert exercising if cash value receiver address in equal to address zero', async () => {
-        /*
-
-
-
-
+      it('should revert exercising if cash value receiver address in equal to address zero', async () => {
         // set it as finalized in mock
         await oracle.setIsDisputePeriodOver(
           await shortOtoken.underlyingAsset(),
@@ -2907,18 +2878,19 @@ contract(
           },
         ]
 
-        assert.equal(await controllerProxy.hasExpired(shortOtoken.address), true, 'Short otoken is not expired yet')
+        const expiryTimestamp = await shortOtoken.expiryTimestamp()
+        const curTime = BigNumber.from((await time.latest()).toString())
+
+        assert.isTrue(curTime > expiryTimestamp, 'Short otoken is not expired yet')
+        
+        
+        //  assert.equal(await controllerProxy.hasExpired(shortOtoken.address), true, 'Short otoken is not expired yet')
 
         await expectRevert(controllerProxy.operate(actionArgs, { from: holder1 }), 'A14')
 
-
-        */
       })
 
       it('should redeem after expiry + price is finalized', async () => {
-        /*
-
-
 
         const shortAmountToBurn = createTokenAmount(1)
         const actionArgs = [
@@ -2933,18 +2905,25 @@ contract(
             data: ZERO_ADDR,
           },
         ]
-        assert.equal(await controllerProxy.hasExpired(shortOtoken.address), true, 'Short otoken is not expired yet')
+
+        const expiryTimestamp = await shortOtoken.expiryTimestamp()
+        const curTime = BigNumber.from((await time.latest()).toString())
+
+        assert.isTrue(curTime > expiryTimestamp, 'Short otoken is not expired yet')
+
+
+        // assert.equal(await controllerProxy.hasExpired(shortOtoken.address), true, 'Short otoken is not expired yet')
 
         const payout = createTokenAmount(50, usdcDecimals)
-        const marginPoolBalanceBefore = BigNumber.from(await usdc.balanceOf(marginPool.address))
-        const senderBalanceBefore = BigNumber.from(await usdc.balanceOf(holder1))
-        const senderShortBalanceBefore = BigNumber.from(await shortOtoken.balanceOf(holder1))
+        const marginPoolBalanceBefore = await usdc.balanceOf(marginPool.address)
+        const senderBalanceBefore = await usdc.balanceOf(holder1)
+        const senderShortBalanceBefore = await shortOtoken.balanceOf(holder1)
 
         await controllerProxy.operate(actionArgs, { from: holder1 })
 
-        const marginPoolBalanceAfter = BigNumber.from(await usdc.balanceOf(marginPool.address))
-        const senderBalanceAfter = BigNumber.from(await usdc.balanceOf(holder1))
-        const senderShortBalanceAfter = BigNumber.from(await shortOtoken.balanceOf(holder1))
+        const marginPoolBalanceAfter = await usdc.balanceOf(marginPool.address)
+        const senderBalanceAfter = await usdc.balanceOf(holder1)
+        const senderShortBalanceAfter = await shortOtoken.balanceOf(holder1)
 
         assert.equal(
           marginPoolBalanceBefore.sub(marginPoolBalanceAfter).toString(),
@@ -2961,9 +2940,6 @@ contract(
           shortAmountToBurn.toString(),
           ' Burned short otoken amount mismatch',
         )
-
-
-        */
       })
 
       it('should redeem call option correctly', async () => {
@@ -2973,7 +2949,7 @@ contract(
           addressBook.address,
           weth.address,
           usdc.address,
-          weth.address,
+          [weth.address],
           createTokenAmount(200),
           expiry,
           false,
@@ -3054,7 +3030,7 @@ contract(
           addressBook.address,
           weth.address,
           usdc.address,
-          weth2.address,
+          [weth2.address],
           createTokenAmount(200),
           expiry,
           false,
@@ -3143,7 +3119,7 @@ contract(
             addressBook.address,
             weth.address,
             usdc.address,
-            usdc.address,
+            [usdc.address],
             createTokenAmount(200),
             expiry,
             true,
@@ -3152,7 +3128,7 @@ contract(
             addressBook.address,
             weth.address,
             usdc.address,
-            usdc.address,
+            [usdc.address],
             createTokenAmount(200),
             expiry,
             true,
@@ -3334,7 +3310,7 @@ contract(
           addressBook.address,
           weth.address,
           usdc.address,
-          usdc.address,
+          [usdc.address],
           createTokenAmount(200),
           BigNumber.from((await time.latest()).toString()).add(expiryTime),
           true,
@@ -3443,7 +3419,7 @@ contract(
         await expectRevert(controllerProxy.operate(actionArgs, { from: accountOwner1 }), 'C35')
       })
 
-      xit('should revert settling after expiry when price is not finalized', async () => {
+      it('should revert settling after expiry when price is not finalized', async () => {
         // past time after expiry
         await time.increase(60 * 61 * 24) // increase time with one hour in seconds
         // set price in Oracle Mock, 150$ at expiry, expire ITM
@@ -3531,7 +3507,7 @@ contract(
           addressBook.address,
           weth.address,
           usdc.address,
-          usdc.address,
+          [usdc.address],
           createScaledNumber(stirkePrice),
           expiry,
           true,
@@ -3664,7 +3640,7 @@ contract(
             addressBook.address,
             weth.address,
             usdc.address,
-            usdc.address,
+            [usdc.address],
             createTokenAmount(200),
             BigNumber.from(await time.latest()).add(expiryTime),
             true,
@@ -3716,7 +3692,7 @@ contract(
             addressBook.address,
             weth.address,
             usdc.address,
-            usdc.address,
+            [usdc.address],
             createTokenAmount(200),
             BigNumber.from(await time.latest()).add(expiryTime),
             true,
@@ -3830,7 +3806,7 @@ contract(
           addressBook.address,
           weth.address,
           usdc.address,
-          usdc.address,
+          [usdc.address],
           createTokenAmount(200),
           BigNumber.from((await time.latest()).toString()),
           true,
@@ -3841,7 +3817,7 @@ contract(
         await oracle.setIsDisputePeriodOver(weth.address, expiry, true)
       })
 
-      xit('should return false when price is pushed and dispute period not over yet', async () => {
+      it('should return false when price is pushed and dispute period not over yet', async () => {
         const priceMock = BigNumber.from('200')
 
         // Mock oracle returned data.
@@ -3851,7 +3827,7 @@ contract(
 
         const underlying = await expiredOtoken.underlyingAsset()
         const strike = await expiredOtoken.strikeAsset()
-        const collateral = await expiredOtoken.collateralAsset()
+        const collateral = await expiredOtoken.collateralAssets(0)
         const expiryTimestamp = await expiredOtoken.expiryTimestamp()
 
         const expectedResult = false
@@ -3867,7 +3843,7 @@ contract(
         //)
       })
 
-      xit('should return true when price is finalized', async () => {
+      it('should return true when price is finalized', async () => {
         expiredOtoken = await MockOtoken.new()
         const expiry = BigNumber.from(await time.latest())
         // init otoken
@@ -3875,7 +3851,7 @@ contract(
           addressBook.address,
           weth.address,
           usdc.address,
-          usdc.address,
+          [usdc.address],
           createTokenAmount(200),
           expiry,
           true,
@@ -3888,7 +3864,7 @@ contract(
 
         const underlying = await expiredOtoken.underlyingAsset()
         const strike = await expiredOtoken.strikeAsset()
-        const collateral = await expiredOtoken.collateralAsset()
+        const collateral = await expiredOtoken.collateralAssets(1)
         const expiryTimestamp = await expiredOtoken.expiryTimestamp()
 
         const expectedResult = true
@@ -3906,13 +3882,13 @@ contract(
     })
 
     describe('Expiry', () => {
-      xit('should return false for non expired otoken', async () => {
+      it('should return false for non expired otoken', async () => {
         const otoken: MockOtokenInstance = await MockOtoken.new()
         await otoken.init(
           addressBook.address,
           weth.address,
           usdc.address,
-          usdc.address,
+          [usdc.address],
           createTokenAmount(200),
           BigNumber.from(await time.latest()).add(60000 * 60000),
           true,
@@ -3921,7 +3897,7 @@ contract(
         //fix it!    assert.equal(await controllerProxy.hasExpired(otoken.address), false, 'Otoken expiry check mismatch')
       })
 
-      xit('should return true for expired otoken', async () => {
+      it('should return true for expired otoken', async () => {
         // Otoken deployment
         const expiredOtoken = await MockOtoken.new()
         // init otoken
@@ -4037,22 +4013,20 @@ contract(
     })
 
     describe('Sync vault latest update timestamp', () => {
-      xit('should update vault latest update timestamp', async () => {
+      it('should update vault latest update timestamp', async () => {
         const vaultCounter = BigNumber.from(await controllerProxy.accountVaultCounter(accountOwner1))
-        //fix it!  const timestampBefore = BigNumber.from(
-        //fix it!    (await controllerProxy.getVaultWithDetails(accountOwner1, vaultCounter.toNumber()))[2],
-        //fix it!  )
+        const timestampBefore = (await controllerProxy.getVaultWithDetails(accountOwner1, vaultCounter.toNumber()))[1]
+
 
         await controllerProxy.sync(accountOwner1, vaultCounter.toNumber(), { from: random })
 
-        //fix it!  const timestampAfter = BigNumber.from(
-        //fix it!    (await controllerProxy.getVaultWithDetails(accountOwner1, vaultCounter.toNumber()))[2],
-        //fix it!  )
-        //fix it!  assert.isAbove(
-        //fix it!    timestampAfter.toNumber(),
-        //fix it!    timestampBefore.toNumber(),
-        //fix it!    'Vault latest update timestamp did not sync',
-        //fix it!  )
+         const timestampAfter = (await controllerProxy.getVaultWithDetails(accountOwner1, vaultCounter.toNumber()))[1]
+
+        assert.isAbove(
+            timestampAfter.toNumber(),
+            timestampBefore.toNumber(),
+            'Vault latest update timestamp did not sync',
+        )
       })
 
     })
@@ -4199,7 +4173,7 @@ contract(
           addressBook.address,
           weth.address,
           usdc.address,
-          usdc.address,
+          [usdc.address],
           createTokenAmount(200),
           BigNumber.from((await time.latest()).toString()).add(expiryTime),
           true,
@@ -4428,7 +4402,7 @@ contract(
         )
       })
 
-      xit('should redeem when system is partially paused', async () => {
+      it('should redeem when system is partially paused', async () => {
         const amountToRedeem = createTokenAmount(1)
         // transfer to holder
         await shortOtoken.transfer(holder1, amountToRedeem, { from: accountOwner1 })
@@ -4492,7 +4466,7 @@ contract(
           addressBook.address,
           weth.address,
           usdc.address,
-          usdc.address,
+          [usdc.address],
           createTokenAmount(200),
           BigNumber.from(await time.latest()).add(expiryTime),
           true,
@@ -4761,7 +4735,7 @@ contract(
         await expectRevert(controllerProxy.refreshConfiguration({ from: random }), 'Ownable: caller is not the owner')
       })
 
-      xit('should refresh configuratiom', async () => {
+      it('should refresh configuratiom', async () => {
         // update modules
         const oracle = await MockOracle.new(addressBook.address, { from: owner })
         const calculator = await MarginCalculator.new(addressBook.address, { from: owner })
