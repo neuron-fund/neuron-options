@@ -140,7 +140,7 @@ contract MockOtoken is ERC20PermitUpgradeable {
         uint256[] calldata collateralsAmountsForMint,
         uint256[] calldata collateralsValuesForMint
     ) external {
-        require(msg.sender == controller, "Otoken: Only Controller can mint Otokens");
+        //require(msg.sender == controller, "Otoken: Only Controller can mint Otokens");
         require(
             collateralAssets.length == collateralsValuesForMint.length,
             "Otoken: collateralAssets and collateralsValuesForMint must be of same length"

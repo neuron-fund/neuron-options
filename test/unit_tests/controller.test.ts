@@ -63,6 +63,9 @@ contract(
     let controllerImplementation: ControllerInstance
     let controllerProxy: ControllerInstance
 
+    // deployed and whitelisted otoken
+    let whitelistedOtoken: MockOtokenInstance
+
     const usdcDecimals = 6
     const wethDecimals = 18
 
@@ -117,6 +120,12 @@ contract(
       await usdc.mint(accountOperator1, createTokenAmount(10000, usdcDecimals))
       await usdc.mint(random, createTokenAmount(10000, usdcDecimals))
       await usdc.mint(donor, createTokenAmount(10000, usdcDecimals))
+
+      //whitelisted dumb otoken
+      whitelistedOtoken = await MockOtoken.new()
+      await whitelist.whitelistOtoken(whitelistedOtoken.address, { from: owner })
+      // await addressBook.setWhitelist(whitelist.address)
+      assert.isTrue(await whitelist.isWhitelistedOtoken(whitelistedOtoken.address))
     })
 
     describe('Controller initialization', () => {
@@ -240,121 +249,67 @@ contract(
       })
 
       it('should revert opening multiple vaults in the same operate call', async () => {
-        let otoken: MockOtokenInstance
-        otoken = await MockOtoken.new()
-        await whitelist.whitelistOtoken(otoken.address, { from: owner })
-        await addressBook.setWhitelist(whitelist.address)
-        assert.isTrue(await whitelist.isWhitelistedOtoken(otoken.address))
 
         const actionArgs: ActionArgsStruct[] = [
           getAction(ActionType.OpenVault, {
             owner: accountOwner1,
-            shortOtoken: otoken.address,
+            shortOtoken: whitelistedOtoken.address,
             vaultId: 1,
           }),
           getAction(ActionType.OpenVault, {
             owner: accountOwner1,
-            shortOtoken: otoken.address,
+            shortOtoken: whitelistedOtoken.address,
             vaultId: 2,
           })
         ]
-
-
         await expectRevert(controllerProxy.operate(actionArgs, { from: accountOwner1 }), 'C13')
-      })
-
-      xit('should revert opening a vault with vault type other than 0 or 1', async () => {
-        const invalidVault = web3.eth.abi.encodeParameter('uint256', 2)
-
-        const actionArgs = [
-          {
-            actionType: ActionType.OpenVault,
-            owner: accountOwner1,
-            secondAddress: accountOwner1,
-            assets: [ZERO_ADDR],
-            vaultId: '1',
-            amounts: ['0'],
-            index: '0',
-            data: invalidVault,
-          },
-        ]
-
-        await expectRevert(controllerProxy.operate(actionArgs, { from: accountOwner1 }), 'A3')
       })
 
       it('should revert opening a vault with vault type other than 0 or 1', async () => {
         const invalidVault = web3.eth.abi.encodeParameter('uint256', 2)
-        
-        let otoken: MockOtokenInstance
-        otoken = await MockOtoken.new()
-        await whitelist.whitelistOtoken(otoken.address, { from: owner })
-        await addressBook.setWhitelist(whitelist.address)
-        assert.isTrue(await whitelist.isWhitelistedOtoken(otoken.address))
 
         const actionArgs = [
-          {
-            actionType: ActionType.OpenVault,
+          getAction(ActionType.OpenVault, {
             owner: accountOwner1,
-            secondAddress: accountOwner1,
-            assets: [ZERO_ADDR],
-            shortOtoken: otoken.address, 
-            vaultId: '1',
-            amounts: ['0'],
-            index: '0',
-            data: invalidVault,
-          },
+            shortOtoken: whitelistedOtoken.address,
+            vaultId: invalidVault,
+          })
         ]
 
-        await expectRevert(controllerProxy.operate(actionArgs, { from: accountOwner1 }), 'A3')
+        await expectRevert(controllerProxy.operate(actionArgs, { from: accountOwner1 }), 'C15') //'A3')
       })
 
       it('should revert opening multiple vaults for different owners in the same operate call', async () => {
         await controllerProxy.setOperator(accountOwner1, true, { from: accountOwner2 })
-        const actionArgs = [
-          {
-            actionType: ActionType.OpenVault,
-            owner: accountOwner1,
-            secondAddress: accountOwner1,
-            assets: [ZERO_ADDR],
-            vaultId: '1',
-            amounts: ['0'],
-            index: '0',
-            data: ZERO_ADDR,
-          },
-          {
-            actionType: ActionType.OpenVault,
-            owner: accountOwner2,
-            secondAddress: accountOwner1,
-            assets: [ZERO_ADDR],
-            vaultId: '1',
-            amounts: ['0'],
-            index: '0',
-            data: ZERO_ADDR,
-          },
-        ]
 
+        const actionArgs = [
+          getAction(ActionType.OpenVault, {
+            owner: accountOwner1,
+            shortOtoken: whitelistedOtoken.address,
+            vaultId: '1',
+          }),
+          getAction(ActionType.OpenVault, {
+            owner: accountOwner2,
+            shortOtoken: whitelistedOtoken.address,
+            vaultId: '1',
+          })
+        ]
         await expectRevert(controllerProxy.operate(actionArgs, { from: accountOwner1 }), 'C12')
       })
 
       it('should open vault', async () => {
-        const vaultCounterBefore = BigNumber.from (await controllerProxy.accountVaultCounter(accountOwner1))
+        const vaultCounterBefore = await controllerProxy.accountVaultCounter(accountOwner1)
         assert.equal(vaultCounterBefore.toString(), '0', 'vault counter before mismatch')
-
         const actionArgs = [
-          {
-            actionType: ActionType.OpenVault,
+          getAction(ActionType.OpenVault, {
             owner: accountOwner1,
-            secondAddress: accountOwner1,
-            assets: [ZERO_ADDR],
+            shortOtoken: whitelistedOtoken.address,
             vaultId: vaultCounterBefore.toNumber() + 1,
-            amounts: ['0'],
-            index: '0',
-            data: ZERO_ADDR,
-          },
+          })
         ]
         await controllerProxy.operate(actionArgs, { from: accountOwner1 })
 
-        const vaultCounterAfter = BigNumber.from(await controllerProxy.accountVaultCounter(accountOwner1))
+        const vaultCounterAfter = await controllerProxy.accountVaultCounter(accountOwner1)
         assert.equal(vaultCounterAfter.sub(vaultCounterBefore).toString(), '1', 'vault counter after mismatch')
       })
 
@@ -366,23 +321,18 @@ contract(
           'Operator address mismatch',
         )
 
-        const vaultCounterBefore = BigNumber.from(await controllerProxy.accountVaultCounter(accountOwner1))
+        const vaultCounterBefore = await controllerProxy.accountVaultCounter(accountOwner1)
 
         const actionArgs = [
-          {
-            actionType: ActionType.OpenVault,
+          getAction(ActionType.OpenVault, {
             owner: accountOwner1,
-            secondAddress: accountOperator1,
-            assets: [ZERO_ADDR],
+            shortOtoken: whitelistedOtoken.address,
             vaultId: vaultCounterBefore.toNumber() + 1,
-            amounts: ['0'],
-            index: '0',
-            data: ZERO_ADDR,
-          },
+          })
         ]
         await controllerProxy.operate(actionArgs, { from: accountOperator1 })
 
-        const vaultCounterAfter = BigNumber.from(await controllerProxy.accountVaultCounter(accountOwner1))
+        const vaultCounterAfter = await controllerProxy.accountVaultCounter(accountOwner1)
         assert.equal(vaultCounterAfter.sub(vaultCounterBefore).toString(), '1', 'vault counter after mismatch')
       })
     })
@@ -1795,7 +1745,10 @@ contract(
           const vaultCounter = await controllerProxy.accountVaultCounter(accountOwner1)
           assert.isAbove(vaultCounter.toNumber(), 0, 'Account owner have no vault')
 
-          const collateralToDeposit = (await shortOtoken.strikePrice()).div(1e8)
+          
+          const strike = BigNumber.from((await shortOtoken.strikePrice()).toString())
+          console.log('strike', strike.toString())
+          const collateralToDeposit = strike.div(BigNumber.from('100000000'))
           const amountToMint = createTokenAmount(1, wethDecimals)
           const actionArgs = [
             {
@@ -3845,7 +3798,7 @@ contract(
 
       it('should return true when price is finalized', async () => {
         expiredOtoken = await MockOtoken.new()
-        const expiry = BigNumber.from(await time.latest())
+        const expiry = BigNumber.from((await time.latest()).toString())
         // init otoken
         await expiredOtoken.init(
           addressBook.address,
@@ -3890,7 +3843,7 @@ contract(
           usdc.address,
           [usdc.address],
           createTokenAmount(200),
-          BigNumber.from(await time.latest()).add(60000 * 60000),
+          BigNumber.from((await time.latest()).toString()).add(60000 * 60000),
           true,
         )
 
@@ -3905,7 +3858,7 @@ contract(
           addressBook.address,
           weth.address,
           usdc.address,
-          usdc.address,
+          [usdc.address],
           createTokenAmount(200),
           1219835219,
           true,
@@ -4014,7 +3967,7 @@ contract(
 
     describe('Sync vault latest update timestamp', () => {
       it('should update vault latest update timestamp', async () => {
-        const vaultCounter = BigNumber.from(await controllerProxy.accountVaultCounter(accountOwner1))
+        const vaultCounter = await controllerProxy.accountVaultCounter(accountOwner1)
         const timestampBefore = (await controllerProxy.getVaultWithDetails(accountOwner1, vaultCounter.toNumber()))[1]
 
 
@@ -4191,6 +4144,7 @@ contract(
             secondAddress: accountOwner1,
             assets: [ZERO_ADDR],
             vaultId: vaultCounterBefore.toNumber() + 1,
+            shortOtoken: shortOtoken.address,
             amounts: ['0'],
             index: '0',
             data: ZERO_ADDR,
@@ -4201,6 +4155,7 @@ contract(
             secondAddress: accountOwner1,
             assets: [shortOtoken.address],
             vaultId: vaultCounterBefore.toNumber() + 1,
+            shortOtoken: shortOtoken.address,
             amounts: [amountToMint],
             index: '0',
             data: ZERO_ADDR,
@@ -4211,6 +4166,7 @@ contract(
             secondAddress: accountOwner1,
             assets: [usdc.address],
             vaultId: vaultCounterBefore.toNumber() + 1,
+            shortOtoken: shortOtoken.address,
             amounts: [collateralToDeposit],
             index: '0',
             data: ZERO_ADDR,
