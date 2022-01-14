@@ -30,6 +30,10 @@ export const createValidExpiry = (now: number, days: number) => {
   return (Number(multiplier.toFixed(0)) + 1) * 86400 + days * 86400 + 28800
 }
 
+export const resp2bn =  (resp: any) => {
+  return BigNumber.from((resp).toString())
+}
+
 
 
 /**
