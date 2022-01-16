@@ -265,6 +265,7 @@ contract(
       it('should revert opening multiple vaults for different owners in the same operate call', async () => {
         await controllerProxy.setOperator(accountOwner1, true, { from: accountOwner2 })
 
+        const vaultCounter = await controllerProxy.accountVaultCounter(accountOwner1)
         const actionArgs = [
           getAction(ActionType.OpenVault, {
             owner: accountOwner1,
@@ -1719,48 +1720,6 @@ contract(
           await expectRevert(controllerProxy.operate(actionArgs, { from: random }), 'C6')
         })
 
-        it('should revert minting using un-marginable collateral asset', async () => {
-          const vaultCounter = await controllerProxy.accountVaultCounter(accountOwner1)
-          assert.isAbove(vaultCounter.toNumber(), 0, 'Account owner have no vault')
-
-          
-          const strike =  resp2bn(await shortOtoken.strikePrice())
-          console.log('strike', strike.toString())
-          const collateralToDeposit = strike.div(BigNumber.from('100000000'))
-          const amountToMint = createTokenAmount(1, wethDecimals)
-          const actionArgs = [
-            {
-              actionType: ActionType.MintShortOption,
-              owner: accountOwner1,
-              secondAddress: accountOwner1,
-              assets: [shortOtoken.address],
-              vaultId: vaultCounter.toNumber(),
-              amounts: [amountToMint],
-              index: '0',
-              data: ZERO_ADDR,
-            },
-            {
-              actionType: ActionType.DepositCollateral,
-              owner: accountOwner1,
-              secondAddress: accountOwner1,
-              assets: [weth.address],
-              vaultId: vaultCounter.toNumber(),
-              amounts: [collateralToDeposit.toString()],
-              index: '0',
-              data: ZERO_ADDR,
-            },
-          ]
-
-          // free money
-          await weth.mint(accountOwner1, collateralToDeposit)
-
-          await weth.approve(marginPool.address, collateralToDeposit, { from: accountOwner1 })
-          await expectRevert(
-            controllerProxy.operate(actionArgs, { from: accountOwner1 }),
-            'MarginCalculator: collateral asset not marginable for short asset',
-          )
-        })
-
         it('should revert minting short with invalid vault id', async () => {
           const vaultCounter = BigNumber.from('100')
 
@@ -2066,36 +2025,12 @@ contract(
 
         })
 
-        it('should revert when vault have more than 1 short otoken', async () => {
-          const vaultCounter = await controllerProxy.accountVaultCounter(accountOwner1)
-          assert.isAbove(vaultCounter.toNumber(), 0, 'Account owner have no vault')
-
-          await whitelist.whitelistOtoken(longOtoken.address, { from: owner })
-
-          const amountToMint = '1'
-
-          const actionArgs = [
-            {
-              actionType: ActionType.MintShortOption,
-              owner: accountOwner1,
-              secondAddress: accountOwner1,
-              assets: [longOtoken.address],
-              vaultId: vaultCounter.toNumber(),
-              amounts: [amountToMint],
-              index: '1',
-              data: ZERO_ADDR,
-            },
-          ]
-
-          await expectRevert(
-            controllerProxy.operate(actionArgs, { from: accountOwner1 }),
-            'MarginCalculator: Too many short otokens in the vault',
-          )
-        })
-
         describe('Mint un-whitelisted short otoken', () => {
           it('should revert minting an otoken that is not whitelisted in Whitelist module', async () => {
             const expiryTime = BigNumber.from(60 * 60 * 24) // after 1 day
+
+            const vaultCounter = await controllerProxy.accountVaultCounter(accountOwner1)
+            const vaultId = vaultCounter.toNumber() + 1
 
             const notWhitelistedShortOtoken: MockOtokenInstance = await MockOtoken.new()
             await notWhitelistedShortOtoken.init(
@@ -2109,18 +2044,20 @@ contract(
             )
             const collateralToDeposit = resp2bn(await notWhitelistedShortOtoken.strikePrice()).div(100)
             const amountToMint = createTokenAmount(1)
+
+
             const actionArgs = [
               getAction(ActionType.OpenVault, {
                 owner: accountOwner1,
                 shortOtoken:notWhitelistedShortOtoken.address,
-                vaultId: '1',
+                vaultId: vaultId,
               }),
               {
                 actionType: ActionType.MintShortOption,
                 owner: accountOperator1,
                 secondAddress: accountOperator1,
                 assets: [notWhitelistedShortOtoken.address],
-                vaultId: '1',
+                vaultId: vaultId,
                 amounts: [amountToMint],
                 index: '0',
                 data: ZERO_ADDR,
@@ -2130,7 +2067,7 @@ contract(
                 owner: accountOperator1,
                 secondAddress: accountOperator1,
                 assets: [usdc.address],
-                vaultId: '1',
+                vaultId: vaultId,
                 amounts: [collateralToDeposit.toNumber()],
                 index: '0',
                 data: ZERO_ADDR,
@@ -2175,7 +2112,7 @@ contract(
             const actionArgs = [
               getAction(ActionType.OpenVault, {
                 owner: accountOwner2,
-                shortOtoken: whitelistedOtoken.address,
+                shortOtoken: oneDollarPut.address,
                 vaultId: vaultId,
               }),
               {
@@ -2189,7 +2126,7 @@ contract(
                 data: ZERO_ADDR,
               },
             ]
-            await expectRevert(controllerProxy.operate(actionArgs, { from: accountOwner2 }), 'C14')
+            await expectRevert(controllerProxy.operate(actionArgs, { from: accountOwner2 }), 'Vault value is not enough to collaterize the amount')
           })
 
           it('should revert minting 1 wei of oToken with minimal strikePrice without putting collateral', async () => {
@@ -2197,7 +2134,7 @@ contract(
             const actionArgs = [
               getAction(ActionType.OpenVault, {
                 owner: accountOwner2,
-                shortOtoken: whitelistedOtoken.address,
+                shortOtoken: smallestPut.address,
                 vaultId: vaultId,
               }),
               {
@@ -2212,7 +2149,7 @@ contract(
               },
             ]
 
-            await expectRevert(controllerProxy.operate(actionArgs, { from: accountOwner2 }), 'C14')
+            await expectRevert(controllerProxy.operate(actionArgs, { from: accountOwner2 }), 'Vault value is not enough to collaterize the amount')
           })
         })
       })
@@ -2236,7 +2173,7 @@ contract(
             },
           ]
 
-          await expectRevert(controllerProxy.operate(actionArgs, { from: accountOwner1 }), 'V2')
+          await expectRevert(controllerProxy.operate(actionArgs, { from: accountOwner1 }), 'V3')
         })
 
         it('should revert burning when there is no enough balance', async () => {
@@ -2244,21 +2181,25 @@ contract(
           const operatorShortBalance = await shortOtoken.balanceOf(accountOperator1)
           await shortOtoken.transfer(accountOwner1, operatorShortBalance, { from: accountOperator1 })
 
-          const vaultCounter = await controllerProxy.accountVaultCounter(accountOwner1)
+          const vaultCounter = resp2bn(await controllerProxy.accountVaultCounter(accountOwner1))
           assert.isAbove(vaultCounter.toNumber(), 0, 'Account owner have no vault')
 
-          const shortOtokenToBurn =await shortOtoken.balanceOf(accountOwner1)
+          const vaultId = vaultCounter.add(1)
+
+          const shortOtokenToBurn = resp2bn(await shortOtoken.balanceOf(accountOwner1)).add(1)
           const actionArgs = [
-            {
-              actionType: ActionType.BurnShortOption,
+            getAction(ActionType.OpenVault, {
               owner: accountOwner1,
-              secondAddress: accountOperator1,
-              assets: [shortOtoken.address],
-              vaultId: vaultCounter.toNumber(),
-              amounts: [shortOtokenToBurn.toString()],
-              index: '0',
-              data: ZERO_ADDR,
-            },
+              shortOtoken: shortOtoken.address,
+              vaultId: vaultId,
+            }),
+            getAction(ActionType.BurnShortOption, {
+                owner: accountOwner1,
+                vaultId: vaultId,
+                from: accountOperator1,
+                otoken: [shortOtoken.address],
+                amount: [shortOtokenToBurn.toString()]
+            })
           ]
 
           await expectRevert(

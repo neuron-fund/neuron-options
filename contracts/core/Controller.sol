@@ -862,13 +862,15 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         // do not allow burning expired otoken
         require(block.timestamp < otoken.expiryTimestamp(), "C26");
 
+        // burn otoken
+        otoken.burnOtoken(_args.from, _args.amount);
+
         // remove otoken from vault
         (uint256[] memory freedCollateralAmounts, uint256[] memory freedCollateralValues) = vaults[_args.owner][
             _args.vaultId
         ].removeShort(_args.otoken, _args.amount);
 
-        // burn otoken
-        otoken.burnOtoken(_args.from, _args.amount);
+
         otoken.reduceCollaterization(freedCollateralAmounts, freedCollateralValues, _args.amount);
 
         emit ShortOtokenBurned(_args.otoken, _args.owner, _args.from, _args.vaultId, _args.amount);
