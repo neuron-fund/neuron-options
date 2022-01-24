@@ -6,10 +6,9 @@ pragma experimental ABIEncoderV2;
 import {Actions} from "../libs/Actions.sol";
 import "hardhat/console.sol";
 
-
 contract ActionTester {
     Actions.OpenVaultArgs private openVaultArgs;
-    Actions.DepositArgs private depositArgs;
+    Actions.DepositCollateralArgs private depositCollateralArgs;
     Actions.WithdrawArgs private withdrawArgs;
     Actions.MintArgs private mintArgs;
     Actions.BurnArgs private burnArgs;
@@ -18,11 +17,11 @@ contract ActionTester {
     Actions.CallArgs private callArgs;
 
     function testParseDespositAction(Actions.ActionArgs memory _args) external {
-        depositArgs = Actions._parseDepositArgs(_args);
+        depositCollateralArgs = Actions._parseDepositCollateralArgs(_args);
     }
 
-    function getDepositArgs() external view returns (Actions.DepositArgs memory) {
-        return depositArgs;
+    function getDepositArgs() external view returns (Actions.DepositCollateralArgs memory) {
+        return depositCollateralArgs;
     }
 
     function testParseWithdrawAction(Actions.ActionArgs memory _args) external {

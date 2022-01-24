@@ -46,7 +46,7 @@ export type CallArgsStructOutput = [string, string] & {
   data: string;
 };
 
-export type DepositArgsStruct = {
+export type DepositCollateralArgsStruct = {
   owner: string;
   vaultId: BigNumberish;
   from: string;
@@ -54,7 +54,7 @@ export type DepositArgsStruct = {
   amounts: BigNumberish[];
 };
 
-export type DepositArgsStructOutput = [
+export type DepositCollateralArgsStructOutput = [
   string,
   BigNumber,
   string,
@@ -368,7 +368,7 @@ export interface ActionTester extends BaseContract {
 
     getDepositArgs(
       overrides?: CallOverrides
-    ): Promise<[DepositArgsStructOutput]>;
+    ): Promise<[DepositCollateralArgsStructOutput]>;
 
     getMintArgs(overrides?: CallOverrides): Promise<[MintArgsStructOutput]>;
 
@@ -431,7 +431,9 @@ export interface ActionTester extends BaseContract {
 
   getCallArgs(overrides?: CallOverrides): Promise<CallArgsStructOutput>;
 
-  getDepositArgs(overrides?: CallOverrides): Promise<DepositArgsStructOutput>;
+  getDepositArgs(
+    overrides?: CallOverrides
+  ): Promise<DepositCollateralArgsStructOutput>;
 
   getMintArgs(overrides?: CallOverrides): Promise<MintArgsStructOutput>;
 
@@ -492,7 +494,9 @@ export interface ActionTester extends BaseContract {
 
     getCallArgs(overrides?: CallOverrides): Promise<CallArgsStructOutput>;
 
-    getDepositArgs(overrides?: CallOverrides): Promise<DepositArgsStructOutput>;
+    getDepositArgs(
+      overrides?: CallOverrides
+    ): Promise<DepositCollateralArgsStructOutput>;
 
     getMintArgs(overrides?: CallOverrides): Promise<MintArgsStructOutput>;
 

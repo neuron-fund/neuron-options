@@ -19,35 +19,38 @@ import { TypedEventFilter, TypedEvent, TypedListener, OnEvent } from "./common";
 
 export type VaultStruct = {
   shortOtoken: string;
-  longOtokens: string[];
+  longOtoken: string;
   collateralAssets: string[];
   shortAmount: BigNumberish;
-  longAmounts: BigNumberish[];
+  longAmount: BigNumberish;
+  usedLongAmount: BigNumberish;
   collateralAmounts: BigNumberish[];
   usedCollateralAmounts: BigNumberish[];
-  usedCollateralValues: BigNumberish[];
+  reservedCollateralValues: BigNumberish[];
   unusedCollateralAmounts: BigNumberish[];
 };
 
 export type VaultStructOutput = [
   string,
-  string[],
+  string,
   string[],
   BigNumber,
-  BigNumber[],
+  BigNumber,
+  BigNumber,
   BigNumber[],
   BigNumber[],
   BigNumber[],
   BigNumber[]
 ] & {
   shortOtoken: string;
-  longOtokens: string[];
+  longOtoken: string;
   collateralAssets: string[];
   shortAmount: BigNumber;
-  longAmounts: BigNumber[];
+  longAmount: BigNumber;
+  usedLongAmount: BigNumber;
   collateralAmounts: BigNumber[];
   usedCollateralAmounts: BigNumber[];
-  usedCollateralValues: BigNumber[];
+  reservedCollateralValues: BigNumber[];
   unusedCollateralAmounts: BigNumber[];
 };
 
@@ -56,11 +59,10 @@ export interface MarginVaultTesterInterface extends utils.Interface {
     "getVault(uint256)": FunctionFragment;
     "initCollaterals(uint256,address[])": FunctionFragment;
     "testAddCollaterals(uint256,address[],uint256[])": FunctionFragment;
-    "testAddLong(uint256,address,uint256,uint256)": FunctionFragment;
+    "testAddLong(uint256,address,uint256)": FunctionFragment;
     "testAddShort(uint256,address,uint256)": FunctionFragment;
     "testRemoveCollateral(uint256,address,uint256,uint256)": FunctionFragment;
-    "testRemoveLong(uint256,address,uint256,uint256)": FunctionFragment;
-    "testRemoveShort(uint256,address,uint256)": FunctionFragment;
+    "testRemoveLong(uint256,address,uint256)": FunctionFragment;
   };
 
   encodeFunctionData(
@@ -77,7 +79,7 @@ export interface MarginVaultTesterInterface extends utils.Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "testAddLong",
-    values: [BigNumberish, string, BigNumberish, BigNumberish]
+    values: [BigNumberish, string, BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "testAddShort",
@@ -89,10 +91,6 @@ export interface MarginVaultTesterInterface extends utils.Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "testRemoveLong",
-    values: [BigNumberish, string, BigNumberish, BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "testRemoveShort",
     values: [BigNumberish, string, BigNumberish]
   ): string;
 
@@ -119,10 +117,6 @@ export interface MarginVaultTesterInterface extends utils.Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "testRemoveLong",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "testRemoveShort",
     data: BytesLike
   ): Result;
 
@@ -178,7 +172,6 @@ export interface MarginVaultTester extends BaseContract {
       _vaultIndex: BigNumberish,
       _longOtoken: string,
       _amount: BigNumberish,
-      _index: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -200,14 +193,6 @@ export interface MarginVaultTester extends BaseContract {
     testRemoveLong(
       _vaultIndex: BigNumberish,
       _longOtoken: string,
-      _amount: BigNumberish,
-      _index: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<ContractTransaction>;
-
-    testRemoveShort(
-      _vaultIndex: BigNumberish,
-      _shortOtoken: string,
       _amount: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
@@ -235,7 +220,6 @@ export interface MarginVaultTester extends BaseContract {
     _vaultIndex: BigNumberish,
     _longOtoken: string,
     _amount: BigNumberish,
-    _index: BigNumberish,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -257,14 +241,6 @@ export interface MarginVaultTester extends BaseContract {
   testRemoveLong(
     _vaultIndex: BigNumberish,
     _longOtoken: string,
-    _amount: BigNumberish,
-    _index: BigNumberish,
-    overrides?: Overrides & { from?: string | Promise<string> }
-  ): Promise<ContractTransaction>;
-
-  testRemoveShort(
-    _vaultIndex: BigNumberish,
-    _shortOtoken: string,
     _amount: BigNumberish,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
@@ -292,7 +268,6 @@ export interface MarginVaultTester extends BaseContract {
       _vaultIndex: BigNumberish,
       _longOtoken: string,
       _amount: BigNumberish,
-      _index: BigNumberish,
       overrides?: CallOverrides
     ): Promise<void>;
 
@@ -314,14 +289,6 @@ export interface MarginVaultTester extends BaseContract {
     testRemoveLong(
       _vaultIndex: BigNumberish,
       _longOtoken: string,
-      _amount: BigNumberish,
-      _index: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<void>;
-
-    testRemoveShort(
-      _vaultIndex: BigNumberish,
-      _shortOtoken: string,
       _amount: BigNumberish,
       overrides?: CallOverrides
     ): Promise<void>;
@@ -352,7 +319,6 @@ export interface MarginVaultTester extends BaseContract {
       _vaultIndex: BigNumberish,
       _longOtoken: string,
       _amount: BigNumberish,
-      _index: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -374,14 +340,6 @@ export interface MarginVaultTester extends BaseContract {
     testRemoveLong(
       _vaultIndex: BigNumberish,
       _longOtoken: string,
-      _amount: BigNumberish,
-      _index: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<BigNumber>;
-
-    testRemoveShort(
-      _vaultIndex: BigNumberish,
-      _shortOtoken: string,
       _amount: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
@@ -410,7 +368,6 @@ export interface MarginVaultTester extends BaseContract {
       _vaultIndex: BigNumberish,
       _longOtoken: string,
       _amount: BigNumberish,
-      _index: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
@@ -432,14 +389,6 @@ export interface MarginVaultTester extends BaseContract {
     testRemoveLong(
       _vaultIndex: BigNumberish,
       _longOtoken: string,
-      _amount: BigNumberish,
-      _index: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<PopulatedTransaction>;
-
-    testRemoveShort(
-      _vaultIndex: BigNumberish,
-      _shortOtoken: string,
       _amount: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;

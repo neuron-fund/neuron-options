@@ -25,19 +25,7 @@ contract CalculatorTester is MarginCalculator {
             );
     }
 
-    function findUpperBoundValue(
-        address _underlying,
-        address _strike,
-        address _collateral,
-        bool _isPut,
-        uint256 _expiryTimestamp
-    ) external view returns (uint256) {
-        bytes32 productHash = keccak256(abi.encode(_underlying, _strike, _collateral, _isPut));
-
-        return FPI.toScaledUint(_findUpperBoundValue(productHash, _expiryTimestamp), 27, false);
-    }
-
-  /*  
+    /*  
     function price(
         uint256 _vaultCollateral,
         uint256 _vaultDebt,

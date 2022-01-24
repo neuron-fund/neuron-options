@@ -25,9 +25,7 @@ export const getAssetFromWhale = async (asset: string, amount: BigNumber, recipi
   })
   const whale = await ethers.getSigner(whaleAddress)
   const assetContract = IERC20__factory.connect(asset, whale)
-  console.log('WHALE balance', formatEther(await whale.getBalance()))
   await assetContract.transfer(recipient, amount)
-  console.log('WHALE after transfer')
   await network.provider.request({
     method: 'hardhat_stopImpersonatingAccount',
     params: [whaleAddress],

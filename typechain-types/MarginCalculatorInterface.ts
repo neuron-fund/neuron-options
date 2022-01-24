@@ -17,51 +17,55 @@ import { FunctionFragment, Result, EventFragment } from "@ethersproject/abi";
 import { Listener, Provider } from "@ethersproject/providers";
 import { TypedEventFilter, TypedEvent, TypedListener, OnEvent } from "./common";
 
+export type FixedPointIntStruct = { value: BigNumberish };
+
+export type FixedPointIntStructOutput = [BigNumber] & { value: BigNumber };
+
 export type VaultStruct = {
   shortOtoken: string;
-  longOtokens: string[];
+  longOtoken: string;
   collateralAssets: string[];
   shortAmount: BigNumberish;
-  longAmounts: BigNumberish[];
+  longAmount: BigNumberish;
+  usedLongAmount: BigNumberish;
   collateralAmounts: BigNumberish[];
   usedCollateralAmounts: BigNumberish[];
-  usedCollateralValues: BigNumberish[];
+  reservedCollateralValues: BigNumberish[];
   unusedCollateralAmounts: BigNumberish[];
 };
 
 export type VaultStructOutput = [
   string,
-  string[],
+  string,
   string[],
   BigNumber,
-  BigNumber[],
+  BigNumber,
+  BigNumber,
   BigNumber[],
   BigNumber[],
   BigNumber[],
   BigNumber[]
 ] & {
   shortOtoken: string;
-  longOtokens: string[];
+  longOtoken: string;
   collateralAssets: string[];
   shortAmount: BigNumber;
-  longAmounts: BigNumber[];
+  longAmount: BigNumber;
+  usedLongAmount: BigNumber;
   collateralAmounts: BigNumber[];
   usedCollateralAmounts: BigNumber[];
-  usedCollateralValues: BigNumber[];
+  reservedCollateralValues: BigNumber[];
   unusedCollateralAmounts: BigNumber[];
 };
-
-export type FixedPointIntStruct = { value: BigNumberish };
-
-export type FixedPointIntStructOutput = [BigNumber] & { value: BigNumber };
 
 export interface MarginCalculatorInterfaceInterface extends utils.Interface {
   functions: {
     "AUCTION_TIME()": FunctionFragment;
-    "_getCollateralRequired((address,address[],address[],uint256,uint256[],uint256[],uint256[],uint256[],uint256[]),address,uint256)": FunctionFragment;
     "_getCollateralizationRatio(address,address)": FunctionFragment;
+    "getAfterBurnCollateralRatio((address,address,address[],uint256,uint256,uint256,uint256[],uint256[],uint256[],uint256[]),uint256)": FunctionFragment;
     "getCollateralDust(address)": FunctionFragment;
-    "getExcessCollateral((address,address[],address[],uint256,uint256[],uint256[],uint256[],uint256[],uint256[]))": FunctionFragment;
+    "getCollateralRequired((address,address,address[],uint256,uint256,uint256,uint256[],uint256[],uint256[],uint256[]),uint256)": FunctionFragment;
+    "getExcessCollateral((address,address,address[],uint256,uint256,uint256,uint256[],uint256[],uint256[],uint256[]))": FunctionFragment;
     "getExpiredPayoutRate(address)": FunctionFragment;
     "getMaxPrice(address,address,address[],bool,uint256)": FunctionFragment;
     "getOracleDeviation()": FunctionFragment;
@@ -84,16 +88,20 @@ export interface MarginCalculatorInterfaceInterface extends utils.Interface {
     values?: undefined
   ): string;
   encodeFunctionData(
-    functionFragment: "_getCollateralRequired",
-    values: [VaultStruct, string, BigNumberish]
-  ): string;
-  encodeFunctionData(
     functionFragment: "_getCollateralizationRatio",
     values: [string, string]
   ): string;
   encodeFunctionData(
+    functionFragment: "getAfterBurnCollateralRatio",
+    values: [VaultStruct, BigNumberish]
+  ): string;
+  encodeFunctionData(
     functionFragment: "getCollateralDust",
     values: [string]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getCollateralRequired",
+    values: [VaultStruct, BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "getExcessCollateral",
@@ -159,15 +167,19 @@ export interface MarginCalculatorInterfaceInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "_getCollateralRequired",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
     functionFragment: "_getCollateralizationRatio",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "getAfterBurnCollateralRatio",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "getCollateralDust",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "getCollateralRequired",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -333,28 +345,36 @@ export interface MarginCalculatorInterface extends BaseContract {
   functions: {
     AUCTION_TIME(overrides?: CallOverrides): Promise<[BigNumber]>;
 
-    _getCollateralRequired(
-      _vault: VaultStruct,
-      _otoken: string,
-      _amount: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<
-      [BigNumber[], BigNumber[]] & {
-        collateralsAmountsRequired: BigNumber[];
-        collateralsValuesRequired: BigNumber[];
-      }
-    >;
-
     _getCollateralizationRatio(
       _otoken: string,
       _collateralAsset: string,
       overrides?: CallOverrides
     ): Promise<[FixedPointIntStructOutput]>;
 
+    getAfterBurnCollateralRatio(
+      _vault: VaultStruct,
+      _shortBurnAmount: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<[FixedPointIntStructOutput, BigNumber]>;
+
     getCollateralDust(
       _collateral: string,
       overrides?: CallOverrides
     ): Promise<[BigNumber]>;
+
+    getCollateralRequired(
+      _vault: VaultStruct,
+      _amount: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<
+      [BigNumber[], BigNumber[], BigNumber[], BigNumber[], BigNumber] & {
+        collateralsAmountsRequired: BigNumber[];
+        collateralsValuesRequired: BigNumber[];
+        collateralsAmountsUsed: BigNumber[];
+        collateralsValuesUsed: BigNumber[];
+        usedLongAmount: BigNumber;
+      }
+    >;
 
     getExcessCollateral(
       _vault: VaultStruct,
@@ -455,28 +475,36 @@ export interface MarginCalculatorInterface extends BaseContract {
 
   AUCTION_TIME(overrides?: CallOverrides): Promise<BigNumber>;
 
-  _getCollateralRequired(
-    _vault: VaultStruct,
-    _otoken: string,
-    _amount: BigNumberish,
-    overrides?: CallOverrides
-  ): Promise<
-    [BigNumber[], BigNumber[]] & {
-      collateralsAmountsRequired: BigNumber[];
-      collateralsValuesRequired: BigNumber[];
-    }
-  >;
-
   _getCollateralizationRatio(
     _otoken: string,
     _collateralAsset: string,
     overrides?: CallOverrides
   ): Promise<FixedPointIntStructOutput>;
 
+  getAfterBurnCollateralRatio(
+    _vault: VaultStruct,
+    _shortBurnAmount: BigNumberish,
+    overrides?: CallOverrides
+  ): Promise<[FixedPointIntStructOutput, BigNumber]>;
+
   getCollateralDust(
     _collateral: string,
     overrides?: CallOverrides
   ): Promise<BigNumber>;
+
+  getCollateralRequired(
+    _vault: VaultStruct,
+    _amount: BigNumberish,
+    overrides?: CallOverrides
+  ): Promise<
+    [BigNumber[], BigNumber[], BigNumber[], BigNumber[], BigNumber] & {
+      collateralsAmountsRequired: BigNumber[];
+      collateralsValuesRequired: BigNumber[];
+      collateralsAmountsUsed: BigNumber[];
+      collateralsValuesUsed: BigNumber[];
+      usedLongAmount: BigNumber;
+    }
+  >;
 
   getExcessCollateral(
     _vault: VaultStruct,
@@ -577,28 +605,36 @@ export interface MarginCalculatorInterface extends BaseContract {
   callStatic: {
     AUCTION_TIME(overrides?: CallOverrides): Promise<BigNumber>;
 
-    _getCollateralRequired(
-      _vault: VaultStruct,
-      _otoken: string,
-      _amount: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<
-      [BigNumber[], BigNumber[]] & {
-        collateralsAmountsRequired: BigNumber[];
-        collateralsValuesRequired: BigNumber[];
-      }
-    >;
-
     _getCollateralizationRatio(
       _otoken: string,
       _collateralAsset: string,
       overrides?: CallOverrides
     ): Promise<FixedPointIntStructOutput>;
 
+    getAfterBurnCollateralRatio(
+      _vault: VaultStruct,
+      _shortBurnAmount: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<[FixedPointIntStructOutput, BigNumber]>;
+
     getCollateralDust(
       _collateral: string,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
+
+    getCollateralRequired(
+      _vault: VaultStruct,
+      _amount: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<
+      [BigNumber[], BigNumber[], BigNumber[], BigNumber[], BigNumber] & {
+        collateralsAmountsRequired: BigNumber[];
+        collateralsValuesRequired: BigNumber[];
+        collateralsAmountsUsed: BigNumber[];
+        collateralsValuesUsed: BigNumber[];
+        usedLongAmount: BigNumber;
+      }
+    >;
 
     getExcessCollateral(
       _vault: VaultStruct,
@@ -767,21 +803,26 @@ export interface MarginCalculatorInterface extends BaseContract {
   estimateGas: {
     AUCTION_TIME(overrides?: CallOverrides): Promise<BigNumber>;
 
-    _getCollateralRequired(
-      _vault: VaultStruct,
-      _otoken: string,
-      _amount: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
     _getCollateralizationRatio(
       _otoken: string,
       _collateralAsset: string,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
+    getAfterBurnCollateralRatio(
+      _vault: VaultStruct,
+      _shortBurnAmount: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
     getCollateralDust(
       _collateral: string,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    getCollateralRequired(
+      _vault: VaultStruct,
+      _amount: BigNumberish,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
@@ -885,21 +926,26 @@ export interface MarginCalculatorInterface extends BaseContract {
   populateTransaction: {
     AUCTION_TIME(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
-    _getCollateralRequired(
-      _vault: VaultStruct,
-      _otoken: string,
-      _amount: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
     _getCollateralizationRatio(
       _otoken: string,
       _collateralAsset: string,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
+    getAfterBurnCollateralRatio(
+      _vault: VaultStruct,
+      _shortBurnAmount: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
     getCollateralDust(
       _collateral: string,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    getCollateralRequired(
+      _vault: VaultStruct,
+      _amount: BigNumberish,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 

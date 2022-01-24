@@ -45,6 +45,7 @@ interface OtokenInterface {
         returns (
             address[] memory,
             uint256[] memory,
+            uint256[] memory,
             address,
             address,
             uint256,

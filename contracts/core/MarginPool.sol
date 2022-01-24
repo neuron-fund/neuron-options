@@ -96,9 +96,9 @@ contract MarginPool is Ownable {
         address _user,
         uint256 _amount
     ) public onlyController {
+        console.log("MarginPool: transferToUser: required", _amount);
+        console.log("MarginPool: transferToUser: balance", assetBalance[_asset]);
         require(_user != address(this), "MarginPool: cannot transfer assets to oneself");
-        console.log("Asset balance before transfer", assetBalance[_asset]);
-        console.log("Amount to transfer", _amount);
         assetBalance[_asset] = assetBalance[_asset].sub(_amount);
 
         // transfer _asset _amount from pool to _user

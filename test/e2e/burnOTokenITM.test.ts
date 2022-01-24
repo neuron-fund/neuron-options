@@ -1,3 +1,4 @@
+import path from 'path'
 import { USDT, DAI, WETH, USDC } from '../../constants/externalAddresses'
 import { prettyObjectStringify } from '../../utils/log'
 import { testDeploy } from '../helpers/fixtures'
@@ -130,7 +131,7 @@ const testsParams = [
   },
 ] as const
 
-describe('Mint, burn some oToken from vaults, redeem, using stablePrice in Oracle', function () {
+describe(path.basename(__filename), function () {
   let deployResult: Awaited<ReturnType<typeof testDeploy>>
 
   before(async () => {

@@ -36,6 +36,9 @@ pragma solidity 0.8.9;
  * A27 param "assets" first element should not be zero address for redeem action
  * A28 param "amounts" should have 1 element for redeem action
  * A29 param "amounts" first element should not be zero, cant redeem zero amount
+ * A30 param "amounts" should be same length as param "assets"
+ * A31 param "assets" should have 1 element for depositLong action
+ * A32 param "amounts" should have 1 element for depositLong action
  */
 library Actions {
     // possible actions that can be performed
@@ -107,7 +110,7 @@ library Actions {
         uint256 vaultId;
     }
 
-    struct DepositArgs {
+    struct DepositCollateralArgs {
         // address of the account owner
         address owner;
         // index of the vault to which the asset will be added
@@ -118,6 +121,19 @@ library Actions {
         address[] assets;
         // amount of asset that is to be deposited
         uint256[] amounts;
+    }
+
+    struct DepositLongArgs {
+        // address of the account owner
+        address owner;
+        // index of the vault to which the asset will be added
+        uint256 vaultId;
+        // address from which we transfer the asset
+        address from;
+        // asset that is to be deposited
+        address longOtoken;
+        // amount of asset that is to be deposited
+        uint256 amount;
     }
 
     struct RedeemArgs {
@@ -222,20 +238,45 @@ library Actions {
      * @param _args general action arguments structure
      * @return arguments for a deposit action
      */
-    function _parseDepositArgs(ActionArgs memory _args) internal pure returns (DepositArgs memory) {
+    function _parseDepositCollateralArgs(ActionArgs memory _args) internal pure returns (DepositCollateralArgs memory) {
         require(
             (_args.actionType == ActionType.DepositLongOption) || (_args.actionType == ActionType.DepositCollateral),
             "A8"
         );
         require(_args.owner != address(0), "A9");
+        require(_args.assets.length == _args.amounts.length, "A30");
 
         return
-            DepositArgs({
+            DepositCollateralArgs({
                 owner: _args.owner,
                 vaultId: _args.vaultId,
                 from: _args.secondAddress,
                 assets: _args.assets,
                 amounts: _args.amounts
+            });
+    }
+
+    /**
+     * @notice parses the passed in action arguments to get the arguments for a deposit action
+     * @param _args general action arguments structure
+     * @return arguments for a deposit action
+     */
+    function _parseDepositLongArgs(ActionArgs memory _args) internal pure returns (DepositLongArgs memory) {
+        require(
+            (_args.actionType == ActionType.DepositLongOption) || (_args.actionType == ActionType.DepositCollateral),
+            "A8"
+        );
+        require(_args.owner != address(0), "A9");
+        require(_args.assets.length == 1, "A31");
+        require(_args.amounts.length == 1, "A32");
+
+        return
+            DepositLongArgs({
+                owner: _args.owner,
+                vaultId: _args.vaultId,
+                from: _args.secondAddress,
+                longOtoken: _args.assets[0],
+                amount: _args.amounts[0]
             });
     }
 

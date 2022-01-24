@@ -19,58 +19,63 @@ import { TypedEventFilter, TypedEvent, TypedListener, OnEvent } from "./common";
 
 export type VaultStruct = {
   shortOtoken: string;
-  longOtokens: string[];
+  longOtoken: string;
   collateralAssets: string[];
   shortAmount: BigNumberish;
-  longAmounts: BigNumberish[];
+  longAmount: BigNumberish;
+  usedLongAmount: BigNumberish;
   collateralAmounts: BigNumberish[];
   usedCollateralAmounts: BigNumberish[];
-  usedCollateralValues: BigNumberish[];
+  reservedCollateralValues: BigNumberish[];
   unusedCollateralAmounts: BigNumberish[];
 };
 
 export type VaultStructOutput = [
   string,
-  string[],
+  string,
   string[],
   BigNumber,
-  BigNumber[],
+  BigNumber,
+  BigNumber,
   BigNumber[],
   BigNumber[],
   BigNumber[],
   BigNumber[]
 ] & {
   shortOtoken: string;
-  longOtokens: string[];
+  longOtoken: string;
   collateralAssets: string[];
   shortAmount: BigNumber;
-  longAmounts: BigNumber[];
+  longAmount: BigNumber;
+  usedLongAmount: BigNumber;
   collateralAmounts: BigNumber[];
   usedCollateralAmounts: BigNumber[];
-  usedCollateralValues: BigNumber[];
+  reservedCollateralValues: BigNumber[];
   unusedCollateralAmounts: BigNumber[];
 };
+
+export type FixedPointIntStruct = { value: BigNumberish };
+
+export type FixedPointIntStructOutput = [BigNumber] & { value: BigNumber };
 
 export interface CalculatorTesterInterface extends utils.Interface {
   functions: {
     "AUCTION_TIME()": FunctionFragment;
-    "_getCollateralRequired((address,address[],address[],uint256,uint256[],uint256[],uint256[],uint256[],uint256[]),address,uint256)": FunctionFragment;
-    "findUpperBoundValue(address,address,address,bool,uint256)": FunctionFragment;
+    "getAfterBurnCollateralRatio((address,address,address[],uint256,uint256,uint256,uint256[],uint256[],uint256[],uint256[]),uint256)": FunctionFragment;
     "getCollateralDust(address)": FunctionFragment;
-    "getExcessCollateral((address,address[],address[],uint256,uint256[],uint256[],uint256[],uint256[],uint256[]))": FunctionFragment;
+    "getCollateralRequired((address,address,address[],uint256,uint256,uint256,uint256[],uint256[],uint256[],uint256[]),uint256)": FunctionFragment;
+    "getExcessCollateral((address,address,address[],uint256,uint256,uint256,uint256[],uint256[],uint256[],uint256[]))": FunctionFragment;
     "getExpiredCashValue(address,address,uint256,uint256,bool)": FunctionFragment;
     "getExpiredPayoutRate(address)": FunctionFragment;
     "getMaxPrice(address,address,address[],bool,uint256)": FunctionFragment;
     "getOracleDeviation()": FunctionFragment;
     "getPayout(address,uint256)": FunctionFragment;
-    "getSpotShock(address,address,address[],bool)": FunctionFragment;
     "getTimesToExpiry(address,address,address[],bool)": FunctionFragment;
     "oracle()": FunctionFragment;
     "owner()": FunctionFragment;
     "renounceOwnership()": FunctionFragment;
     "setCollateralDust(address,uint256)": FunctionFragment;
     "setOracleDeviation(uint256)": FunctionFragment;
-    "setSpotShock(address,address,address[],bool,uint256)": FunctionFragment;
     "setUpperBoundValues(address,address,address[],bool,uint256[],uint256[])": FunctionFragment;
     "transferOwnership(address)": FunctionFragment;
     "updateUpperBoundValue(address,address,address[],bool,uint256,uint256)": FunctionFragment;
@@ -81,16 +86,16 @@ export interface CalculatorTesterInterface extends utils.Interface {
     values?: undefined
   ): string;
   encodeFunctionData(
-    functionFragment: "_getCollateralRequired",
-    values: [VaultStruct, string, BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "findUpperBoundValue",
-    values: [string, string, string, boolean, BigNumberish]
+    functionFragment: "getAfterBurnCollateralRatio",
+    values: [VaultStruct, BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "getCollateralDust",
     values: [string]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getCollateralRequired",
+    values: [VaultStruct, BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "getExcessCollateral",
@@ -117,10 +122,6 @@ export interface CalculatorTesterInterface extends utils.Interface {
     values: [string, BigNumberish]
   ): string;
   encodeFunctionData(
-    functionFragment: "getSpotShock",
-    values: [string, string, string[], boolean]
-  ): string;
-  encodeFunctionData(
     functionFragment: "getTimesToExpiry",
     values: [string, string, string[], boolean]
   ): string;
@@ -137,10 +138,6 @@ export interface CalculatorTesterInterface extends utils.Interface {
   encodeFunctionData(
     functionFragment: "setOracleDeviation",
     values: [BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "setSpotShock",
-    values: [string, string, string[], boolean, BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "setUpperBoundValues",
@@ -160,15 +157,15 @@ export interface CalculatorTesterInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "_getCollateralRequired",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "findUpperBoundValue",
+    functionFragment: "getAfterBurnCollateralRatio",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
     functionFragment: "getCollateralDust",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "getCollateralRequired",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -193,10 +190,6 @@ export interface CalculatorTesterInterface extends utils.Interface {
   ): Result;
   decodeFunctionResult(functionFragment: "getPayout", data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "getSpotShock",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
     functionFragment: "getTimesToExpiry",
     data: BytesLike
   ): Result;
@@ -212,10 +205,6 @@ export interface CalculatorTesterInterface extends utils.Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "setOracleDeviation",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "setSpotShock",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -338,26 +327,22 @@ export interface CalculatorTester extends BaseContract {
   functions: {
     AUCTION_TIME(overrides?: CallOverrides): Promise<[BigNumber]>;
 
-    _getCollateralRequired(
+    getAfterBurnCollateralRatio(
       _vault: VaultStruct,
-      _otoken: string,
-      _amount: BigNumberish,
+      _shortBurnAmount: BigNumberish,
       overrides?: CallOverrides
-    ): Promise<[BigNumber[], BigNumber[]]>;
-
-    findUpperBoundValue(
-      _underlying: string,
-      _strike: string,
-      _collateral: string,
-      _isPut: boolean,
-      _expiryTimestamp: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<[BigNumber]>;
+    ): Promise<[FixedPointIntStructOutput, BigNumber]>;
 
     getCollateralDust(
       _collateral: string,
       overrides?: CallOverrides
     ): Promise<[BigNumber]>;
+
+    getCollateralRequired(
+      _vault: VaultStruct,
+      _shortAmount: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<[BigNumber[], BigNumber[], BigNumber[], BigNumber[], BigNumber]>;
 
     getExcessCollateral(
       _vault: VaultStruct,
@@ -395,14 +380,6 @@ export interface CalculatorTester extends BaseContract {
       overrides?: CallOverrides
     ): Promise<[BigNumber[]]>;
 
-    getSpotShock(
-      _underlying: string,
-      _strike: string,
-      _collaterals: string[],
-      _isPut: boolean,
-      overrides?: CallOverrides
-    ): Promise<[BigNumber]>;
-
     getTimesToExpiry(
       _underlying: string,
       _strike: string,
@@ -427,15 +404,6 @@ export interface CalculatorTester extends BaseContract {
 
     setOracleDeviation(
       _deviation: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<ContractTransaction>;
-
-    setSpotShock(
-      _underlying: string,
-      _strike: string,
-      _collaterals: string[],
-      _isPut: boolean,
-      _shockValue: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -467,26 +435,22 @@ export interface CalculatorTester extends BaseContract {
 
   AUCTION_TIME(overrides?: CallOverrides): Promise<BigNumber>;
 
-  _getCollateralRequired(
+  getAfterBurnCollateralRatio(
     _vault: VaultStruct,
-    _otoken: string,
-    _amount: BigNumberish,
+    _shortBurnAmount: BigNumberish,
     overrides?: CallOverrides
-  ): Promise<[BigNumber[], BigNumber[]]>;
-
-  findUpperBoundValue(
-    _underlying: string,
-    _strike: string,
-    _collateral: string,
-    _isPut: boolean,
-    _expiryTimestamp: BigNumberish,
-    overrides?: CallOverrides
-  ): Promise<BigNumber>;
+  ): Promise<[FixedPointIntStructOutput, BigNumber]>;
 
   getCollateralDust(
     _collateral: string,
     overrides?: CallOverrides
   ): Promise<BigNumber>;
+
+  getCollateralRequired(
+    _vault: VaultStruct,
+    _shortAmount: BigNumberish,
+    overrides?: CallOverrides
+  ): Promise<[BigNumber[], BigNumber[], BigNumber[], BigNumber[], BigNumber]>;
 
   getExcessCollateral(
     _vault: VaultStruct,
@@ -524,14 +488,6 @@ export interface CalculatorTester extends BaseContract {
     overrides?: CallOverrides
   ): Promise<BigNumber[]>;
 
-  getSpotShock(
-    _underlying: string,
-    _strike: string,
-    _collaterals: string[],
-    _isPut: boolean,
-    overrides?: CallOverrides
-  ): Promise<BigNumber>;
-
   getTimesToExpiry(
     _underlying: string,
     _strike: string,
@@ -556,15 +512,6 @@ export interface CalculatorTester extends BaseContract {
 
   setOracleDeviation(
     _deviation: BigNumberish,
-    overrides?: Overrides & { from?: string | Promise<string> }
-  ): Promise<ContractTransaction>;
-
-  setSpotShock(
-    _underlying: string,
-    _strike: string,
-    _collaterals: string[],
-    _isPut: boolean,
-    _shockValue: BigNumberish,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -596,26 +543,22 @@ export interface CalculatorTester extends BaseContract {
   callStatic: {
     AUCTION_TIME(overrides?: CallOverrides): Promise<BigNumber>;
 
-    _getCollateralRequired(
+    getAfterBurnCollateralRatio(
       _vault: VaultStruct,
-      _otoken: string,
-      _amount: BigNumberish,
+      _shortBurnAmount: BigNumberish,
       overrides?: CallOverrides
-    ): Promise<[BigNumber[], BigNumber[]]>;
-
-    findUpperBoundValue(
-      _underlying: string,
-      _strike: string,
-      _collateral: string,
-      _isPut: boolean,
-      _expiryTimestamp: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
+    ): Promise<[FixedPointIntStructOutput, BigNumber]>;
 
     getCollateralDust(
       _collateral: string,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
+
+    getCollateralRequired(
+      _vault: VaultStruct,
+      _shortAmount: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<[BigNumber[], BigNumber[], BigNumber[], BigNumber[], BigNumber]>;
 
     getExcessCollateral(
       _vault: VaultStruct,
@@ -653,14 +596,6 @@ export interface CalculatorTester extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber[]>;
 
-    getSpotShock(
-      _underlying: string,
-      _strike: string,
-      _collaterals: string[],
-      _isPut: boolean,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
     getTimesToExpiry(
       _underlying: string,
       _strike: string,
@@ -683,15 +618,6 @@ export interface CalculatorTester extends BaseContract {
 
     setOracleDeviation(
       _deviation: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<void>;
-
-    setSpotShock(
-      _underlying: string,
-      _strike: string,
-      _collaterals: string[],
-      _isPut: boolean,
-      _shockValue: BigNumberish,
       overrides?: CallOverrides
     ): Promise<void>;
 
@@ -793,24 +719,20 @@ export interface CalculatorTester extends BaseContract {
   estimateGas: {
     AUCTION_TIME(overrides?: CallOverrides): Promise<BigNumber>;
 
-    _getCollateralRequired(
+    getAfterBurnCollateralRatio(
       _vault: VaultStruct,
-      _otoken: string,
-      _amount: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
-    findUpperBoundValue(
-      _underlying: string,
-      _strike: string,
-      _collateral: string,
-      _isPut: boolean,
-      _expiryTimestamp: BigNumberish,
+      _shortBurnAmount: BigNumberish,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
     getCollateralDust(
       _collateral: string,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    getCollateralRequired(
+      _vault: VaultStruct,
+      _shortAmount: BigNumberish,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
@@ -850,14 +772,6 @@ export interface CalculatorTester extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
-    getSpotShock(
-      _underlying: string,
-      _strike: string,
-      _collaterals: string[],
-      _isPut: boolean,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
     getTimesToExpiry(
       _underlying: string,
       _strike: string,
@@ -882,15 +796,6 @@ export interface CalculatorTester extends BaseContract {
 
     setOracleDeviation(
       _deviation: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<BigNumber>;
-
-    setSpotShock(
-      _underlying: string,
-      _strike: string,
-      _collaterals: string[],
-      _isPut: boolean,
-      _shockValue: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -923,24 +828,20 @@ export interface CalculatorTester extends BaseContract {
   populateTransaction: {
     AUCTION_TIME(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
-    _getCollateralRequired(
+    getAfterBurnCollateralRatio(
       _vault: VaultStruct,
-      _otoken: string,
-      _amount: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
-    findUpperBoundValue(
-      _underlying: string,
-      _strike: string,
-      _collateral: string,
-      _isPut: boolean,
-      _expiryTimestamp: BigNumberish,
+      _shortBurnAmount: BigNumberish,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
     getCollateralDust(
       _collateral: string,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    getCollateralRequired(
+      _vault: VaultStruct,
+      _shortAmount: BigNumberish,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
@@ -982,14 +883,6 @@ export interface CalculatorTester extends BaseContract {
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
-    getSpotShock(
-      _underlying: string,
-      _strike: string,
-      _collaterals: string[],
-      _isPut: boolean,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
     getTimesToExpiry(
       _underlying: string,
       _strike: string,
@@ -1014,15 +907,6 @@ export interface CalculatorTester extends BaseContract {
 
     setOracleDeviation(
       _deviation: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<PopulatedTransaction>;
-
-    setSpotShock(
-      _underlying: string,
-      _strike: string,
-      _collaterals: string[],
-      _isPut: boolean,
-      _shockValue: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 

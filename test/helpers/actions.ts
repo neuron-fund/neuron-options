@@ -110,9 +110,18 @@ export const BurnShortOptionArgsMappings = {
   amount: 'amounts',
 } as const
 
+export const DepositLongOptionArgsMappings = {
+  owner: 'owner',
+  vaultId: 'vaultId',
+  from: 'secondAddress',
+  longOtoken: 'assets',
+  amount: 'amounts',
+} as const
+
 export const ActionTypeToMappings = {
   [ActionType.OpenVault]: OpenVaultArgsMappings,
   [ActionType.DepositCollateral]: DepositCollateralArgsMappings,
+  [ActionType.DepositLongOption]: DepositLongOptionArgsMappings,
   [ActionType.MintShortOption]: MintShortOptionArgsMappings,
   [ActionType.Redeem]: RedeemArgsMappings,
   [ActionType.SettleVault]: SettleVaultsArgsMappings,

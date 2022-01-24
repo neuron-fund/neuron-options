@@ -352,6 +352,7 @@ export interface OtokenInterface extends BaseContract {
       [
         string[],
         BigNumber[],
+        BigNumber[],
         string,
         string,
         BigNumber,
@@ -487,6 +488,7 @@ export interface OtokenInterface extends BaseContract {
     [
       string[],
       BigNumber[],
+      BigNumber[],
       string,
       string,
       BigNumber,
@@ -621,6 +623,7 @@ export interface OtokenInterface extends BaseContract {
     ): Promise<
       [
         string[],
+        BigNumber[],
         BigNumber[],
         string,
         string,

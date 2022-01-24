@@ -171,87 +171,6 @@ const _abi = [
   {
     inputs: [
       {
-        components: [
-          {
-            internalType: "address",
-            name: "shortOtoken",
-            type: "address",
-          },
-          {
-            internalType: "address[]",
-            name: "longOtokens",
-            type: "address[]",
-          },
-          {
-            internalType: "address[]",
-            name: "collateralAssets",
-            type: "address[]",
-          },
-          {
-            internalType: "uint256",
-            name: "shortAmount",
-            type: "uint256",
-          },
-          {
-            internalType: "uint256[]",
-            name: "longAmounts",
-            type: "uint256[]",
-          },
-          {
-            internalType: "uint256[]",
-            name: "collateralAmounts",
-            type: "uint256[]",
-          },
-          {
-            internalType: "uint256[]",
-            name: "usedCollateralAmounts",
-            type: "uint256[]",
-          },
-          {
-            internalType: "uint256[]",
-            name: "usedCollateralValues",
-            type: "uint256[]",
-          },
-          {
-            internalType: "uint256[]",
-            name: "unusedCollateralAmounts",
-            type: "uint256[]",
-          },
-        ],
-        internalType: "struct MarginVault.Vault",
-        name: "_vault",
-        type: "tuple",
-      },
-      {
-        internalType: "address",
-        name: "_otoken",
-        type: "address",
-      },
-      {
-        internalType: "uint256",
-        name: "_amount",
-        type: "uint256",
-      },
-    ],
-    name: "_getCollateralRequired",
-    outputs: [
-      {
-        internalType: "uint256[]",
-        name: "collateralsAmountsRequired",
-        type: "uint256[]",
-      },
-      {
-        internalType: "uint256[]",
-        name: "collateralsValuesRequired",
-        type: "uint256[]",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
         internalType: "address",
         name: "_otoken",
         type: "address",
@@ -272,9 +191,97 @@ const _abi = [
             type: "int256",
           },
         ],
-        internalType: "struct FixedPointInt256.FixedPointInt",
+        internalType: "struct FPI.FixedPointInt",
         name: "",
         type: "tuple",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        components: [
+          {
+            internalType: "address",
+            name: "shortOtoken",
+            type: "address",
+          },
+          {
+            internalType: "address",
+            name: "longOtoken",
+            type: "address",
+          },
+          {
+            internalType: "address[]",
+            name: "collateralAssets",
+            type: "address[]",
+          },
+          {
+            internalType: "uint256",
+            name: "shortAmount",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "longAmount",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "usedLongAmount",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256[]",
+            name: "collateralAmounts",
+            type: "uint256[]",
+          },
+          {
+            internalType: "uint256[]",
+            name: "usedCollateralAmounts",
+            type: "uint256[]",
+          },
+          {
+            internalType: "uint256[]",
+            name: "reservedCollateralValues",
+            type: "uint256[]",
+          },
+          {
+            internalType: "uint256[]",
+            name: "unusedCollateralAmounts",
+            type: "uint256[]",
+          },
+        ],
+        internalType: "struct MarginVault.Vault",
+        name: "_vault",
+        type: "tuple",
+      },
+      {
+        internalType: "uint256",
+        name: "_shortBurnAmount",
+        type: "uint256",
+      },
+    ],
+    name: "getAfterBurnCollateralRatio",
+    outputs: [
+      {
+        components: [
+          {
+            internalType: "int256",
+            name: "value",
+            type: "int256",
+          },
+        ],
+        internalType: "struct FPI.FixedPointInt",
+        name: "",
+        type: "tuple",
+      },
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
       },
     ],
     stateMutability: "view",
@@ -309,9 +316,9 @@ const _abi = [
             type: "address",
           },
           {
-            internalType: "address[]",
-            name: "longOtokens",
-            type: "address[]",
+            internalType: "address",
+            name: "longOtoken",
+            type: "address",
           },
           {
             internalType: "address[]",
@@ -324,9 +331,14 @@ const _abi = [
             type: "uint256",
           },
           {
-            internalType: "uint256[]",
-            name: "longAmounts",
-            type: "uint256[]",
+            internalType: "uint256",
+            name: "longAmount",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "usedLongAmount",
+            type: "uint256",
           },
           {
             internalType: "uint256[]",
@@ -340,7 +352,103 @@ const _abi = [
           },
           {
             internalType: "uint256[]",
-            name: "usedCollateralValues",
+            name: "reservedCollateralValues",
+            type: "uint256[]",
+          },
+          {
+            internalType: "uint256[]",
+            name: "unusedCollateralAmounts",
+            type: "uint256[]",
+          },
+        ],
+        internalType: "struct MarginVault.Vault",
+        name: "_vault",
+        type: "tuple",
+      },
+      {
+        internalType: "uint256",
+        name: "_amount",
+        type: "uint256",
+      },
+    ],
+    name: "getCollateralRequired",
+    outputs: [
+      {
+        internalType: "uint256[]",
+        name: "collateralsAmountsRequired",
+        type: "uint256[]",
+      },
+      {
+        internalType: "uint256[]",
+        name: "collateralsValuesRequired",
+        type: "uint256[]",
+      },
+      {
+        internalType: "uint256[]",
+        name: "collateralsAmountsUsed",
+        type: "uint256[]",
+      },
+      {
+        internalType: "uint256[]",
+        name: "collateralsValuesUsed",
+        type: "uint256[]",
+      },
+      {
+        internalType: "uint256",
+        name: "usedLongAmount",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        components: [
+          {
+            internalType: "address",
+            name: "shortOtoken",
+            type: "address",
+          },
+          {
+            internalType: "address",
+            name: "longOtoken",
+            type: "address",
+          },
+          {
+            internalType: "address[]",
+            name: "collateralAssets",
+            type: "address[]",
+          },
+          {
+            internalType: "uint256",
+            name: "shortAmount",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "longAmount",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "usedLongAmount",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256[]",
+            name: "collateralAmounts",
+            type: "uint256[]",
+          },
+          {
+            internalType: "uint256[]",
+            name: "usedCollateralAmounts",
+            type: "uint256[]",
+          },
+          {
+            internalType: "uint256[]",
+            name: "reservedCollateralValues",
             type: "uint256[]",
           },
           {

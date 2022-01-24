@@ -19,35 +19,38 @@ import { TypedEventFilter, TypedEvent, TypedListener, OnEvent } from "./common";
 
 export type VaultStruct = {
   shortOtoken: string;
-  longOtokens: string[];
+  longOtoken: string;
   collateralAssets: string[];
   shortAmount: BigNumberish;
-  longAmounts: BigNumberish[];
+  longAmount: BigNumberish;
+  usedLongAmount: BigNumberish;
   collateralAmounts: BigNumberish[];
   usedCollateralAmounts: BigNumberish[];
-  usedCollateralValues: BigNumberish[];
+  reservedCollateralValues: BigNumberish[];
   unusedCollateralAmounts: BigNumberish[];
 };
 
 export type VaultStructOutput = [
   string,
-  string[],
+  string,
   string[],
   BigNumber,
-  BigNumber[],
+  BigNumber,
+  BigNumber,
   BigNumber[],
   BigNumber[],
   BigNumber[],
   BigNumber[]
 ] & {
   shortOtoken: string;
-  longOtokens: string[];
+  longOtoken: string;
   collateralAssets: string[];
   shortAmount: BigNumber;
-  longAmounts: BigNumber[];
+  longAmount: BigNumber;
+  usedLongAmount: BigNumber;
   collateralAmounts: BigNumber[];
   usedCollateralAmounts: BigNumber[];
-  usedCollateralValues: BigNumber[];
+  reservedCollateralValues: BigNumber[];
   unusedCollateralAmounts: BigNumber[];
 };
 
@@ -712,7 +715,13 @@ export interface Controller extends BaseContract {
       arg1: BigNumberish,
       overrides?: CallOverrides
     ): Promise<
-      [string, BigNumber] & { shortOtoken: string; shortAmount: BigNumber }
+      [string, string, BigNumber, BigNumber, BigNumber] & {
+        shortOtoken: string;
+        longOtoken: string;
+        shortAmount: BigNumber;
+        longAmount: BigNumber;
+        usedLongAmount: BigNumber;
+      }
     >;
 
     whitelist(overrides?: CallOverrides): Promise<[string]>;
@@ -841,7 +850,13 @@ export interface Controller extends BaseContract {
     arg1: BigNumberish,
     overrides?: CallOverrides
   ): Promise<
-    [string, BigNumber] & { shortOtoken: string; shortAmount: BigNumber }
+    [string, string, BigNumber, BigNumber, BigNumber] & {
+      shortOtoken: string;
+      longOtoken: string;
+      shortAmount: BigNumber;
+      longAmount: BigNumber;
+      usedLongAmount: BigNumber;
+    }
   >;
 
   whitelist(overrides?: CallOverrides): Promise<string>;
@@ -966,7 +981,13 @@ export interface Controller extends BaseContract {
       arg1: BigNumberish,
       overrides?: CallOverrides
     ): Promise<
-      [string, BigNumber] & { shortOtoken: string; shortAmount: BigNumber }
+      [string, string, BigNumber, BigNumber, BigNumber] & {
+        shortOtoken: string;
+        longOtoken: string;
+        shortAmount: BigNumber;
+        longAmount: BigNumber;
+        usedLongAmount: BigNumber;
+      }
     >;
 
     whitelist(overrides?: CallOverrides): Promise<string>;

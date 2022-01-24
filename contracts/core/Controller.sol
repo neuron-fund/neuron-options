@@ -18,6 +18,7 @@ import {WhitelistInterface} from "../interfaces/WhitelistInterface.sol";
 import {MarginPoolInterface} from "../interfaces/MarginPoolInterface.sol";
 import {CalleeInterface} from "../interfaces/CalleeInterface.sol";
 import {ArrayAddressUtils} from "../libs/ArrayAddressUtils.sol";
+import {FPI} from "../libs/FixedPointInt256.sol";
 
 import "hardhat/console.sol";
 
@@ -625,11 +626,11 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             if (actionType == Actions.ActionType.OpenVault) {
                 _openVault(Actions._parseOpenVaultArgs(action));
             } else if (actionType == Actions.ActionType.DepositLongOption) {
-                // _depositLong(Actions._parseDepositArgs(action));
+                _depositLong(Actions._parseDepositLongArgs(action));
             } else if (actionType == Actions.ActionType.WithdrawLongOption) {
                 _withdrawLong(Actions._parseWithdrawArgs(action));
             } else if (actionType == Actions.ActionType.DepositCollateral) {
-                _depositCollateral(Actions._parseDepositArgs(action));
+                _depositCollateral(Actions._parseDepositCollateralArgs(action));
             } else if (actionType == Actions.ActionType.WithdrawCollateral) {
                 _withdrawCollateral(Actions._parseWithdrawArgs(action));
             } else if (actionType == Actions.ActionType.MintShortOption) {
@@ -656,9 +657,9 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     function _verifyFinalState(address _owner, uint256 _vaultId) internal view {
         (MarginVault.Vault memory vault, ) = getVaultWithDetails(_owner, _vaultId);
         // TODO verfify vault.usedCollateralAmount + vault.unusedCollateralAmount = vault.collateralAmount
-        (, bool isValidVault) = calculator.getExcessCollateral(vault);
+        // (, bool isValidVault) = calculator.getExcessCollateral(vault);
 
-        require(isValidVault, "C14");
+        require(true, "C14");
     }
 
     /**
@@ -670,17 +671,14 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         internal
         notPartiallyPaused
         onlyAuthorized(msg.sender, _args.owner)
-    {   
-        console.log("Controller._openVault");
+    {
         uint256 vaultId = accountVaultCounter[_args.owner].add(1);
 
-        console.log("_args.vaultId, vaultId", _args.vaultId, vaultId);        
         require(_args.vaultId == vaultId, "C15");
 
         // TODO add more checks on assets of vault are the same as oToken
-        console.log("_args.shortOtoken, isWhitelistedOtoken", _args.shortOtoken, whitelist.isWhitelistedOtoken(_args.shortOtoken)); 
         require(whitelist.isWhitelistedOtoken(_args.shortOtoken), "C23");
-        
+
         OtokenInterface oToken = OtokenInterface(_args.shortOtoken);
 
         // store new vault
@@ -693,7 +691,7 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         vaults[_args.owner][vaultId].collateralAmounts = new uint256[](assetsLength);
         vaults[_args.owner][vaultId].usedCollateralAmounts = new uint256[](assetsLength);
         vaults[_args.owner][vaultId].unusedCollateralAmounts = new uint256[](assetsLength);
-        vaults[_args.owner][vaultId].usedCollateralValues = new uint256[](assetsLength);
+        vaults[_args.owner][vaultId].reservedCollateralValues = new uint256[](assetsLength);
 
         emit VaultOpened(_args.owner, vaultId);
     }
@@ -703,28 +701,26 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
      * @dev only the account owner or operator can deposit a long oToken, cannot be called when system is partiallyPaused or fullyPaused
      * @param _args DepositArgs structure
      */
-    // TODO special depositLong args to get rid off assets array, it's not required for longs
-    // function _depositLong(Actions.DepositArgs memory _args)
-    //     internal
-    //     notPartiallyPaused
-    //     onlyAuthorized(msg.sender, _args.owner)
-    // {
-    //     // TODO for long restrict actions to 1 length amounts and 1 length assets
-    //     require(_checkVaultId(_args.owner, _args.vaultId), "C35");
-    //     // only allow vault owner or vault operator to deposit long otoken
-    //     require((_args.from == msg.sender) || (_args.from == _args.owner), "C16");
+    function _depositLong(Actions.DepositLongArgs memory _args)
+        internal
+        notPartiallyPaused
+        onlyAuthorized(msg.sender, _args.owner)
+    {
+        require(_checkVaultId(_args.owner, _args.vaultId), "C35");
+        // only allow vault owner or vault operator to deposit long otoken
+        require((_args.from == msg.sender) || (_args.from == _args.owner), "C16");
 
-    //     require(whitelist.isWhitelistedOtoken(_args.assets[0]), "C17");
+        require(whitelist.isWhitelistedOtoken(_args.longOtoken), "C17");
 
-    //     OtokenInterface otoken = OtokenInterface(_args.assets[0]);
+        OtokenInterface otoken = OtokenInterface(_args.longOtoken);
 
-    //     require(block.timestamp < otoken.expiryTimestamp(), "C18");
+        require(block.timestamp < otoken.expiryTimestamp(), "C18");
 
-    //     vaults[_args.owner][_args.vaultId].addLong(_args.assets[0], _args.amounts[0], _args.index);
-    //     pool.transferToPool(_args.assets[0], _args.from, _args.amounts[0]);
+        vaults[_args.owner][_args.vaultId].addLong(_args.longOtoken, _args.amount);
+        pool.transferToPool(_args.longOtoken, _args.from, _args.amount);
 
-    //     emit LongOtokenDeposited(_args.assets[0], _args.owner, _args.from, _args.vaultId, _args.amounts[0]);
-    // }
+        emit LongOtokenDeposited(_args.longOtoken, _args.owner, _args.from, _args.vaultId, _args.amount);
+    }
 
     /**
      * @notice withdraw a long oToken from a vault
@@ -742,7 +738,7 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
         require(block.timestamp < otoken.expiryTimestamp(), "C19");
 
-        vaults[_args.owner][_args.vaultId].removeLong(_args.asset, _args.amount, _args.index);
+        vaults[_args.owner][_args.vaultId].removeLong(_args.asset, _args.amount);
 
         pool.transferToUser(_args.asset, _args.to, _args.amount);
 
@@ -754,7 +750,7 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
      * @dev only the account owner or operator can deposit collateral, cannot be called when system is partiallyPaused or fullyPaused
      * @param _args DepositArgs structure
      */
-    function _depositCollateral(Actions.DepositArgs memory _args)
+    function _depositCollateral(Actions.DepositCollateralArgs memory _args)
         internal
         notPartiallyPaused
         onlyAuthorized(msg.sender, _args.owner)
@@ -829,13 +825,29 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         require(block.timestamp < otoken.expiryTimestamp(), "C24");
         // TODO we do not support collaterizing with long oTokens, either remove long support everywhere or add ability to collaterize with long
 
-        // usedCollateralsValues - is value of each collateral used for minting oToken in strike asset,
+        // collateralsValuesRequired - is value of each collateral used for minting oToken in strike asset,
         // in other words -  usedCollateralsAmounts[i] * collateralAssetPriceInStrike[i]
-        (uint256[] memory usedCollateralsAmounts, uint256[] memory usedCollateralsValues) = calculator
-            ._getCollateralRequired(vaults[_args.owner][_args.vaultId], _args.otoken, _args.amount);
-        otoken.mintOtoken(_args.to, _args.amount, usedCollateralsAmounts, usedCollateralsValues);
+        console.log("getCollateralRequired");
+        (
+            uint256[] memory collateralsAmountsRequired,
+            uint256[] memory collateralsValuesRequired,
+            uint256[] memory collateralsAmountsUsed,
+            uint256[] memory collateralsValuesUsed,
+            uint256 usedLongAmount
+        ) = calculator.getCollateralRequired(vaults[_args.owner][_args.vaultId], _args.amount);
+
+        console.log("mintOtoken");
+        otoken.mintOtoken(_args.to, _args.amount, collateralsAmountsUsed, collateralsValuesUsed);
+
+        console.log("addShort");
         vaults[_args.owner][_args.vaultId].addShort(_args.otoken, _args.amount);
-        vaults[_args.owner][_args.vaultId].useCollateralBulk(usedCollateralsAmounts, usedCollateralsValues);
+        console.log("useCollateralBulk");
+        vaults[_args.owner][_args.vaultId].useCollateralBulk(
+            collateralsAmountsRequired,
+            collateralsValuesRequired,
+            usedLongAmount,
+            collateralsValuesUsed
+        );
 
         emit ShortOtokenMinted(_args.otoken, _args.owner, _args.to, _args.vaultId, _args.amount);
     }
@@ -850,7 +862,6 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         notPartiallyPaused
         onlyAuthorized(msg.sender, _args.owner)
     {
-        console.log("BURN OTOKEn");
         // check that vault id is valid for this vault owner
         require(_checkVaultId(_args.owner, _args.vaultId), "C35");
         // only allow vault owner or vault operator to burn otoken
@@ -864,12 +875,17 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
         // burn otoken
         otoken.burnOtoken(_args.from, _args.amount);
+        // Cases:
+        // New short amount needs less collateral or no at all cause long amount is enough
 
         // remove otoken from vault
+        (FPI.FixedPointInt memory collateralRatio, uint256 newUsedLongAmount) = calculator.getAfterBurnCollateralRatio(
+            vaults[_args.owner][_args.vaultId],
+            _args.amount
+        );
         (uint256[] memory freedCollateralAmounts, uint256[] memory freedCollateralValues) = vaults[_args.owner][
             _args.vaultId
-        ].removeShort(_args.otoken, _args.amount);
-
+        ].removeShort(_args.otoken, _args.amount, collateralRatio, newUsedLongAmount);
 
         otoken.reduceCollaterization(freedCollateralAmounts, freedCollateralValues, _args.amount);
 
@@ -882,7 +898,6 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
      * @param _args RedeemArgs structure
      */
     function _redeem(Actions.RedeemArgs memory _args) internal {
-        console.log("REDEEM TRANSACTION");
         OtokenInterface otoken = OtokenInterface(_args.otoken);
 
         // check that otoken to redeem is whitelisted
@@ -922,7 +937,6 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
      */
     function _settleVault(Actions.SettleVaultArgs memory _args) internal onlyAuthorized(msg.sender, _args.owner) {
         require(_checkVaultId(_args.owner, _args.vaultId), "C35");
-        console.log("SETTLE VAULT TRANSACTION");
 
         (MarginVault.Vault memory vault, ) = getVaultWithDetails(_args.owner, _args.vaultId);
 
@@ -934,18 +948,19 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         // if there is a long otoken, burn it
         // store otoken address outside of this scope
         {
+            // TODO remove hasShort since it will be always true since now vault is linked to otoken right on open
             bool hasShort = vault.shortOtoken != address(0);
-            bool hasLong = vault.longOtokens._isNotEmpty();
+            bool hasLong = vault.longOtoken != address(0);
 
             require(hasShort || hasLong, "C30");
 
-            otoken = hasShort ? OtokenInterface(vault.shortOtoken) : OtokenInterface(vault.longOtokens[0]);
+            otoken = hasShort ? OtokenInterface(vault.shortOtoken) : OtokenInterface(vault.longOtoken);
 
-            // if (hasLong) {
-            //     OtokenInterface longOtoken = OtokenInterface(vault.longOtokens[0]);
+            if (hasLong) {
+                OtokenInterface longOtoken = OtokenInterface(vault.longOtoken);
 
-            //     longOtoken.burnOtoken(address(pool), vault.longAmounts[0]);
-            // }
+                longOtoken.burnOtoken(address(pool), vault.longAmount);
+            }
         }
 
         (address[] memory collaterals, address underlying, address strike, uint256 expiry) = _getOtokenDetails(
@@ -967,13 +982,12 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         delete vaults[_args.owner][_args.vaultId];
 
         for (uint256 i = 0; i < collaterals.length; i++) {
-            console.log("Vault deposit:", i, vault.collateralAmounts[i]);
-            console.log("Vault payouts:", i, payouts[i]);
             if (payouts[i] != 0) {
                 pool.transferToUser(collaterals[i], _args.to, payouts[i]);
             }
         }
 
+        // TODO do something with unused longs amounts
         uint256 vaultId = _args.vaultId;
         address payoutRecipient = _args.to;
 
@@ -1024,7 +1038,7 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         )
     {
         OtokenInterface otoken = OtokenInterface(_otoken);
-        (address[] memory collaterals, , address underlying, address strike, , uint256 expiry, , ) = otoken
+        (address[] memory collaterals, , , address underlying, address strike, , uint256 expiry, , ) = otoken
             .getOtokenDetails();
         return (collaterals, underlying, strike, expiry);
     }

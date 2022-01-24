@@ -4,6 +4,7 @@ pragma solidity 0.8.9;
 pragma experimental ABIEncoderV2;
 
 import {MarginVault} from "../libs/MarginVault.sol";
+import {FPI} from "../libs/FixedPointInt256.sol";
 
 interface MarginCalculatorInterface {
     event CollateralDustUpdated(address indexed collateral, uint256 dust);
@@ -16,16 +17,26 @@ interface MarginCalculatorInterface {
 
     function AUCTION_TIME() external view returns (uint256);
 
-    function _getCollateralRequired(
-        MarginVault.Vault memory _vault,
-        address _otoken,
-        uint256 _amount
-    ) external view returns (uint256[] memory collateralsAmountsRequired, uint256[] memory collateralsValuesRequired);
+    function getAfterBurnCollateralRatio(MarginVault.Vault memory _vault, uint256 _shortBurnAmount)
+        external
+        view
+        returns (FPI.FixedPointInt memory, uint256);
+
+    function getCollateralRequired(MarginVault.Vault memory _vault, uint256 _amount)
+        external
+        view
+        returns (
+            uint256[] memory collateralsAmountsRequired,
+            uint256[] memory collateralsValuesRequired,
+            uint256[] memory collateralsAmountsUsed,
+            uint256[] memory collateralsValuesUsed,
+            uint256 usedLongAmount
+        );
 
     function _getCollateralizationRatio(address _otoken, address _collateralAsset)
         external
         view
-        returns (FixedPointInt256.FixedPointInt memory);
+        returns (FPI.FixedPointInt memory);
 
     function getCollateralDust(address _collateral) external view returns (uint256);
 
@@ -38,8 +49,8 @@ interface MarginCalculatorInterface {
     //     view
     //     returns (
     //         bool,
-    //         FixedPointInt256.FixedPointInt[] memory,
-    //         FixedPointInt256.FixedPointInt[] memory
+    //         FPI.FixedPointInt[] memory,
+    //         FPI.FixedPointInt[] memory
     //     );
 
     function getMaxPrice(

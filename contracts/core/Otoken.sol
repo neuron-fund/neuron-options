@@ -105,6 +105,7 @@ contract Otoken is ERC20PermitUpgradeable {
         returns (
             address[] memory,
             uint256[] memory,
+            uint256[] memory,
             address,
             address,
             uint256,
@@ -116,6 +117,7 @@ contract Otoken is ERC20PermitUpgradeable {
         return (
             collateralAssets,
             collateralsAmounts,
+            collateralsValues,
             underlyingAsset,
             strikeAsset,
             strikePrice,
@@ -175,8 +177,6 @@ contract Otoken is ERC20PermitUpgradeable {
      * @param amount amount to burn
      */
     function burnOtoken(address account, uint256 amount) external {
-        console.log("burn amount:", amount);
-        console.log("balance", balanceOf(account));
         require(msg.sender == controller, "Otoken: Only Controller can burn Otokens");
         _burn(account, amount);
     }
@@ -196,8 +196,6 @@ contract Otoken is ERC20PermitUpgradeable {
             "Otoken: collateralAssets and collateralsAmountsForReduce must be of same length"
         );
         for (uint256 i = 0; i < collateralAssets.length; i++) {
-            console.log("collateralsValuesForReduce[i]", collateralsValuesForReduce[i]);
-            console.log("collateralsAmountsForReduce[i]", collateralsAmountsForReduce[i]);
             collateralsValues[i] = collateralsValues[i].sub(collateralsValuesForReduce[i]);
             collateralsAmounts[i] = collateralsAmounts[i].sub(collateralsAmountsForReduce[i]);
         }

@@ -32,3 +32,5 @@ TODO make helper function to help users of vault to calculate how much of collat
 TODO restrict zero strike
 
 TODO if one of collateral drastically falls in price we should still allow redeemer to redeem atleast other collaterals. Check calculations if expiry price is zero or very small and not enough balance.
+
+TODO get rid of safeMath probably since it's integrated in 8+ version of Solidity

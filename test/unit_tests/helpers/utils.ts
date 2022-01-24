@@ -1,9 +1,6 @@
-import { 
-  MockERC20 as MockERC20Instance,
-} from '../../../typechain-types' 
+import { MockERC20 as MockERC20Instance } from '../../../typechain-types'
 
-import {VaultStruct} from '../../../typechain-types/CalculatorTester'
-
+import { VaultStruct } from '../../../typechain-types/CalculatorTester'
 
 //import util from '@0x/protocol-utils'
 import { BigNumber } from 'ethers'
@@ -30,11 +27,9 @@ export const createValidExpiry = (now: number, days: number) => {
   return (Number(multiplier.toFixed(0)) + 1) * 86400 + days * 86400 + 28800
 }
 
-export const resp2bn =  (resp: any) => {
-  return BigNumber.from((resp).toString())
+export const resp2bn = (resp: any) => {
+  return BigNumber.from(resp.toString())
 }
-
-
 
 /**
  * Create a vault for testing
@@ -46,34 +41,34 @@ export const resp2bn =  (resp: any) => {
  * @param collateralAmount
  */
 
-
 export const createVault = (
   shortOtoken: string | undefined,
   longOtoken: string | undefined,
   collateralAssets: Array<string>,
   shortAmount: string | BigNumber | number | undefined,
   longAmount: string | BigNumber | number | undefined,
-  collateralAmounts: Array<string | BigNumber | number | undefined>,
+  collateralAmounts: Array<string | BigNumber | number | undefined>
 ): VaultStruct => {
   return {
     shortOtoken: shortOtoken !== undefined ? shortOtoken : ZERO_ADDR,
-    longOtokens: longOtoken !== undefined ? [longOtoken] : [],
+    longOtoken: longOtoken,
     collateralAssets: collateralAssets ? collateralAssets : [],
-    shortAmount: shortAmount !== undefined ? shortAmount: '0',
-    longAmounts: longAmount !== undefined ? [longAmount] : [],
+    shortAmount: shortAmount !== undefined ? shortAmount : '0',
+    longAmount: longAmount,
     collateralAmounts: collateralAmounts ? collateralAmounts : [],
     usedCollateralAmounts: [],
-    usedCollateralValues: [],
-    unusedCollateralAmounts: []
+    unusedCollateralAmounts: [],
+    reservedCollateralValues: [],
+    usedLongAmount: 0,
   }
 }
 
 export const createTokenAmount = (_num: number, _decimals = 8) => {
   let num = _num
   let decimals = _decimals
-  
-  while(decimals>0){
-    if((num % 1) === 0) break
+
+  while (decimals > 0) {
+    if (num % 1 === 0) break
     decimals--
     num *= 10
   }
@@ -102,13 +97,13 @@ export const createScaledBigNumber = (num: number, decimals = 8): BigNumber => {
 export const underlyingPriceToCtokenPrice = async (
   underlyingPrice: BigNumber,
   exchangeRate: BigNumber,
-  underlying: MockERC20Instance,
+  underlying: MockERC20Instance
 ) => {
   const decimals = (await underlying.decimals()).toString()
   const underlyingDecimals = BigNumber.from(decimals)
   const cTokenDecimals = BigNumber.from(8)
 
-/*
+  /*
   const mul0 = exchangeRate.mul(underlyingPrice)
   const exp0 = BigNumber.from(10).pow(cTokenDecimals)
   const exp1 = BigNumber.from(10).pow(underlyingDecimals.add(BigNumber.from(18)))
@@ -123,21 +118,18 @@ export const underlyingPriceToCtokenPrice = async (
     .mul(underlyingPrice)
     .mul(BigNumber.from(10).pow(cTokenDecimals))
     .div(BigNumber.from(10).pow(underlyingDecimals.add(BigNumber.from(18))))
-    //.integerValue(BigNumber.ROUND_DOWN)
+  //.integerValue(BigNumber.ROUND_DOWN)
 }
 
 export const underlyingPriceToYTokenPrice = async (
   underlyingPrice: BigNumber,
   pricePerShare: BigNumber,
-  underlying: MockERC20Instance,
-) => { 
-
+  underlying: MockERC20Instance
+) => {
   const underlyingDecimals = BigNumber.from((await underlying.decimals()).toString())
 
-  return pricePerShare
-    .mul(underlyingPrice)
-    .div(BigNumber.from('10').pow(underlyingDecimals))
-    //.integerValue(BigNumber.ROUND_DOWN)
+  return pricePerShare.mul(underlyingPrice).div(BigNumber.from('10').pow(underlyingDecimals))
+  //.integerValue(BigNumber.ROUND_DOWN)
 }
 
 /**
@@ -205,7 +197,7 @@ export const expectedLiqudidationPrice = (
   auctionStartingTime: number,
   currentBlockTime: number,
   isPut: boolean,
-  collateralDecimals: number,
+  collateralDecimals: number
 ) => {
   const endingPrice = BigNumber.from(collateral).div(debt)
   const auctionElapsedTime = currentBlockTime - auctionStartingTime
@@ -219,16 +211,14 @@ export const expectedLiqudidationPrice = (
 
   if (isPut) {
     startingPrice = BigNumber.from(cashValue).sub(BigNumber.from(spotPrice).mul(oracleDeviation))
-    if(startingPrice < BigNumber.from(0)) startingPrice = BigNumber.from(0)
+    if (startingPrice < BigNumber.from(0)) startingPrice = BigNumber.from(0)
   } else {
     startingPrice = BigNumber.from(cashValue).sub(BigNumber.from(spotPrice).mul(oracleDeviation)).div(spotPrice)
-    if(startingPrice < BigNumber.from(0)) startingPrice = BigNumber.from(0)
+    if (startingPrice < BigNumber.from(0)) startingPrice = BigNumber.from(0)
   }
 
-  const price = startingPrice.add(endingPrice
-    .sub(startingPrice)
-    .mul(auctionElapsedTime)
-    .div(3600))
+  const price = startingPrice
+    .add(endingPrice.sub(startingPrice).mul(auctionElapsedTime).div(3600))
     .mul(10 ** collateralDecimals)
 
   if (price.isGreaterThan(endingPrice.mul(10 ** collateralDecimals)))
