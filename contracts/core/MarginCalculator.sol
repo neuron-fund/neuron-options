@@ -282,7 +282,7 @@ contract MarginCalculator is Ownable {
      * @param _amount amount of the oToken to calculate the payout for, always represented in 1e8
      * @return amount of collateral to pay out for provided amount rate
      */
-    function getPayout(address _otoken, uint256 _amount) public view returns (uint256[] memory) {
+    function getPayout(address _otoken, uint256 _amount) external view returns (uint256[] memory) {
         // payoutsRaw is amounts of each of collateral asset in collateral asset decimals to be paid out for 1e8 of the oToken
         uint256[] memory payoutsRaw = getExpiredPayoutRate(_otoken);
         uint256[] memory payouts = new uint256[](payoutsRaw.length);
@@ -291,7 +291,8 @@ contract MarginCalculator is Ownable {
             // TODO is it possible to have significant precision loss here?
             // TODO can it overflow uint256 on multiplication?
             payouts[i] = payoutsRaw[i].mul(_amount).div(10**BASE);
-            console.log("GET PAYOUT payoutsRaw[i]", payouts[i]);
+            console.log("_amount", _amount);
+            console.log("GET PAYOUT payoutsRaw[i]", payoutsRaw[i]);
             console.log("GET PAYOUT payouts[i]", payouts[i]);
         }
 
@@ -340,11 +341,20 @@ contract MarginCalculator is Ownable {
             oTokenDetails.strikePrice,
             oTokenDetails.isPut
         );
+        console.log("cashValueInStrike round down", cashValueInStrike.toScaledUint(7, true));
+        console.log("cashValueInStrike round up", cashValueInStrike.toScaledUint(7, false));
+        {
+            (uint256 strikePrice, ) = oracle.getExpiryPrice(oTokenDetails.strikeAsset, oTokenDetails.expiry);
+            console.log(
+                "cashValueInUsd",
+                cashValueInStrike.mul(FPI.fromScaledUint(strikePrice, BASE)).toScaledUint(7, false)
+            );
+        }
 
         uint256 oTokenTotalCollateralValue = uint256ArraySum(oTokenDetails.collateralsValues);
         console.log("oTokenTotalCollateralValue", oTokenTotalCollateralValue);
 
-        // FPI.FixedPointInt memory strikePriceFpi = FPI.fromScaledUint(oTokenDetails.strikePrice, BASE);
+        // FPI.FixedPointInt memory strikePriceFpi = FPI.fromScaledUint(oToenDetails.strikePrice, BASE);
         // TODO this is only put calculations, add for call
         // Amounts of collateral to transfer for 1 oToken
         collateralsPayoutRate = new uint256[](oTokenDetails.collaterals.length);
@@ -778,6 +788,7 @@ contract MarginCalculator is Ownable {
     //         _vaultDetails.longUnderlyingAsset == _vaultDetails.shortUnderlyingAsset &&
     //         _vaultDetails.longStrikeAsset == _vaultDetails.shortStrikeAsset &&
     //         _vaultDetails.longExpiryTimestamp == _vaultDetails.shortExpiryTimestamp &&
+    //         _vaultDetails.longStrikePrice != _vaultDetails.shortStrikePrice &&
     //         _vaultDetails.isLongPut == _vaultDetails.isShortPut;
     // }
 

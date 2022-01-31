@@ -17,7 +17,7 @@ import '@openzeppelin/hardhat-upgrades'
 import '@nomiclabs/hardhat-solhint'
 import 'hardhat-contract-sizer'
 import { getHardhatAccounts } from './utils/accounts'
-import "@nomiclabs/hardhat-truffle5";
+import '@nomiclabs/hardhat-truffle5'
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -46,15 +46,15 @@ const config: HardhatUserConfig = {
   networks: {
     hardhat: {
       chainId: process.env.POLYGON ? 1339 : 1337,
-      forking: {
-        url: process.env.POLYGON ? process.env.ALCHEMY_POLYGON : process.env.ALCHEMY,
-        // Hardhat advices to set block number for testing
-        // "You're running a network fork starting from the latest block.
-        // Performance may degrade due to fetching data from the network with each run.
-        // If connecting to an archival node (e.g. Alchemy), we strongly recommend setting
-        // blockNumber to a fixed value to increase performance with a local cache."
-        blockNumber: Number(process.env.FORK_BLOCK_NUMBER) || undefined,
-      },
+      // forking: {
+      //   url: process.env.POLYGON ? process.env.ALCHEMY_POLYGON : process.env.ALCHEMY,
+      //   // Hardhat advices to set block number for testing
+      //   // "You're running a network fork starting from the latest block.
+      //   // Performance may degrade due to fetching data from the network with each run.
+      //   // If connecting to an archival node (e.g. Alchemy), we strongly recommend setting
+      //   // blockNumber to a fixed value to increase performance with a local cache."
+      //   blockNumber: Number(process.env.FORK_BLOCK_NUMBER) || undefined,
+      // },
       loggingEnabled: true,
       blockGasLimit: 0x1fffffffffffff,
       gas: 120e9,
