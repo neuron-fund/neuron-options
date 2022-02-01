@@ -49,13 +49,19 @@ export const generateFuzzyTestParams = async (
     oTokenParams: shortOtokenParams,
     mockERC20Owners,
     underlyingInitialPriceFormatted,
+    strikeInitialPriceFormatted,
   } = await genShortOtokenParams(chance, isPut, isITM)
 
   const longOtokenParams = canHaveLong ? genLongOtokenParams(chance, shortOtokenParams) : undefined
 
   const vaultsNumber = chance.integer({ min: 1, max: 40 })
 
-  const initialPrices = genInitialPrices(chance, shortOtokenParams, underlyingInitialPriceFormatted)
+  const initialPrices = genInitialPrices(
+    chance,
+    shortOtokenParams,
+    underlyingInitialPriceFormatted,
+    strikeInitialPriceFormatted
+  )
   const expiryPrices = genExpiryPrices(chance, shortOtokenParams, initialPrices, isPut, isITM)
 
   const vaults: {
@@ -88,7 +94,7 @@ export const generateFuzzyTestParams = async (
       : undefined
 
   return {
-    oTokenParams: shortOtokenParams as OTokenParams,
+    oTokenParams: shortOtokenParams,
     initialPrices,
     expiryPrices,
     longsOwners,
@@ -99,7 +105,7 @@ export const generateFuzzyTestParams = async (
 
 export const genShortOtokenParams = async (chance: Chance.Chance, isPut: boolean, isITM: boolean) => {
   const collateralsNumber = chance.integer({ min: 1, max: 6 })
-  const collateralsDecimals = [...new Array(collateralsNumber)].map(() => chance.integer({ min: 8, max: 18 }))
+  const collateralsDecimals = [...new Array(collateralsNumber)].map(() => chance.integer({ min: 6, max: 18 }))
 
   const mockERC20Owners = {}
 
@@ -127,11 +133,13 @@ export const genShortOtokenParams = async (chance: Chance.Chance, isPut: boolean
   mockERC20Owners[strikeAsset] = strikeAssetOwner
 
   const underlyingInitialPriceFormatted = chance.floating({ min: 500, max: 100000, fixed: 2 })
+  const strikeInitialPriceFormatted = chance.floating({ min: 1, max: 500, fixed: 2 })
   const strikePriceMultiplier = chance.floating({ min: 1, max: 2, fixed: 4 })
   const strikePriceFormatted = Number(
-    (isPut
-      ? underlyingInitialPriceFormatted / strikePriceMultiplier
-      : underlyingInitialPriceFormatted * strikePriceMultiplier
+    (
+      (isPut
+        ? underlyingInitialPriceFormatted / strikePriceMultiplier
+        : underlyingInitialPriceFormatted * strikePriceMultiplier) / strikeInitialPriceFormatted
     ).toFixed(2)
   )
 
@@ -148,6 +156,7 @@ export const genShortOtokenParams = async (chance: Chance.Chance, isPut: boolean
     },
     mockERC20Owners,
     underlyingInitialPriceFormatted,
+    strikeInitialPriceFormatted,
   }
 }
 
@@ -207,14 +216,15 @@ export const genVaultParams = (
 export const genInitialPrices = (
   chance: Chance.Chance,
   shortOtokenParams: OTokenParams,
-  underlyingInitialPriceFormatted: number
+  underlyingInitialPriceFormatted: number,
+  strikeInitialPriceFormatted: number
 ) => {
   const initialPrices = {}
 
   shortOtokenParams.collateralAssets.forEach(x => {
     initialPrices[x] = chance.floating({ min: 20, max: 20000, fixed: 2 })
   })
-  initialPrices[shortOtokenParams.strikeAsset] = chance.floating({ min: 20, max: 1000, fixed: 2 })
+  initialPrices[shortOtokenParams.strikeAsset] = strikeInitialPriceFormatted
   initialPrices[shortOtokenParams.underlyingAsset] = underlyingInitialPriceFormatted
 
   return initialPrices
