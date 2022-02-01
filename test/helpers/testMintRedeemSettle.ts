@@ -318,15 +318,15 @@ export const testMintRedeemSettleFactory = (getDeployResults: () => TestDeployRe
     }
 
     // Check total redeem in usd is same as expected
-    // const totalRedeemUsdDeviation = Math.abs(totalRedeemUsdRecieved - totalRedeem.usd)
-    // assert(
-    //   totalRedeemUsdDeviation < expectedRedeemTotalUsdDeviation,
-    //   `
-    //    Redeem with wrong total USD value.
-    //    Expected: ${totalRedeem.usd}, got: ${totalRedeemUsdRecieved}
-    //    Expected usd deviation: ${expectedRedeemOneCollateralUsdDeviation}, got:  ${totalRedeemUsdDeviation}\n
-    //   `
-    // )
+    const totalRedeemUsdDeviation = Math.abs(totalRedeemUsdRecieved - totalRedeem.usd)
+    assert(
+      totalRedeemUsdDeviation < expectedRedeemTotalUsdDeviation,
+      `
+       Redeem with wrong total USD value.
+       Expected: ${totalRedeem.usd}, got: ${totalRedeemUsdRecieved}
+       Expected usd deviation: ${expectedRedeemOneCollateralUsdDeviation}, got:  ${totalRedeemUsdDeviation}\n
+      `
+    )
 
     // Settle minter vaults and assert that returned collateral matches expected
     for (const vault of vaults) {
