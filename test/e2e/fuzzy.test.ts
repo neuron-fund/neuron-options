@@ -4,8 +4,12 @@ import { testDeploy } from '../helpers/fixtures'
 import { generateFuzzyTestParams, getSeed } from '../helpers/fuzzy'
 import { testMintRedeemSettleFactory } from '../helpers/testMintRedeemSettle'
 
-let testFuzzyNumbers
-const numberOfTests = 10
+//let testFuzzyNumbers
+let numberOfTests = 10
+if (process.env.CHANCE_SEED)
+  numberOfTests = 1;
+else if (process.env.ITER)
+  numberOfTests = Number(process.env.ITER);
 
 describe(path.basename(__filename), function () {
   let deployResult: Awaited<ReturnType<typeof testDeploy>>
@@ -25,11 +29,11 @@ describe(path.basename(__filename), function () {
   //   42, 43, 47, 48, 49,
   // ]
 
-  testFuzzyNumbers = [1]
+  //testFuzzyNumbers = [1]
   for (let i = 0; i < numberOfTests; i++) {
-    if (testFuzzyNumbers && !testFuzzyNumbers.includes(i)) {
-      continue
-    }
+  //  if (testFuzzyNumbers && !testFuzzyNumbers.includes(i)) {
+  //    continue
+  //  }
     const seed = getSeed();
     // it(`Fuzzy e2e test simplest No: ${i}:\n`, async () => {
     //   const testParams = await generateFuzzyTestParams(i)
