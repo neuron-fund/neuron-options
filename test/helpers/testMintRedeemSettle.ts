@@ -88,7 +88,7 @@ export type TestMintRedeemSettleParams<T extends OTokenParams, C extends TestMin
 
 // Maxiumum deviation of usd value of redeem and vault settle. Calculated from balances of redeemer and vault owner respectively
 const expectedRedeemOneCollateralUsdDeviation = 2.5
-const expectedRedeemTotalUsdDeviation = 0.1
+const expectedRedeemTotalUsdDeviation = 1
 const expectedSettleCollateralUsdDeviation = 2
 
 export const testMintRedeemSettleFactory = (getDeployResults: () => TestDeployResult) => {
@@ -324,7 +324,7 @@ export const testMintRedeemSettleFactory = (getDeployResults: () => TestDeployRe
       `
        Redeem with wrong total USD value.
        Expected: ${totalRedeem.usd}, got: ${totalRedeemUsdRecieved}
-       Expected usd deviation: ${expectedRedeemOneCollateralUsdDeviation}, got:  ${totalRedeemUsdDeviation}\n
+       Expected usd deviation: ${expectedRedeemTotalUsdDeviation}, got:  ${totalRedeemUsdDeviation}\n
       `
     )
 
