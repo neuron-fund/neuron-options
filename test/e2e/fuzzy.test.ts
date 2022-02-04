@@ -1,7 +1,7 @@
 import path from 'path'
 import { prettyObjectStringify } from '../../utils/log'
 import { testDeploy } from '../helpers/fixtures'
-import { generateFuzzyTestParams } from '../helpers/fuzzy'
+import { generateFuzzyTestParams, getSeed } from '../helpers/fuzzy'
 import { testMintRedeemSettleFactory } from '../helpers/testMintRedeemSettle'
 
 let testFuzzyNumbers
@@ -30,14 +30,15 @@ describe(path.basename(__filename), function () {
     if (testFuzzyNumbers && !testFuzzyNumbers.includes(i)) {
       continue
     }
+    const seed = getSeed();
     // it(`Fuzzy e2e test simplest No: ${i}:\n`, async () => {
     //   const testParams = await generateFuzzyTestParams(i)
     //   // console.log('\n', prettyObjectStringify(testParams), '\n')
     //   // await proceedTest({ ...testParams, vaults: [testParams.vaults[0]] })
     //   await proceedTest(testParams)
     // })
-    it(`Fuzzy e2e tests with burn No: ${i}:\n`, async () => {
-      const testParams = await generateFuzzyTestParams(i, true)
+    it(`Fuzzy e2e tests with burn No: ${seed}:\n`, async () => {
+      const testParams = await generateFuzzyTestParams(seed, true)
       // console.log('\n', prettyObjectStringify(testParams), '\n')
       // await proceedTest({ ...testParams, vaults: [testParams.vaults[0]] })
       await proceedTest(testParams)

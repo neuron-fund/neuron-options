@@ -36,8 +36,18 @@ import { calculateMarginRequired, OtokenCollateralsAmounts, OTokenParams } from 
 //   ],
 // },
 
+export declare type Seed = number | string;
+
+export const getSeed = (): Seed => {
+  if (!process.env.CHANCE_SEED) {
+    const seedGenerator = new Chance();
+    process.env.CHANCE_SEED = seedGenerator.hash();
+  }
+  return process.env.CHANCE_SEED;
+};
+
 export const generateFuzzyTestParams = async (
-  testSeed: string | number,
+  testSeed: Seed,
   canHaveBurn?: boolean,
   canHaveLong?: boolean
 ) => {
