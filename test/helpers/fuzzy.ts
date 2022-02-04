@@ -41,7 +41,7 @@ export declare type Seed = number | string;
 export const getSeed = (): Seed => {
   if (!process.env.CHANCE_SEED) {
     const seedGenerator = new Chance();
-    process.env.CHANCE_SEED = seedGenerator.hash();
+    return seedGenerator.hash();
   }
   return process.env.CHANCE_SEED;
 };
