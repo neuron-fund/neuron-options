@@ -1,13 +1,20 @@
 import path from 'path'
 import { prettyObjectStringify } from '../../utils/log'
 import { testDeploy } from '../helpers/fixtures'
-import { generateFuzzyTestParams, getSeed } from '../helpers/fuzzy'
+import { generateFuzzyTestParams, getSeed, Seed } from '../helpers/fuzzy'
 import { testMintRedeemSettleFactory } from '../helpers/testMintRedeemSettle'
 
 //let testFuzzyNumbers
 let numberOfTests = 10
+let seedArray : Seed[] = [];
+
 if (process.env.CHANCE_SEED) numberOfTests = 1;
 else if (process.env.ITER) numberOfTests = Number(process.env.ITER);
+else if (process.env.SEEDS) {
+  var fs = require('fs');
+  seedArray = fs.readFileSync(process.env.SEEDS).toString().split("\n");
+  numberOfTests = seedArray.length;
+}
 
 describe(path.basename(__filename), function () {
   let deployResult: Awaited<ReturnType<typeof testDeploy>>
@@ -32,7 +39,7 @@ describe(path.basename(__filename), function () {
   //  if (testFuzzyNumbers && !testFuzzyNumbers.includes(i)) {
   //    continue
   //  }
-    const seed = getSeed();
+    const seed = process.env.SEEDS ? seedArray[i] : getSeed();
     // it(`Fuzzy e2e test simplest No: ${i}:\n`, async () => {
     //   const testParams = await generateFuzzyTestParams(i)
     //   // console.log('\n', prettyObjectStringify(testParams), '\n')
