@@ -6,10 +6,8 @@ import { testMintRedeemSettleFactory } from '../helpers/testMintRedeemSettle'
 
 //let testFuzzyNumbers
 let numberOfTests = 10
-if (process.env.CHANCE_SEED)
-  numberOfTests = 1;
-else if (process.env.ITER)
-  numberOfTests = Number(process.env.ITER);
+if (process.env.CHANCE_SEED) numberOfTests = 1;
+else if (process.env.ITER) numberOfTests = Number(process.env.ITER);
 
 describe(path.basename(__filename), function () {
   let deployResult: Awaited<ReturnType<typeof testDeploy>>
