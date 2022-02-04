@@ -13,7 +13,7 @@ else if (process.env.ITER) numberOfTests = Number(process.env.ITER);
 else if (process.env.SEEDS) {
   var fs = require('fs');
   seedArray = fs.readFileSync(process.env.SEEDS).toString().split("\n");
-  numberOfTests = seedArray.length;
+  numberOfTests = seedArray.length - 1;
 }
 
 describe(path.basename(__filename), function () {
@@ -40,6 +40,7 @@ describe(path.basename(__filename), function () {
   //    continue
   //  }
     const seed = process.env.SEEDS ? seedArray[i] : getSeed();
+    console.log(seedArray[i]);
     // it(`Fuzzy e2e test simplest No: ${i}:\n`, async () => {
     //   const testParams = await generateFuzzyTestParams(i)
     //   // console.log('\n', prettyObjectStringify(testParams), '\n')
