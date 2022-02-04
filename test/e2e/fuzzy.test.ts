@@ -40,7 +40,7 @@ describe(path.basename(__filename), function () {
   //    continue
   //  }
     const seed = process.env.SEEDS ? seedArray[i] : getSeed();
-    console.log(seedArray[i]);
+    //console.log(seedArray[i]);
     // it(`Fuzzy e2e test simplest No: ${i}:\n`, async () => {
     //   const testParams = await generateFuzzyTestParams(i)
     //   // console.log('\n', prettyObjectStringify(testParams), '\n')
