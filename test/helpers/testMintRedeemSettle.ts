@@ -88,7 +88,7 @@ export type TestMintRedeemSettleParams<T extends OTokenParams, C extends TestMin
 
 // Maxiumum deviation of usd value of redeem and vault settle. Calculated from balances of redeemer and vault owner respectively
 const expectedRedeemOneCollateralUsdDeviation = 2.5
-const expectedRedeemTotalUsdDeviation = 0.1
+const expectedRedeemTotalUsdDeviation = 1
 const expectedSettleCollateralUsdDeviation = 2
 
 export const testMintRedeemSettleFactory = (getDeployResults: () => TestDeployResult) => {
@@ -318,15 +318,15 @@ export const testMintRedeemSettleFactory = (getDeployResults: () => TestDeployRe
     }
 
     // Check total redeem in usd is same as expected
-    // const totalRedeemUsdDeviation = Math.abs(totalRedeemUsdRecieved - totalRedeem.usd)
-    // assert(
-    //   totalRedeemUsdDeviation < expectedRedeemTotalUsdDeviation,
-    //   `
-    //    Redeem with wrong total USD value.
-    //    Expected: ${totalRedeem.usd}, got: ${totalRedeemUsdRecieved}
-    //    Expected usd deviation: ${expectedRedeemOneCollateralUsdDeviation}, got:  ${totalRedeemUsdDeviation}\n
-    //   `
-    // )
+    const totalRedeemUsdDeviation = Math.abs(totalRedeemUsdRecieved - totalRedeem.usd)
+    assert(
+      totalRedeemUsdDeviation < expectedRedeemTotalUsdDeviation,
+      `
+       Redeem with wrong total USD value.
+       Expected: ${totalRedeem.usd}, got: ${totalRedeemUsdRecieved}
+       Expected usd deviation: ${expectedRedeemTotalUsdDeviation}, got:  ${totalRedeemUsdDeviation}\n
+      `
+    )
 
     // Settle minter vaults and assert that returned collateral matches expected
     for (const vault of vaults) {
