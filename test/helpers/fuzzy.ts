@@ -41,6 +41,7 @@ export const generateFuzzyTestParams = async (
   canHaveBurn?: boolean,
   canHaveLong?: boolean
 ) => {
+  console.log(`testSeed=${testSeed}`)
   const chance = new Chance(testSeed)
   const isITM = chance.bool()
   const isPut = chance.bool()

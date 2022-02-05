@@ -378,6 +378,7 @@ contract MarginCalculator is Ownable {
                 oTokenDetails.collaterals[i],
                 oTokenDetails.expiry
             ).toScaledUint(collateralDecimals, false);
+            console.log("collateralPayoutRate", collateralsPayoutRate[i]);
         }
         return collateralsPayoutRate;
     }
