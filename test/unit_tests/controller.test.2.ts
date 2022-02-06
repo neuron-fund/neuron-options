@@ -132,6 +132,7 @@ contract(
     describe('Redeem', () => {
       const expiryTime = BigNumber.from(60 * 60 * 24) // after 1 day 
       it('should redeem from undercollaretized call', async () => {
+        // Call
         // underlying price 100 -> 200
         // strlke 100
         // collateral price 100 -> 10
@@ -167,6 +168,7 @@ contract(
 
         await weth2.approve(marginPool.address, collateralAmounts[0], { from: user })
 
+        await oracle.setRealTimePrice(usdc.address, createTokenAmount(1))
         await oracle.setRealTimePrice(weth.address, strike)
         await oracle.setRealTimePrice(weth2.address, strike)
 
@@ -193,9 +195,6 @@ contract(
         ]
 
         await controllerProxy.operate(actionArgs, { from: user })
-        // await oracle.setRealTimePrice(weth.address, strike_x2)
-        // await oracle.setRealTimePrice(weth2.address, strike_div10) 
-
         await time.increase(expiryTime.toNumber()) // increase time with one hour in seconds
 
         const expiryTimestamp = await shortCall.expiryTimestamp()
@@ -223,26 +222,102 @@ contract(
         ]
 
         await controllerProxy.operate(actionArgsRedeem, { from: redeemer })
+      })
+      it('should redeem from undercollaretized put', async () => {
+        // Put
+        // underlying price 100 -> 50
+        // strlke 100
+        // collateral price 1 -> 0.01
+        //
 
+        const shortPut: MockOtokenInstance = await MockOtoken.new()
+        const strike = createTokenAmount(100)
+        const strike_div2 = createTokenAmount(50)
+        const collateral_start_price = createTokenAmount(1)
+        const collateral_expiry_price = createTokenAmount(0.01)
 
-        /*
+        const collaterals = [usdc2.address,]
+        whitelist.whitelistCollaterals(collaterals)
+
+        // init put
+        await shortPut.init(
+          addressBook.address,
+          weth.address,
+          usdc.address,
+          collaterals,
+          strike,
+          resp2bn(await time.latest()).add(expiryTime),
+          true,
+        )       
+
+        await whitelist.whitelistOtoken(shortPut.address, { from: owner })
+        assert.isTrue(await whitelist.isWhitelistedOtoken(shortPut.address))
+        
+        const vaultCounter = resp2bn(await controllerProxy.accountVaultCounter(user))
+        const vaultId = vaultCounter.toNumber() + 1
+        const collateralAmounts = [createTokenAmount(1000, usdcDecimals)]
+        const shortsToMint = createTokenAmount(10)
+        const shortsToSell = createTokenAmount(2)
+         
+        await usdc2.approve(marginPool.address, collateralAmounts[0], { from: user })
+
+        await oracle.setRealTimePrice(weth.address, strike)        
+        await oracle.setRealTimePrice(usdc.address, collateral_start_price)
+        await oracle.setRealTimePrice(usdc2.address, collateral_start_price)
+
         const actionArgs = [
-          {
-            actionType: ActionType.DepositLongOption,
-            owner: accountOwner1,
-            secondAddress: accountOwner1,
-            assets: [longOtoken.address],
-            vaultId: vaultCounter.toNumber(),
-            amounts: [longToDeposit],
-            index: '0',
-            data: ZERO_ADDR,
-          },
+          getAction(ActionType.OpenVault, {
+            owner: user,
+            shortOtoken: shortPut.address,
+            vaultId: vaultId,
+          }),
+          getAction(ActionType.DepositCollateral, {
+            owner: user, 
+            vaultId: vaultId, 
+            from: user, 
+            assets: collaterals, 
+            amounts: collateralAmounts
+          }),
+          getAction(ActionType.MintShortOption, {
+            owner: user, 
+            vaultId: vaultId,
+            to: user,
+            otoken: [shortPut.address],
+            amount: [shortsToMint]
+          })
         ]
 
-          await longOtoken.approve(marginPool.address, longToDeposit, { from: accountOwner1 })
-          await expectRevert(controllerProxy.operate(actionArgs, { from: accountOwner1 }), 'C17')
+        await controllerProxy.operate(actionArgs, { from: user })
+        await time.increase(expiryTime.toNumber()) // increase time with one hour in seconds
 
-        */
+        const expiryTimestamp = await shortPut.expiryTimestamp()
+        const curTime = resp2bn(await time.latest())
+
+        assert.isTrue(curTime > expiryTimestamp, "Short otoken hasn't expired")
+
+        // shortCall.transfer(redeemer, createTokenAmount(2))
+
+        console.log('user shorts', (await shortPut.balanceOf(user)).toString())
+
+        await shortPut.transfer(redeemer, shortsToSell, { from: user })
+
+
+        await oracle.setExpiryPriceFinalizedAllPeiodOver(usdc.address, expiryTimestamp, collateral_start_price, true)        
+        await oracle.setExpiryPriceFinalizedAllPeiodOver(usdc2.address, expiryTimestamp, collateral_expiry_price, true)
+        await oracle.setExpiryPriceFinalizedAllPeiodOver(weth.address, expiryTimestamp, strike_div2, true)
+
+        const actionArgsRedeem = [
+          getAction(ActionType.Redeem, {
+            receiver: redeemer,
+            otoken: [shortPut.address],
+            amount: [shortsToSell],
+          }),
+        ]
+
+        await controllerProxy.operate(actionArgsRedeem, { from: redeemer })
+
+
+    
       })
 
     })

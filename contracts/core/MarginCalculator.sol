@@ -341,18 +341,20 @@ contract MarginCalculator is Ownable {
             oTokenDetails.strikePrice,
             oTokenDetails.isPut
         );
-        console.log("cashValueInStrike round down", cashValueInStrike.toScaledUint(7, true));
-        console.log("cashValueInStrike round up", cashValueInStrike.toScaledUint(7, false));
+        console.log("cashValueInStrike round down   ", cashValueInStrike.toScaledUint(7, true));
+        console.log("cashValueInStrike round up     ", cashValueInStrike.toScaledUint(7, false));
+        console.log("oToken.collateralsValues[0]    ", oTokenDetails.collateralsValues[0]);
+        console.log("oToken.collaterizedTotalAmount ", oTokenDetails.collaterizedTotalAmount);
         {
             (uint256 strikePrice, ) = oracle.getExpiryPrice(oTokenDetails.strikeAsset, oTokenDetails.expiry);
             console.log(
-                "cashValueInUsd",
+                "cashValueInUsd                 ",
                 cashValueInStrike.mul(FPI.fromScaledUint(strikePrice, BASE)).toScaledUint(7, false)
             );
         }
 
         uint256 oTokenTotalCollateralValue = uint256ArraySum(oTokenDetails.collateralsValues);
-        console.log("oTokenTotalCollateralValue", oTokenTotalCollateralValue);
+        console.log("oTokenTotalCollateralValue     ", oTokenTotalCollateralValue);
 
         // FPI.FixedPointInt memory strikePriceFpi = FPI.fromScaledUint(oToenDetails.strikePrice, BASE);
         // TODO this is only put calculations, add for call
@@ -360,7 +362,7 @@ contract MarginCalculator is Ownable {
         collateralsPayoutRate = new uint256[](oTokenDetails.collaterals.length);
         // TODO this calculations should be done only once after oToken expiry but not on every redeem as its now. It will help save gas for redeemers
         for (uint256 i = 0; i < oTokenDetails.collaterals.length; i++) {
-            console.log("O TOKEN COLLATERAL VALUE", oTokenDetails.collateralsValues[i]);
+            console.log("O TOKEN COLLATERAL VALUE       ", oTokenDetails.collateralsValues[i]);
             // the exchangeRate was scaled by 1e8, if 1e8 otoken can take out 1 USDC, the exchangeRate is currently 1e8
             // we want to return: how much USDC units can be taken out by 1 (1e8 units) oToken
             uint256 collateralDecimals = uint256(IERC20Metadata(oTokenDetails.collaterals[i]).decimals());
@@ -372,13 +374,21 @@ contract MarginCalculator is Ownable {
                 FPI.fromScaledUint(oTokenTotalCollateralValue, BASE)
             );
 
-            collateralsPayoutRate[i] = _convertAmountOnExpiryPrice(
+            //Compute maximal collateral payout rate as oToken.collaterizedTotalAmount / oTokenTotalCollateralValue
+            FPI.FixedPointInt memory maxCollateralPayoutRate = FPI.fromScaledUint(oTokenDetails.collaterizedTotalAmount, BASE).div(
+                FPI.fromScaledUint(oTokenTotalCollateralValue, BASE)
+            );
+
+            //Compute collateralPayoutRate for normal conditions
+            FPI.FixedPointInt memory collateralPayoutRate = _convertAmountOnExpiryPrice(
                 collateralPayoutValueInStrike,
                 oTokenDetails.strikeAsset,
                 oTokenDetails.collaterals[i],
                 oTokenDetails.expiry
-            ).toScaledUint(collateralDecimals, false);
-            console.log("collateralPayoutRate", collateralsPayoutRate[i]);
+            );
+
+            collateralsPayoutRate[i] = FPI.min(maxCollateralPayoutRate, collateralPayoutRate).toScaledUint(collateralDecimals, false);
+            console.log("collateralPayoutRate[i]         ", collateralsPayoutRate[i]);
         }
         return collateralsPayoutRate;
     }
