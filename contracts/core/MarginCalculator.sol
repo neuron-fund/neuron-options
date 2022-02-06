@@ -435,6 +435,9 @@ contract MarginCalculator is Ownable {
      * if True, collateral can be taken out from the vault, if False, additional collateral needs to be added to vault
      */
     function getExcessCollateral(MarginVault.Vault memory _vault) public view returns (uint256[] memory, bool) {
+        
+        console.log("_vault.shortOtoken", _vault.shortOtoken);
+
         bool hasExpiredShort = OtokenInterface(_vault.shortOtoken).expiryTimestamp() <= block.timestamp;
 
         uint256[] memory excessCollaterals = _vault.unusedCollateralAmounts;
