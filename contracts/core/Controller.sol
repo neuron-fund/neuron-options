@@ -830,7 +830,7 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         console.log("getCollateralRequired");
         (
             uint256[] memory collateralsAmountsRequired,
-            uint256[] memory collateralsValuesRequired,
+            ,
             uint256[] memory collateralsAmountsUsed,
             uint256[] memory collateralsValuesUsed,
             uint256 usedLongAmount
@@ -844,7 +844,6 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         console.log("useCollateralBulk");
         vaults[_args.owner][_args.vaultId].useCollateralBulk(
             collateralsAmountsRequired,
-            collateralsValuesRequired,
             usedLongAmount,
             collateralsValuesUsed
         );
