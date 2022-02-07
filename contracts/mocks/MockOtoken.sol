@@ -94,6 +94,7 @@ contract MockOtoken is ERC20PermitUpgradeable {
         returns (
             address[] memory,
             uint256[] memory,
+            uint256[] memory,
             address,
             address,
             uint256,
@@ -105,6 +106,7 @@ contract MockOtoken is ERC20PermitUpgradeable {
         return (
             collateralAssets,
             collateralsAmounts,
+            collateralsValues,
             underlyingAsset,
             strikeAsset,
             strikePrice,

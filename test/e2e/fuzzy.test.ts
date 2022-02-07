@@ -50,6 +50,7 @@ describe(path.basename(__filename), function () {
     it(`Fuzzy e2e tests with burn No: ${seed}:\n`, async () => {
       const testParams = await generateFuzzyTestParams(seed, true)
       // console.log('\n', prettyObjectStringify(testParams), '\n')
+
       // await proceedTest({ ...testParams, vaults: [testParams.vaults[0]] })
       await proceedTest(testParams)
     })

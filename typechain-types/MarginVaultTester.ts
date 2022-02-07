@@ -54,6 +54,10 @@ export type VaultStructOutput = [
   unusedCollateralAmounts: BigNumber[];
 };
 
+export type FixedPointIntStruct = { value: BigNumberish };
+
+export type FixedPointIntStructOutput = [BigNumber] & { value: BigNumber };
+
 export interface MarginVaultTesterInterface extends utils.Interface {
   functions: {
     "getVault(uint256)": FunctionFragment;
@@ -63,6 +67,7 @@ export interface MarginVaultTesterInterface extends utils.Interface {
     "testAddShort(uint256,address,uint256)": FunctionFragment;
     "testRemoveCollateral(uint256,address,uint256,uint256)": FunctionFragment;
     "testRemoveLong(uint256,address,uint256)": FunctionFragment;
+    "testRemoveShort(uint256,address,uint256,(int256),uint256)": FunctionFragment;
   };
 
   encodeFunctionData(
@@ -93,6 +98,16 @@ export interface MarginVaultTesterInterface extends utils.Interface {
     functionFragment: "testRemoveLong",
     values: [BigNumberish, string, BigNumberish]
   ): string;
+  encodeFunctionData(
+    functionFragment: "testRemoveShort",
+    values: [
+      BigNumberish,
+      string,
+      BigNumberish,
+      FixedPointIntStruct,
+      BigNumberish
+    ]
+  ): string;
 
   decodeFunctionResult(functionFragment: "getVault", data: BytesLike): Result;
   decodeFunctionResult(
@@ -117,6 +132,10 @@ export interface MarginVaultTesterInterface extends utils.Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "testRemoveLong",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "testRemoveShort",
     data: BytesLike
   ): Result;
 
@@ -196,6 +215,15 @@ export interface MarginVaultTester extends BaseContract {
       _amount: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
+
+    testRemoveShort(
+      _vaultIndex: BigNumberish,
+      _shortOtoken: string,
+      _amount: BigNumberish,
+      _newCollateralRatio: FixedPointIntStruct,
+      _newUsedLongAmount: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
   };
 
   getVault(
@@ -245,6 +273,15 @@ export interface MarginVaultTester extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
+  testRemoveShort(
+    _vaultIndex: BigNumberish,
+    _shortOtoken: string,
+    _amount: BigNumberish,
+    _newCollateralRatio: FixedPointIntStruct,
+    _newUsedLongAmount: BigNumberish,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
   callStatic: {
     getVault(
       _vaultIndex: BigNumberish,
@@ -290,6 +327,15 @@ export interface MarginVaultTester extends BaseContract {
       _vaultIndex: BigNumberish,
       _longOtoken: string,
       _amount: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    testRemoveShort(
+      _vaultIndex: BigNumberish,
+      _shortOtoken: string,
+      _amount: BigNumberish,
+      _newCollateralRatio: FixedPointIntStruct,
+      _newUsedLongAmount: BigNumberish,
       overrides?: CallOverrides
     ): Promise<void>;
   };
@@ -343,6 +389,15 @@ export interface MarginVaultTester extends BaseContract {
       _amount: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
+
+    testRemoveShort(
+      _vaultIndex: BigNumberish,
+      _shortOtoken: string,
+      _amount: BigNumberish,
+      _newCollateralRatio: FixedPointIntStruct,
+      _newUsedLongAmount: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
   };
 
   populateTransaction: {
@@ -390,6 +445,15 @@ export interface MarginVaultTester extends BaseContract {
       _vaultIndex: BigNumberish,
       _longOtoken: string,
       _amount: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    testRemoveShort(
+      _vaultIndex: BigNumberish,
+      _shortOtoken: string,
+      _amount: BigNumberish,
+      _newCollateralRatio: FixedPointIntStruct,
+      _newUsedLongAmount: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
   };

@@ -1,0 +1,1 @@
+_checkIsValidVault is not used in MarginCalculator

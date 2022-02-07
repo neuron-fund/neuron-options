@@ -14,6 +14,7 @@ import { BigNumber } from 'ethers'
 import { assert } from 'chai'
 
 import { createTokenAmount } from './helpers/utils'
+import { FixedPointIntStruct } from '../../typechain-types/MarginVaultTester'
 
 const Otoken = artifacts.require('Otoken.sol')
 const MockERC20 = artifacts.require('MockERC20.sol')
@@ -90,8 +91,9 @@ contract('MarginVault', ([deployer, controller]) => {
       const toRemove = 5
       const vaultCounter = BigNumber.from(0)
       const vaultBefore = await marginVaultTester.getVault(vaultCounter)
+      const fpiZero: FixedPointIntStruct = {value: BigNumber.from(0)};
 
-      await marginVaultTester.testRemoveShort(vaultCounter, otoken.address, toRemove)
+      await marginVaultTester.testRemoveShort(vaultCounter, otoken.address, toRemove, fpiZero , 0 )
       const vaultAfter = await marginVaultTester.getVault(vaultCounter)
 
       assert.equal(
@@ -105,8 +107,9 @@ contract('MarginVault', ([deployer, controller]) => {
       const vaultCounter = BigNumber.from(0)
       const vaultBefore = await marginVaultTester.getVault(vaultCounter)
       const toRemove = vaultBefore.shortAmount
+      const fpiZero: FixedPointIntStruct = {value: BigNumber.from(0)};
 
-      await marginVaultTester.testRemoveShort(vaultCounter, otoken.address, toRemove)
+      await marginVaultTester.testRemoveShort(vaultCounter, otoken.address, toRemove, fpiZero , 0 )
       const vaultAfter = await marginVaultTester.getVault(vaultCounter)
 
       assert.equal(
@@ -125,8 +128,9 @@ contract('MarginVault', ([deployer, controller]) => {
     })
 
     it('should revert when trying to remove wrong short otoken', async () => {
+      const fpiZero: FixedPointIntStruct = {value: BigNumber.from(0)};
       const vaultCounter = BigNumber.from(0)
-      await expectRevert(marginVaultTester.testRemoveShort(vaultCounter, otoken2.address, 1), 'V3')
+      await expectRevert(marginVaultTester.testRemoveShort(vaultCounter, otoken2.address, 1, fpiZero , 0 ), 'V3')
     })
   })
 
