@@ -374,9 +374,9 @@ contract MarginCalculator is Ownable {
                 FPI.fromScaledUint(oTokenTotalCollateralValue, BASE)
             );
 
-            //Compute maximal collateral payout rate as oToken.collaterizedTotalAmount / oTokenTotalCollateralValue
-            FPI.FixedPointInt memory maxCollateralPayoutRate = FPI.fromScaledUint(oTokenDetails.collaterizedTotalAmount, BASE).div(
-                FPI.fromScaledUint(oTokenTotalCollateralValue, BASE)
+            //Compute maximal collateral payout rate as oToken.collateralsAmounts[i] / collaterizedTotalAmount
+            FPI.FixedPointInt memory maxCollateralPayoutRate = FPI.fromScaledUint(oTokenDetails.collateralsValues[i], BASE).div(
+                FPI.fromScaledUint(oTokenDetails.collaterizedTotalAmount, BASE)
             );
 
             //Compute collateralPayoutRate for normal conditions
