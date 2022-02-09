@@ -542,9 +542,9 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
      * @param _vaultId vault id of vault to return
      * @return Vault struct that corresponds to the _vaultId of _owner
      */
-    // function getVault(address _owner, uint256 _vaultId) external view returns (MarginVault.Vault memory) {
-    //     return (vaults[_owner][_vaultId]);
-    // }
+    function getVault(address _owner, uint256 _vaultId) external view returns (MarginVault.Vault memory) {
+        return (vaults[_owner][_vaultId]);
+    }
 
     /**
      * @notice return a specific vault
@@ -830,7 +830,7 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         console.log("getCollateralRequired");
         (
             uint256[] memory collateralsAmountsRequired,
-            uint256[] memory collateralsValuesRequired,
+            ,
             uint256[] memory collateralsAmountsUsed,
             uint256[] memory collateralsValuesUsed,
             uint256 usedLongAmount
@@ -844,7 +844,6 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         console.log("useCollateralBulk");
         vaults[_args.owner][_args.vaultId].useCollateralBulk(
             collateralsAmountsRequired,
-            collateralsValuesRequired,
             usedLongAmount,
             collateralsValuesUsed
         );

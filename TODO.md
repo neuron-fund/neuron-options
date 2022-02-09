@@ -34,3 +34,15 @@ TODO restrict zero strike
 TODO if one of collateral drastically falls in price we should still allow redeemer to redeem atleast other collaterals. Check calculations if expiry price is zero or very small and not enough balance.
 
 TODO get rid of safeMath probably since it's integrated in 8+ version of Solidity
+
+TODO restrict expiration time
+
+TODO checks for margin vault
+
+TODO restrict redeem if collateral collateralsAmounts
+
+TODO test withdraw from settle after burn
+
+TODO check one by one creating oTokens
+
+TODO maybe add created at for oToken
