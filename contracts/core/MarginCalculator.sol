@@ -651,6 +651,8 @@ contract MarginCalculator is Ownable {
         }
         (uint256 priceA, bool priceAFinalized) = oracle.getExpiryPrice(_assetA, _expiry);
         (uint256 priceB, bool priceBFinalized) = oracle.getExpiryPrice(_assetB, _expiry);
+        console.log("priceA, priceBFinalized", priceA, _assetA, priceAFinalized);
+        console.log("priceB, priceBFinalized", priceB, _assetB, priceBFinalized);
         require(priceAFinalized && priceBFinalized, "MarginCalculator: price at expiry not finalized yet");
         // amount A * price A in USD = amount B * price B in USD
         // amount B = amount A * price A / price B

@@ -51,10 +51,10 @@ export const createVault = (
 ): VaultStruct => {
   return {
     shortOtoken: shortOtoken !== undefined ? shortOtoken : ZERO_ADDR,
-    longOtoken: longOtoken,
+    longOtoken: longOtoken !== undefined ? longOtoken : ZERO_ADDR,
     collateralAssets: collateralAssets ? collateralAssets : [],
     shortAmount: shortAmount !== undefined ? shortAmount : '0',
-    longAmount: longAmount,
+    longAmount: longAmount !== undefined ? longAmount : '0',
     collateralAmounts: collateralAmounts ? collateralAmounts : [],
     usedCollateralAmounts: [],
     unusedCollateralAmounts: [],
