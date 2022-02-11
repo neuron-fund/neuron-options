@@ -308,28 +308,7 @@ contract MarginCalculator is Ownable {
     function getExpiredPayoutRate(address _otoken) public view returns (uint256[] memory collateralsPayoutRate) {
         require(_otoken != address(0), "MarginCalculator: Invalid token address");
 
-        OTokenDetails memory oTokenDetails = OTokenDetails(
-            new address[](0), // [yvUSDC, cUSDC, ...etc]
-            new uint256[](0), // [0, 200, ...etc]
-            new uint256[](0), // [0, 200, ...etc]
-            address(0), // WETH
-            address(0), // USDC
-            0,
-            0,
-            false,
-            0
-        );
-        (
-            oTokenDetails.collaterals, // yvUSDC
-            ,
-            oTokenDetails.collateralsValues,
-            oTokenDetails.underlying, // WETH
-            oTokenDetails.strikeAsset, // USDC
-            oTokenDetails.strikePrice,
-            oTokenDetails.expiry,
-            oTokenDetails.isPut,
-            oTokenDetails.collaterizedTotalAmount
-        ) = _getOtokenDetails(_otoken);
+        OTokenDetails memory oTokenDetails = _getOtokenDetailsFull(_otoken);
 
         require(block.timestamp >= oTokenDetails.expiry, "MarginCalculator: Otoken not expired yet");
 
@@ -375,10 +354,9 @@ contract MarginCalculator is Ownable {
             );
 
             //Compute maximal collateral payout rate as oToken.collateralsAmounts[i] / collaterizedTotalAmount
-            FPI.FixedPointInt memory maxCollateralPayoutRate = FPI.fromScaledUint(oTokenDetails.collateralsValues[i], BASE).div(
-                FPI.fromScaledUint(oTokenDetails.collaterizedTotalAmount, BASE)
-            );
-
+            FPI.FixedPointInt memory maxCollateralPayoutRate = FPI
+                .fromScaledUint(oTokenDetails.collateralsAmounts[i], collateralDecimals)
+                .div(FPI.fromScaledUint(oTokenDetails.collaterizedTotalAmount, BASE));
             //Compute collateralPayoutRate for normal conditions
             FPI.FixedPointInt memory collateralPayoutRate = _convertAmountOnExpiryPrice(
                 collateralPayoutValueInStrike,
@@ -387,7 +365,10 @@ contract MarginCalculator is Ownable {
                 oTokenDetails.expiry
             );
 
-            collateralsPayoutRate[i] = FPI.min(maxCollateralPayoutRate, collateralPayoutRate).toScaledUint(collateralDecimals, false);
+            collateralsPayoutRate[i] = FPI.min(maxCollateralPayoutRate, collateralPayoutRate).toScaledUint(
+                collateralDecimals,
+                false
+            );
             console.log("collateralPayoutRate[i]         ", collateralsPayoutRate[i]);
         }
         return collateralsPayoutRate;
@@ -435,7 +416,6 @@ contract MarginCalculator is Ownable {
      * if True, collateral can be taken out from the vault, if False, additional collateral needs to be added to vault
      */
     function getExcessCollateral(MarginVault.Vault memory _vault) public view returns (uint256[] memory, bool) {
-        
         console.log("_vault.shortOtoken", _vault.shortOtoken);
 
         bool hasExpiredShort = OtokenInterface(_vault.shortOtoken).expiryTimestamp() <= block.timestamp;
@@ -864,6 +844,34 @@ contract MarginCalculator is Ownable {
     {
         OtokenInterface otoken = OtokenInterface(_otoken);
         return otoken.getOtokenDetails();
+    }
+
+    // TODO can this be simplified?
+    function _getOtokenDetailsFull(address _otoken) internal view returns (OTokenDetails memory) {
+        OTokenDetails memory oTokenDetails;
+        (
+            address[] memory collaterals, // yvUSDC
+            uint256[] memory collateralsAmounts,
+            uint256[] memory collateralsValues,
+            address underlying, // WETH
+            address strikeAsset, // USDC
+            uint256 strikePrice,
+            uint256 expiry,
+            bool isPut,
+            uint256 collaterizedTotalAmount
+        ) = _getOtokenDetails(_otoken);
+
+        oTokenDetails.collaterals = collaterals;
+        oTokenDetails.collateralsAmounts = collateralsAmounts;
+        oTokenDetails.collateralsValues = collateralsValues;
+        oTokenDetails.underlying = underlying;
+        oTokenDetails.strikeAsset = strikeAsset;
+        oTokenDetails.strikePrice = strikePrice;
+        oTokenDetails.expiry = expiry;
+        oTokenDetails.isPut = isPut;
+        oTokenDetails.collaterizedTotalAmount = collaterizedTotalAmount;
+
+        return oTokenDetails;
     }
 
     function getAfterBurnCollateralRatio(MarginVault.Vault memory _vault, uint256 _shortBurnAmount)
