@@ -163,6 +163,8 @@ contract Otoken is ERC20PermitUpgradeable {
             "Otoken: collateralAssets and collateralsAmountsForMint must be of same length"
         );
         for (uint256 i = 0; i < collateralAssets.length; i++) {
+            // TODO gas optimizaiton - remove 2N (collateralAssets.length) expensive write to storage operations
+            // assign to local variable in cycle, change storage variable to local after cycle only once
             collateralsValues[i] = collateralsValuesForMint[i].add(collateralsValues[i]);
             collateralsAmounts[i] = collateralsAmounts[i].add(collateralsAmountsForMint[i]);
         }

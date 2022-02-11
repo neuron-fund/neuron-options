@@ -132,7 +132,7 @@ export const mockErc2OwnersPrivateKeys = [
 ]
 
 export const getHardhatAccounts = () => {
-  const A_LOT_OF_ETH = parseUnits('3000').toString()
+  const A_LOT_OF_ETH = parseUnits('3000000').toString()
   return [...testPrivateKeys, ...testVaultOwnersPrivateKeys, ...mockErc2OwnersPrivateKeys].map(x => {
     return {
       privateKey: x,

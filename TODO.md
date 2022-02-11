@@ -48,3 +48,5 @@ TODO check one by one creating oTokens
 TODO maybe add created at for oToken
 
 TODO test depositCollateral after one mint to vault and mint again
+
+TODO mint maximum number of oTokens
