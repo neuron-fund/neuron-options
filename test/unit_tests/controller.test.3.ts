@@ -1,3 +1,20 @@
+/*
+Это должно на Deposit Long проверяться в contloller?
+- Should revert if long token has different underlying as short.
+- Should revert if long token has different strike as short.
+- Should revert if long token has different collateral as short.
+- Should revert if long token has different expiry as short.
+Это уже на Deposit Collateral проверяем?
+- Should revert when collateral assets and amounts have differenct length
+- Should revert when vault only contain long and collateral, and collateral is different from collateral of long
+Это на открытии волта проверим?
+- Should revert when collateral assets is different from short.collateral
+- Should revert when collateral is different from collateral of short
+Не бывает волта без шорта?
+- Should return collateral amount if there's no short.
+*/
+
+
 import { 
   MockERC20 as MockERC20Instance,
   CallTester as CallTesterInstance,

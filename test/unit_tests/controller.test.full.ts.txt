@@ -1933,7 +1933,7 @@ contract(
 
           const vaultBefore = await controllerProxy.getVaultWithDetails(accountOwner1, vaultCounter)
 
-          const [netValue, isExcess] = await calculator.getExcessCollateral(vaultBefore[0], vaultBefore[1])
+          const netValue = await calculator.getExcessCollateral(vaultBefore[0], vaultBefore[1])
 
           const proceed = await controllerProxy.getProceed(accountOwner1, vaultCounter)
           assert.equal(netValue.toString(), proceed.toString())

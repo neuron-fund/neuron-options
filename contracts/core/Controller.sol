@@ -472,12 +472,7 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
      */
     function getProceed(address _owner, uint256 _vaultId) external view returns (uint256[] memory) {
         (MarginVault.Vault memory vault, ) = getVaultWithDetails(_owner, _vaultId);
-
-        (uint256[] memory netValue, bool isExcess) = calculator.getExcessCollateral(vault);
-
-        if (!isExcess) return new uint256[](vault.collateralAssets.length);
-
-        return netValue;
+        return calculator.getExcessCollateral(vault);
     }
 
     /**
@@ -657,7 +652,6 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     function _verifyFinalState(address _owner, uint256 _vaultId) internal view {
         (MarginVault.Vault memory vault, ) = getVaultWithDetails(_owner, _vaultId);
         // TODO verfify vault.usedCollateralAmount + vault.unusedCollateralAmount = vault.collateralAmount
-        // (, bool isValidVault) = calculator.getExcessCollateral(vault);
 
         require(true, "C14");
     }
@@ -971,12 +965,12 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         require(_canSettleAssets(underlying, strike, collaterals, expiry), "C29");
 
         // TODO maybe would be easy to check if payouts is array with all zeros so we can have early return without loop. Will it save gas?
-        (uint256[] memory payouts, bool isValidVault) = calculator.getExcessCollateral(vault);
+        uint256[] memory payouts = calculator.getExcessCollateral(vault);
 
         // require that vault is valid (has excess collateral) before settling
         // to avoid allowing settling undercollateralized naked margin vault
         // TODO since we removed undercollateralized naked margin vault from the system, this check is no longer needed
-        require(isValidVault, "C32");
+        // require(isValidVault, "C32");
 
         delete vaults[_args.owner][_args.vaultId];
 

@@ -40,7 +40,7 @@ interface MarginCalculatorInterface {
 
     function getCollateralDust(address _collateral) external view returns (uint256);
 
-    function getExcessCollateral(MarginVault.Vault memory _vault) external view returns (uint256[] memory, bool);
+    function getExcessCollateral(MarginVault.Vault memory _vault) external view returns (uint256[] memory);
 
     function getExpiredPayoutRate(address _otoken) external view returns (uint256[] memory);
 

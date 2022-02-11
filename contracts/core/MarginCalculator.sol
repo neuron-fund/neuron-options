@@ -431,10 +431,8 @@ contract MarginCalculator is Ownable {
      * @dev return amount is denominated in the collateral asset for the oToken in the vault, or the collateral asset in the vault
      * @param _vault theoretical vault that needs to be checked
      * @return excessCollateral the amount by which the margin is above or below the required amount
-     * @return isExcess True if there is excess margin in the vault, False if there is a deficit of margin in the vault
-     * if True, collateral can be taken out from the vault, if False, additional collateral needs to be added to vault
      */
-    function getExcessCollateral(MarginVault.Vault memory _vault) public view returns (uint256[] memory, bool) {
+    function getExcessCollateral(MarginVault.Vault memory _vault) public view returns (uint256[] memory) {
         
         console.log("_vault.shortOtoken", _vault.shortOtoken);
 
@@ -444,7 +442,7 @@ contract MarginCalculator is Ownable {
 
         // if the vault contains no oTokens, return the amount of collateral
         if (!hasExpiredShort) {
-            return (excessCollaterals, true);
+            return excessCollaterals;
         }
 
         VaultDetails memory vaultDetails = _getVaultDetails(_vault);
@@ -482,7 +480,7 @@ contract MarginCalculator is Ownable {
             );
 
             if (spreadCashValue.isEqual(ZERO) || spreadCashValue.isLessThan(ZERO)) {
-                return (uint256ArraysAdd(excessCollaterals, _vault.usedCollateralAmounts), true);
+                return uint256ArraysAdd(excessCollaterals, _vault.usedCollateralAmounts);
             }
 
             console.log(
@@ -530,7 +528,7 @@ contract MarginCalculator is Ownable {
             excessCollaterals[i] = excessCollaterals[i].add(collateralAmountProvidedByVault).sub(redeemableCollateral);
         }
 
-        return (excessCollaterals, true);
+        return excessCollaterals;
     }
 
     /**
