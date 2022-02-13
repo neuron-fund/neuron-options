@@ -27,7 +27,6 @@ interface MarginCalculatorInterface {
         view
         returns (
             uint256[] memory collateralsAmountsRequired,
-            uint256[] memory collateralsValuesRequired,
             uint256[] memory collateralsAmountsUsed,
             uint256[] memory collateralsValuesUsed,
             uint256 usedLongAmount
