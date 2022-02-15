@@ -336,7 +336,6 @@ contract MarginCalculator is Ownable {
         console.log("oTokenTotalCollateralValue     ", oTokenTotalCollateralValue);
 
         // FPI.FixedPointInt memory strikePriceFpi = FPI.fromScaledUint(oToenDetails.strikePrice, BASE);
-        // TODO this is only put calculations, add for call
         // Amounts of collateral to transfer for 1 oToken
         collateralsPayoutRate = new uint256[](oTokenDetails.collaterals.length);
         // TODO this calculations should be done only once after oToken expiry but not on every redeem as its now. It will help save gas for redeemers
@@ -344,6 +343,7 @@ contract MarginCalculator is Ownable {
             console.log("O TOKEN COLLATERAL VALUE       ", oTokenDetails.collateralsValues[i]);
             // the exchangeRate was scaled by 1e8, if 1e8 otoken can take out 1 USDC, the exchangeRate is currently 1e8
             // we want to return: how much USDC units can be taken out by 1 (1e8 units) oToken
+            // TODO possible optimization - store decimals in oToken on creation
             uint256 collateralDecimals = uint256(IERC20Metadata(oTokenDetails.collaterals[i]).decimals());
 
             // TODO possible gas optimization, get rid of external call for each collateral and get values as array with "_getOtokenDetails"
