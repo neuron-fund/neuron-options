@@ -413,12 +413,7 @@ contract MarginCalculator is Ownable {
      * @param _vault theoretical vault that needs to be checked
      * @return excessCollateral the amount by which the margin is above or below the required amount
      */
-<<<<<<< HEAD
     function getExcessCollateral(MarginVault.Vault memory _vault) public view returns (uint256[] memory) {
-        
-=======
-    function getExcessCollateral(MarginVault.Vault memory _vault) public view returns (uint256[] memory, bool) {
->>>>>>> 9a0e9522e766f713c0eff236453df6d308403d0a
         console.log("_vault.shortOtoken", _vault.shortOtoken);
 
         bool hasExpiredShort = OtokenInterface(_vault.shortOtoken).expiryTimestamp() <= block.timestamp;
