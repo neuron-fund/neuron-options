@@ -817,6 +817,13 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         OtokenInterface otoken = OtokenInterface(_args.otoken);
 
         require(block.timestamp < otoken.expiryTimestamp(), "C24");
+
+        if(_args.amount == 0){ 
+            // TODO remove excess getCollateralRequired computations from this case
+            console.log("getMaxShortAmount");
+            _args.amount = calculator.getMaxShortAmount(vaults[_args.owner][_args.vaultId]);
+        }
+
         // TODO we do not support collaterizing with long oTokens, either remove long support everywhere or add ability to collaterize with long
 
         // collateralsValuesRequired - is value of each collateral used for minting oToken in strike asset,

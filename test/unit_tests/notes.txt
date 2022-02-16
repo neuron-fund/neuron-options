@@ -171,3 +171,54 @@ _checkIsValidVault is not used in MarginCalculator
         )
       })
   })
+
+
+
+
+marginCalculator.sol
+
+
+
+
+/// @dev decimals option upper bound value, spot shock and oracle deviation
+29 uint256 internal constant SCALING_FACTOR = 27;
+
+/// @dev oracle deviation value (1e27)
+72 uint256 internal oracleDeviation;
+
+/// @dev mapping to store option upper bound value at specific time to expiry for a given product (1e27)
+84 mapping(bytes32 => mapping(uint256 => uint256)) internal maxPriceAtTimeToExpiry;
+
+/// @dev mapping to store shock value for spot price of a given product (1e27)
+87 mapping(bytes32 => uint256) internal spotShock; - интёрнал никому не нужный
+
+
+
+139 function setUpperBoundValues
+external onlyOwner
+
+
+191 function updateUpperBoundValue external onlyOwner
+
+217 function setOracleDeviation(uint256 _deviation) external onlyOwner
+
+
+/**
+ * @notice get option upper bound value for specific time to expiry
+ * @param _underlying otoken underlying asset
+ * @param _strike otoken strike asset
+ * @param _collaterals otoken collateral asset
+ * @param _isPut otoken type
+ * @param _timeToExpiry option time to expiry timestamp
+ * @return option upper bound value (1e27)
+ */
+260  function getMaxPrice(
+
+278 getOracleDeviation()
+
+
+
+
+
+
+800 function _getProductHash(
