@@ -899,32 +899,15 @@ contract MarginCalculator is Ownable {
         returns (FPI.FixedPointInt memory, uint256)
     {
         uint256 newShortAmount = _vaultDetails.shortAmount.sub(_shortBurnAmount);
-        (FPI.FixedPointInt memory prevValueRequired, ) = _vaultDetails.isPut
-            ? _getPutSpreadMarginRequired(
-                _vaultDetails.shortAmount,
-                _vaultDetails.longAmount,
-                _vaultDetails.shortStrikePrice,
-                _vaultDetails.longStrikePrice
-            )
-            : _getCallSpreadMarginRequired(
-                _vaultDetails.shortAmount,
-                _vaultDetails.longAmount,
-                _vaultDetails.shortStrikePrice,
-                _vaultDetails.longStrikePrice
-            );
-        (FPI.FixedPointInt memory newValueRequired, FPI.FixedPointInt memory newToUseLongAmount) = _vaultDetails.isPut
-            ? _getPutSpreadMarginRequired(
-                newShortAmount,
-                _vaultDetails.longAmount,
-                _vaultDetails.shortStrikePrice,
-                _vaultDetails.longStrikePrice
-            )
-            : _getCallSpreadMarginRequired(
-                newShortAmount,
-                _vaultDetails.longAmount,
-                _vaultDetails.shortStrikePrice,
-                _vaultDetails.longStrikePrice
-            );
+
+        (
+            FPI.FixedPointInt memory prevValueRequired,
+        ) = _getValueRequired(_vaultDetails, _vaultDetails.shortAmount, _vaultDetails.longAmount);
+
+        (
+            FPI.FixedPointInt memory newValueRequired, 
+            FPI.FixedPointInt memory newToUseLongAmount
+        ) = _getValueRequired(_vaultDetails, newShortAmount, _vaultDetails.longAmount);
 
         return (
             prevValueRequired.isEqual(ZERO) ? ZERO : newValueRequired.div(prevValueRequired),
@@ -932,21 +915,25 @@ contract MarginCalculator is Ownable {
         );
     }
 
-
     /**
-     * @dev calculate the maximum number of short tokens that can be minted against collateral in the vault
+     * @notice calculates maximal short amount can be minted for collateral in a given vault
      */
-    function getCollateralRequired(MarginVault.Vault memory _vault)
+    function getMaxShortAmount(MarginVault.Vault memory _vault)
         external
         view
         returns (uint256)
-    {
+    {   
         VaultDetails memory vaultDetails = _getVaultDetails(_vault);
-        ( , , FPI.FixedPointInt memory availableCollateralTotalValue) = _calculateVaultAvailableCollateralsValues(vaultDetails);
-        
+        uint256 unusedLongAmount = vaultDetails.longAmount.sub(vaultDetails.usedLongAmount);
+        uint256 one = 10**BASE;
+        (FPI.FixedPointInt memory valueRequiredRate, ) = _getValueRequired(vaultDetails, one, unusedLongAmount);
 
-
+        (
+            , , FPI.FixedPointInt memory availableCollateralTotalValue
+        ) = _calculateVaultAvailableCollateralsValues(vaultDetails);
+        return availableCollateralTotalValue.div(valueRequiredRate).toScaledUint(BASE, true);
     }
+
 
     /**
      * @notice calculates collateral required to mint amount of oToken for a given vault
@@ -967,6 +954,30 @@ contract MarginCalculator is Ownable {
         return _getCollateralRequired(vaultDetails, _shortAmount);
     }
 
+    function _getValueRequired(VaultDetails memory _vaultDetails, uint256 _shortAmount,  uint256 _longAmount)
+        internal
+        view
+        returns (
+            FPI.FixedPointInt memory, 
+            FPI.FixedPointInt memory
+        )
+    {
+        (FPI.FixedPointInt memory valueRequired, FPI.FixedPointInt memory toUseLongAmount) = _vaultDetails.isPut
+            ? _getPutSpreadMarginRequired(
+                _shortAmount,
+                _longAmount,
+                _vaultDetails.shortStrikePrice,
+                _vaultDetails.longStrikePrice
+            )
+            : _getCallSpreadMarginRequired(
+                _shortAmount,
+                _longAmount,
+                _vaultDetails.shortStrikePrice,
+                _vaultDetails.longStrikePrice
+            );
+        return (valueRequired, toUseLongAmount);
+    }
+
     /**
      * @notice calculates collateral required to mint amount of oToken for a given vault
      */
@@ -984,19 +995,9 @@ contract MarginCalculator is Ownable {
         require(_shortAmount > 0, "amount must be greater than 0");
 
         uint256 unusedLongAmount = _vaultDetails.longAmount.sub(_vaultDetails.usedLongAmount);
-        (FPI.FixedPointInt memory valueRequired, FPI.FixedPointInt memory toUseLongAmount) = _vaultDetails.isPut
-            ? _getPutSpreadMarginRequired(
-                _shortAmount,
-                unusedLongAmount,
-                _vaultDetails.shortStrikePrice,
-                _vaultDetails.longStrikePrice
-            )
-            : _getCallSpreadMarginRequired(
-                _shortAmount,
-                unusedLongAmount,
-                _vaultDetails.shortStrikePrice,
-                _vaultDetails.longStrikePrice
-            );
+        (
+            FPI.FixedPointInt memory valueRequired, FPI.FixedPointInt memory toUseLongAmount
+        ) = _getValueRequired(_vaultDetails, _shortAmount, unusedLongAmount);
 
         (
             uint256[] memory collateralsAmountsRequired,

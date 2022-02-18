@@ -819,9 +819,9 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         require(block.timestamp < otoken.expiryTimestamp(), "C24");
 
         if(_args.amount == 0){ 
-            // TODO remove excess getCollateralRequired computations from this case
-            console.log("getMaxShortAmount");
+            // TODO remove excess getCollateralRequired computations from this case            
             _args.amount = calculator.getMaxShortAmount(vaults[_args.owner][_args.vaultId]);
+            console.log("getMaxShortAmount", _args.amount);
         }
 
         // TODO we do not support collaterizing with long oTokens, either remove long support everywhere or add ability to collaterize with long
