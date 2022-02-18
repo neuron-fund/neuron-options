@@ -20,7 +20,6 @@ import {CalleeInterface} from "../interfaces/CalleeInterface.sol";
 import {ArrayAddressUtils} from "../libs/ArrayAddressUtils.sol";
 import {FPI} from "../libs/FixedPointInt256.sol";
 
-import "hardhat/console.sol";
 
 /**
  * Controller Error Codes
@@ -815,20 +814,17 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         require(vaults[_args.owner][_args.vaultId].shortOtoken == _args.otoken, "C41");
 
         OtokenInterface otoken = OtokenInterface(_args.otoken);
-
         require(block.timestamp < otoken.expiryTimestamp(), "C24");
 
         if(_args.amount == 0){ 
             // TODO remove excess getCollateralRequired computations from this case            
             _args.amount = calculator.getMaxShortAmount(vaults[_args.owner][_args.vaultId]);
-            console.log("getMaxShortAmount", _args.amount);
         }
 
         // TODO we do not support collaterizing with long oTokens, either remove long support everywhere or add ability to collaterize with long
 
         // collateralsValuesRequired - is value of each collateral used for minting oToken in strike asset,
         // in other words -  usedCollateralsAmounts[i] * collateralAssetPriceInStrike[i]
-        console.log("getCollateralRequired");
         (
             uint256[] memory collateralsAmountsRequired,
             ,
@@ -836,13 +832,8 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             uint256[] memory collateralsValuesUsed,
             uint256 usedLongAmount
         ) = calculator.getCollateralRequired(vaults[_args.owner][_args.vaultId], _args.amount);
-
-        console.log("mintOtoken");
         otoken.mintOtoken(_args.to, _args.amount, collateralsAmountsUsed, collateralsValuesUsed);
-
-        console.log("addShort");
         vaults[_args.owner][_args.vaultId].addShort(_args.otoken, _args.amount);
-        console.log("useCollateralBulk");
         vaults[_args.owner][_args.vaultId].useCollateralBulk(
             collateralsAmountsRequired,
             usedLongAmount,

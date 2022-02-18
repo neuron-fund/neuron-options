@@ -319,7 +319,71 @@ contract(
 
     
       })
+      it('should mint on max collateral', async () => {
+        const shortCall: MockOtokenInstance = await MockOtoken.new()
+        const strike = createTokenAmount(100)
+
+        const collaterals = [weth2.address,]
+        whitelist.whitelistCollaterals(collaterals)
+
+        // init call
+        await shortCall.init(
+          addressBook.address,
+          weth.address,
+          usdc.address,
+          collaterals,
+          strike,
+          resp2bn(await time.latest()).add(expiryTime),
+          false,
+        )        
+
+        await whitelist.whitelistOtoken(shortCall.address, { from: owner })
+        assert.isTrue(await whitelist.isWhitelistedOtoken(shortCall.address))
+        
+        const vaultCounter = resp2bn(await controllerProxy.accountVaultCounter(user))
+        const vaultId = vaultCounter.toNumber() + 1
+        const collateralAmounts = [createTokenAmount(123, wethDecimals)]
+        const shortsToMint = createTokenAmount(0)
+
+        await weth2.approve(marginPool.address, collateralAmounts[0], { from: user })
+
+        await oracle.setRealTimePrice(usdc.address, createTokenAmount(1))
+        await oracle.setRealTimePrice(weth.address, strike)
+        await oracle.setRealTimePrice(weth2.address, strike)
+
+
+
+        const actionArgs = [
+          getAction(ActionType.OpenVault, {
+            owner: user,
+            shortOtoken: shortCall.address,
+            vaultId: vaultId,
+          }),
+          getAction(ActionType.DepositCollateral, {
+            owner: user, 
+            vaultId: vaultId, 
+            from: user, 
+            assets: collaterals, 
+            amounts: collateralAmounts
+          }),
+          getAction(ActionType.MintShortOption, {
+            owner: user, 
+            vaultId: vaultId,
+            to: user,
+            otoken: [shortCall.address],
+            amount: [shortsToMint]
+          })
+        ]
+
+        await controllerProxy.operate(actionArgs, { from: user })
+
+        const mintedShorts = await shortCall.balanceOf(user)
+
+        console.log(mintedShorts.toString())
+      })
 
     })
   }
+
+  
 )
