@@ -9,7 +9,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
  * @title Whitelist Module
  * @notice The whitelist module keeps track of all valid oToken addresses, product hashes, collateral addresses, and callee addresses.
  */
-contract Whitelist is WhitelistInterface, Ownable{
+contract Whitelist is WhitelistInterface, Ownable {
     /// @notice AddressBook module address
     address public addressBook;
     /// @dev mapping to track whitelisted products
@@ -36,7 +36,6 @@ contract Whitelist is WhitelistInterface, Ownable{
         bytes32 productHash,
         address indexed underlying,
         address indexed strike,
-        // TODO will indexing array work?
         address[] indexed collaterals,
         bool isPut
     );
@@ -120,7 +119,6 @@ contract Whitelist is WhitelistInterface, Ownable{
         return whitelistedCallee[_callee];
     }
 
-    // TODO why do we need whitelisting products?
     /**
      * @notice allows the owner to whitelist a product
      * @dev product is the hash of underlying asset, strike asset, collateral asset, and isPut

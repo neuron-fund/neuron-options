@@ -93,6 +93,7 @@ library MarginVault {
      */
     function removeShort(
         // TODO Will using memory here will save gas since we have a lot of reading from _vault opearations?
+        // can copy _vault to memory read it when needed and only set values to storage in the end
         Vault storage _vault,
         address _shortOtoken,
         uint256 _amount,

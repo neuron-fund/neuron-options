@@ -5,7 +5,7 @@ pragma solidity 0.8.9;
 
 /**
  * @title Actions
-  * @notice A library that provides a ActionArgs struct, sub types of Action structs, and functions to parse ActionArgs into specific Actions.
+ * @notice A library that provides a ActionArgs struct, sub types of Action structs, and functions to parse ActionArgs into specific Actions.
  * errorCode
  * A1 can only parse arguments for open vault actions
  * A2 cannot open vault for an invalid account
@@ -93,8 +93,6 @@ library Actions {
         address owner;
         // index of the vault from which the oToken will be burned
         uint256 vaultId;
-        // address from which we transfer the oTokens
-        address from;
         // oToken that is to be burned
         address otoken;
         // amount of oTokens that is to be burned
@@ -186,11 +184,7 @@ library Actions {
         require(_args.actionType == ActionType.OpenVault, "A1");
         require(_args.owner != address(0), "A2");
 
-        return OpenVaultArgs({
-            shortOtoken: _args.secondAddress,
-            owner: _args.owner, 
-            vaultId: _args.vaultId
-        });
+        return OpenVaultArgs({shortOtoken: _args.secondAddress, owner: _args.owner, vaultId: _args.vaultId});
     }
 
     /**
@@ -224,13 +218,7 @@ library Actions {
         require(_args.owner != address(0), "A7");
 
         return
-            BurnArgs({
-                owner: _args.owner,
-                vaultId: _args.vaultId,
-                from: _args.secondAddress,
-                otoken: _args.assets[0],
-                amount: _args.amounts[0]
-            });
+            BurnArgs({owner: _args.owner, vaultId: _args.vaultId, otoken: _args.assets[0], amount: _args.amounts[0]});
     }
 
     /**
@@ -298,7 +286,6 @@ library Actions {
                 owner: _args.owner,
                 vaultId: _args.vaultId,
                 to: _args.secondAddress,
-                // TODO is it correct to use the first asset here? If yes add check that assets and amounts is same length
                 asset: _args.assets[0],
                 index: _args.index,
                 amount: _args.amounts[0]
