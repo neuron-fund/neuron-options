@@ -10,3 +10,4 @@ abi
 zapper
 bin
 deployments/localhost
+typechain-types

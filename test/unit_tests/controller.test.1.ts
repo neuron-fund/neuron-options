@@ -78,8 +78,8 @@ contract(
       oracle = await MockOracle.new(addressBook.address, { from: owner })
       
       const libMarginVault = await MarginVault.new()
-      const libArrayAddressUtils  = await ArrayAddressUtils.new()
-      await MarginCalculator.link(libArrayAddressUtils, libMarginVault)
+      // const libArrayAddressUtils  = await ArrayAddressUtils.new()
+      // await MarginCalculator.link(libArrayAddressUtils, libMarginVault)
 
       
       //await MarginCalculator.link(libArrayAddressUtils)

@@ -4,6 +4,7 @@ pragma solidity 0.8.9;
 pragma experimental ABIEncoderV2;
 
 import {MarginVault} from "../libs/MarginVault.sol";
+import {FPI} from "../libs/FixedPointInt256.sol";
 import "hardhat/console.sol";
 
 contract MarginVaultTester {
@@ -35,13 +36,15 @@ contract MarginVaultTester {
         vault[msg.sender][_vaultIndex].addShort(_shortOtoken, _amount);
     }
 
-    // function testRemoveShort(
-    //     uint256 _vaultIndex,
-    //     address _shortOtoken,
-    //     uint256 _amount
-    // ) external {
-    //     vault[msg.sender][_vaultIndex].removeShort(_shortOtoken, _amount);
-    // }
+    function testRemoveShort(
+        uint256 _vaultIndex,
+        address _shortOtoken,
+        uint256 _amount,
+        FPI.FixedPointInt memory _newCollateralRatio,
+        uint256 _newUsedLongAmount
+     ) external {
+        vault[msg.sender][_vaultIndex].removeShort(_shortOtoken, _amount, _newCollateralRatio, _newUsedLongAmount);
+     }
 
     function testAddLong(
         uint256 _vaultIndex,

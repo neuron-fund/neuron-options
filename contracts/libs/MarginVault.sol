@@ -230,14 +230,13 @@ library MarginVault {
         require(_vault.collateralAssets[_index] == _collateralAsset, "V9");
 
         uint256 newCollateralAmount = _vault.collateralAmounts[_index].sub(_amount);
-
+        _vault.unusedCollateralAmounts[_index] = _vault.unusedCollateralAmounts[_index].sub(_amount);
         _vault.collateralAmounts[_index] = newCollateralAmount;
     }
 
     function useCollateralBulk(
         Vault storage _vault,
         uint256[] memory _amounts,
-        uint256[] memory _values,
         uint256 _usedLongAmount,
         uint256[] memory _reservedCollateralValues
     ) external {

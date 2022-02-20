@@ -282,7 +282,7 @@ contract MarginCalculator is Ownable {
      * @param _amount amount of the oToken to calculate the payout for, always represented in 1e8
      * @return amount of collateral to pay out for provided amount rate
      */
-    function getPayout(address _otoken, uint256 _amount) public view returns (uint256[] memory) {
+    function getPayout(address _otoken, uint256 _amount) external view returns (uint256[] memory) {
         // payoutsRaw is amounts of each of collateral asset in collateral asset decimals to be paid out for 1e8 of the oToken
         uint256[] memory payoutsRaw = getExpiredPayoutRate(_otoken);
         uint256[] memory payouts = new uint256[](payoutsRaw.length);
@@ -291,7 +291,8 @@ contract MarginCalculator is Ownable {
             // TODO is it possible to have significant precision loss here?
             // TODO can it overflow uint256 on multiplication?
             payouts[i] = payoutsRaw[i].mul(_amount).div(10**BASE);
-            console.log("GET PAYOUT payoutsRaw[i]", payouts[i]);
+            console.log("_amount", _amount);
+            console.log("GET PAYOUT payoutsRaw[i]", payoutsRaw[i]);
             console.log("GET PAYOUT payouts[i]", payouts[i]);
         }
 
@@ -307,28 +308,7 @@ contract MarginCalculator is Ownable {
     function getExpiredPayoutRate(address _otoken) public view returns (uint256[] memory collateralsPayoutRate) {
         require(_otoken != address(0), "MarginCalculator: Invalid token address");
 
-        OTokenDetails memory oTokenDetails = OTokenDetails(
-            new address[](0), // [yvUSDC, cUSDC, ...etc]
-            new uint256[](0), // [0, 200, ...etc]
-            new uint256[](0), // [0, 200, ...etc]
-            address(0), // WETH
-            address(0), // USDC
-            0,
-            0,
-            false,
-            0
-        );
-        (
-            oTokenDetails.collaterals, // yvUSDC
-            ,
-            oTokenDetails.collateralsValues,
-            oTokenDetails.underlying, // WETH
-            oTokenDetails.strikeAsset, // USDC
-            oTokenDetails.strikePrice,
-            oTokenDetails.expiry,
-            oTokenDetails.isPut,
-            oTokenDetails.collaterizedTotalAmount
-        ) = _getOtokenDetails(_otoken);
+        OTokenDetails memory oTokenDetails = _getOtokenDetailsFull(_otoken);
 
         require(block.timestamp >= oTokenDetails.expiry, "MarginCalculator: Otoken not expired yet");
 
@@ -340,19 +320,30 @@ contract MarginCalculator is Ownable {
             oTokenDetails.strikePrice,
             oTokenDetails.isPut
         );
+        console.log("cashValueInStrike round down   ", cashValueInStrike.toScaledUint(7, true));
+        console.log("cashValueInStrike round up     ", cashValueInStrike.toScaledUint(7, false));
+        console.log("oToken.collateralsValues[0]    ", oTokenDetails.collateralsValues[0]);
+        console.log("oToken.collaterizedTotalAmount ", oTokenDetails.collaterizedTotalAmount);
+        {
+            (uint256 strikePrice, ) = oracle.getExpiryPrice(oTokenDetails.strikeAsset, oTokenDetails.expiry);
+            console.log(
+                "cashValueInUsd                 ",
+                cashValueInStrike.mul(FPI.fromScaledUint(strikePrice, BASE)).toScaledUint(7, false)
+            );
+        }
 
         uint256 oTokenTotalCollateralValue = uint256ArraySum(oTokenDetails.collateralsValues);
-        console.log("oTokenTotalCollateralValue", oTokenTotalCollateralValue);
+        console.log("oTokenTotalCollateralValue     ", oTokenTotalCollateralValue);
 
-        // FPI.FixedPointInt memory strikePriceFpi = FPI.fromScaledUint(oTokenDetails.strikePrice, BASE);
-        // TODO this is only put calculations, add for call
+        // FPI.FixedPointInt memory strikePriceFpi = FPI.fromScaledUint(oToenDetails.strikePrice, BASE);
         // Amounts of collateral to transfer for 1 oToken
         collateralsPayoutRate = new uint256[](oTokenDetails.collaterals.length);
         // TODO this calculations should be done only once after oToken expiry but not on every redeem as its now. It will help save gas for redeemers
         for (uint256 i = 0; i < oTokenDetails.collaterals.length; i++) {
-            console.log("O TOKEN COLLATERAL VALUE", oTokenDetails.collateralsValues[i]);
+            console.log("O TOKEN COLLATERAL VALUE       ", oTokenDetails.collateralsValues[i]);
             // the exchangeRate was scaled by 1e8, if 1e8 otoken can take out 1 USDC, the exchangeRate is currently 1e8
             // we want to return: how much USDC units can be taken out by 1 (1e8 units) oToken
+            // TODO possible optimization - store decimals in oToken on creation
             uint256 collateralDecimals = uint256(IERC20Metadata(oTokenDetails.collaterals[i]).decimals());
 
             // TODO possible gas optimization, get rid of external call for each collateral and get values as array with "_getOtokenDetails"
@@ -362,12 +353,23 @@ contract MarginCalculator is Ownable {
                 FPI.fromScaledUint(oTokenTotalCollateralValue, BASE)
             );
 
-            collateralsPayoutRate[i] = _convertAmountOnExpiryPrice(
+            //Compute maximal collateral payout rate as oToken.collateralsAmounts[i] / collaterizedTotalAmount
+            FPI.FixedPointInt memory maxCollateralPayoutRate = FPI
+                .fromScaledUint(oTokenDetails.collateralsAmounts[i], collateralDecimals)
+                .div(FPI.fromScaledUint(oTokenDetails.collaterizedTotalAmount, BASE));
+            //Compute collateralPayoutRate for normal conditions
+            FPI.FixedPointInt memory collateralPayoutRate = _convertAmountOnExpiryPrice(
                 collateralPayoutValueInStrike,
                 oTokenDetails.strikeAsset,
                 oTokenDetails.collaterals[i],
                 oTokenDetails.expiry
-            ).toScaledUint(collateralDecimals, false);
+            );
+
+            collateralsPayoutRate[i] = FPI.min(maxCollateralPayoutRate, collateralPayoutRate).toScaledUint(
+                collateralDecimals,
+                false
+            );
+            console.log("collateralPayoutRate[i]         ", collateralsPayoutRate[i]);
         }
         return collateralsPayoutRate;
     }
@@ -410,17 +412,17 @@ contract MarginCalculator is Ownable {
      * @dev return amount is denominated in the collateral asset for the oToken in the vault, or the collateral asset in the vault
      * @param _vault theoretical vault that needs to be checked
      * @return excessCollateral the amount by which the margin is above or below the required amount
-     * @return isExcess True if there is excess margin in the vault, False if there is a deficit of margin in the vault
-     * if True, collateral can be taken out from the vault, if False, additional collateral needs to be added to vault
      */
-    function getExcessCollateral(MarginVault.Vault memory _vault) public view returns (uint256[] memory, bool) {
+    function getExcessCollateral(MarginVault.Vault memory _vault) public view returns (uint256[] memory) {
+        console.log("_vault.shortOtoken", _vault.shortOtoken);
+
         bool hasExpiredShort = OtokenInterface(_vault.shortOtoken).expiryTimestamp() <= block.timestamp;
 
         uint256[] memory excessCollaterals = _vault.unusedCollateralAmounts;
 
         // if the vault contains no oTokens, return the amount of collateral
         if (!hasExpiredShort) {
-            return (excessCollaterals, true);
+            return excessCollaterals;
         }
 
         VaultDetails memory vaultDetails = _getVaultDetails(_vault);
@@ -458,7 +460,7 @@ contract MarginCalculator is Ownable {
             );
 
             if (spreadCashValue.isEqual(ZERO) || spreadCashValue.isLessThan(ZERO)) {
-                return (uint256ArraysAdd(excessCollaterals, _vault.usedCollateralAmounts), true);
+                return uint256ArraysAdd(excessCollaterals, _vault.usedCollateralAmounts);
             }
 
             console.log(
@@ -506,7 +508,7 @@ contract MarginCalculator is Ownable {
             excessCollaterals[i] = excessCollaterals[i].add(collateralAmountProvidedByVault).sub(redeemableCollateral);
         }
 
-        return (excessCollaterals, true);
+        return excessCollaterals;
     }
 
     /**
@@ -627,6 +629,8 @@ contract MarginCalculator is Ownable {
         }
         (uint256 priceA, bool priceAFinalized) = oracle.getExpiryPrice(_assetA, _expiry);
         (uint256 priceB, bool priceBFinalized) = oracle.getExpiryPrice(_assetB, _expiry);
+        console.log("priceA, priceBFinalized", priceA, _assetA, priceAFinalized);
+        console.log("priceB, priceBFinalized", priceB, _assetB, priceBFinalized);
         require(priceAFinalized && priceBFinalized, "MarginCalculator: price at expiry not finalized yet");
         // amount A * price A in USD = amount B * price B in USD
         // amount B = amount A * price A / price B
@@ -778,6 +782,7 @@ contract MarginCalculator is Ownable {
     //         _vaultDetails.longUnderlyingAsset == _vaultDetails.shortUnderlyingAsset &&
     //         _vaultDetails.longStrikeAsset == _vaultDetails.shortStrikeAsset &&
     //         _vaultDetails.longExpiryTimestamp == _vaultDetails.shortExpiryTimestamp &&
+    //         _vaultDetails.longStrikePrice != _vaultDetails.shortStrikePrice &&
     //         _vaultDetails.isLongPut == _vaultDetails.isShortPut;
     // }
 
@@ -839,6 +844,34 @@ contract MarginCalculator is Ownable {
         return otoken.getOtokenDetails();
     }
 
+    // TODO can this be simplified?
+    function _getOtokenDetailsFull(address _otoken) internal view returns (OTokenDetails memory) {
+        OTokenDetails memory oTokenDetails;
+        (
+            address[] memory collaterals, // yvUSDC
+            uint256[] memory collateralsAmounts,
+            uint256[] memory collateralsValues,
+            address underlying, // WETH
+            address strikeAsset, // USDC
+            uint256 strikePrice,
+            uint256 expiry,
+            bool isPut,
+            uint256 collaterizedTotalAmount
+        ) = _getOtokenDetails(_otoken);
+
+        oTokenDetails.collaterals = collaterals;
+        oTokenDetails.collateralsAmounts = collateralsAmounts;
+        oTokenDetails.collateralsValues = collateralsValues;
+        oTokenDetails.underlying = underlying;
+        oTokenDetails.strikeAsset = strikeAsset;
+        oTokenDetails.strikePrice = strikePrice;
+        oTokenDetails.expiry = expiry;
+        oTokenDetails.isPut = isPut;
+        oTokenDetails.collaterizedTotalAmount = collaterizedTotalAmount;
+
+        return oTokenDetails;
+    }
+
     function getAfterBurnCollateralRatio(MarginVault.Vault memory _vault, uint256 _shortBurnAmount)
         external
         view
@@ -898,7 +931,6 @@ contract MarginCalculator is Ownable {
             uint256[] memory,
             uint256[] memory,
             uint256[] memory,
-            uint256[] memory,
             uint256
         )
     {
@@ -914,7 +946,6 @@ contract MarginCalculator is Ownable {
         internal
         view
         returns (
-            uint256[] memory,
             uint256[] memory,
             uint256[] memory,
             uint256[] memory,
@@ -940,14 +971,12 @@ contract MarginCalculator is Ownable {
 
         (
             uint256[] memory collateralsAmountsRequired,
-            uint256[] memory collateralsValuesRequired,
             uint256[] memory collateralsAmountsUsed,
             uint256[] memory collateralsValuesUsed
         ) = _calculateCollateralsRequired(_vaultDetails, valueRequired, toUseLongAmount);
 
         return (
             collateralsAmountsRequired,
-            collateralsValuesRequired,
             collateralsAmountsUsed,
             collateralsValuesUsed,
             toUseLongAmount.toScaledUint(BASE, false)
@@ -962,7 +991,6 @@ contract MarginCalculator is Ownable {
         internal
         view
         returns (
-            uint256[] memory,
             uint256[] memory,
             uint256[] memory,
             uint256[] memory
@@ -1002,13 +1030,13 @@ contract MarginCalculator is Ownable {
         }
 
         uint256[] memory collateralsAmountsRequired = new uint256[](collateralsLength);
-        uint256[] memory collateralsValuesRequired = new uint256[](collateralsLength);
 
         FPI.FixedPointInt memory collaterizationRatio = valueRequired.div(availableCollateralTotalValue);
 
         for (uint256 i = 0; i < collateralsLength; i++) {
+            uint256 collateralsValuesRequired;
             if (availableCollateralsValues[i].isGreaterThan(ZERO)) {
-                collateralsValuesRequired[i] = availableCollateralsValues[i].mul(collaterizationRatio).toScaledUint(
+                collateralsValuesRequired = availableCollateralsValues[i].mul(collaterizationRatio).toScaledUint(
                     BASE,
                     false
                 );
@@ -1018,17 +1046,12 @@ contract MarginCalculator is Ownable {
                 );
             } else {
                 collateralsAmountsRequired[i] = 0;
-                collateralsValuesRequired[i] = 0;
             }
-            console.log("BEFORE ADD REAL USE collateralsAmountsUsed[i]", collateralsAmountsUsed[i]);
-            console.log("BEFORE ADD REAL USE collateralsValueUsed[i]", collateralsValuesUsed[i]);
             collateralsAmountsUsed[i] = collateralsAmountsUsed[i].add(collateralsAmountsRequired[i]);
-            collateralsValuesUsed[i] = collateralsValuesUsed[i].add(collateralsValuesRequired[i]);
-            console.log("AFTER ADD REAL USE collateralsAmountsUsed[i]", collateralsAmountsUsed[i]);
-            console.log("AFTER ADD REAL USE collateralsValueUsed[i]", collateralsValuesUsed[i]);
+            collateralsValuesUsed[i] = collateralsValuesUsed[i].add(collateralsValuesRequired);
         }
 
-        return (collateralsAmountsRequired, collateralsValuesRequired, collateralsAmountsUsed, collateralsValuesUsed);
+        return (collateralsAmountsRequired, collateralsAmountsUsed, collateralsValuesUsed);
     }
 
     function _calculateVaultAvailableCollateralsValues(VaultDetails memory _vaultDetails)

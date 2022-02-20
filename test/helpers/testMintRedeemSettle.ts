@@ -5,7 +5,7 @@ import { assert } from 'chai'
 import { isEqual } from 'date-fns'
 import { parseUnits, formatUnits } from 'ethers/lib/utils'
 import { ethers, getNamedAccounts, network } from 'hardhat'
-import { Otoken, OtokenFactory } from '../../typechain-types'
+import { ERC20Interface__factory, MockERC20__factory, Otoken, OtokenFactory } from '../../typechain-types'
 import { ActionArgsStruct, Controller } from '../../typechain-types/Controller'
 import { testVaultOwnersPrivateKeys } from '../../utils/accounts'
 import { AddressZero } from '../../utils/ethers'
@@ -83,12 +83,13 @@ export type TestMintRedeemSettleParams<T extends OTokenParams, C extends TestMin
   initialPrices: OTokenPrices<T>
   expiryPrices: OTokenPrices<T>
   checkpointsDays?: C
+  mockERC20Owners?: { [key: string]: SignerWithAddress }
 }
 
 // Maxiumum deviation of usd value of redeem and vault settle. Calculated from balances of redeemer and vault owner respectively
 const expectedRedeemOneCollateralUsdDeviation = 2.5
-const expectedRedeemTotalUsdDeviation = 0.1
-const expectedSettleCollateralUsdDeviation = 0.1
+const expectedRedeemTotalUsdDeviation = 1
+const expectedSettleCollateralUsdDeviation = 2
 
 export const testMintRedeemSettleFactory = (getDeployResults: () => TestDeployResult) => {
   return async <T extends OTokenParams, C extends TestMintRedeemSettleParamsCheckpoints<T>>(
@@ -104,7 +105,7 @@ export const testMintRedeemSettleFactory = (getDeployResults: () => TestDeployRe
       }))
     )
 
-    const { initialPrices, expiryPrices } = params
+    const { initialPrices, expiryPrices, mockERC20Owners } = params
     const { expiryDays } = params.oTokenParams
     const oTokenParams = {
       ...params.oTokenParams,
@@ -180,7 +181,10 @@ export const testMintRedeemSettleFactory = (getDeployResults: () => TestDeployRe
         longOToken,
         longVault,
         longVault.oTokenAmountFormatted,
-        oTokenFactory
+        oTokenFactory,
+        undefined,
+        undefined,
+        mockERC20Owners
       )
 
       const vaultsToGetLong = vaults.filter(
@@ -207,7 +211,8 @@ export const testMintRedeemSettleFactory = (getDeployResults: () => TestDeployRe
         vault.oTokenAmountFormatted,
         oTokenFactory,
         vault.longToDeposit,
-        vault.longToDepositAmountFormatted
+        vault.longToDepositAmountFormatted,
+        mockERC20Owners
       )
       await oToken.connect(vault.owner).transfer(redeemer.address, mintedAmount)
     }
@@ -226,7 +231,10 @@ export const testMintRedeemSettleFactory = (getDeployResults: () => TestDeployRe
           oToken,
           vault,
           amountToMint,
-          oTokenFactory
+          oTokenFactory,
+          vault.longToDeposit,
+          vault.longToDepositAmountFormatted,
+          mockERC20Owners
         )
         await oToken.connect(vault.owner).transfer(redeemer.address, mintedAmount)
       }
@@ -280,15 +288,13 @@ export const testMintRedeemSettleFactory = (getDeployResults: () => TestDeployRe
         receiver: redeemer.address,
       }),
     ]
-
-    await controller.connect(redeemer).operate(redeemActions)
-
     const totalRedeem = await calculateRedeemForOtokenAmount(
       params,
       totalOtokenRedeemableFormatted,
       redeemer,
       longsAmountsUsed
     )
+    await controller.connect(redeemer).operate(redeemActions)
 
     // Assert user gets right redeem
     let totalRedeemUsdRecieved = 0
@@ -312,13 +318,13 @@ export const testMintRedeemSettleFactory = (getDeployResults: () => TestDeployRe
     }
 
     // Check total redeem in usd is same as expected
-    const totalRedeemUsdDeviation = totalRedeemUsdRecieved - totalRedeem.usd
+    const totalRedeemUsdDeviation = Math.abs(totalRedeemUsdRecieved - totalRedeem.usd)
     assert(
       totalRedeemUsdDeviation < expectedRedeemTotalUsdDeviation,
       `
        Redeem with wrong total USD value.
-       Expected: ${totalRedeem.usd}, got: ${totalRedeemUsdDeviation}
-       Expected usd deviation: ${expectedRedeemOneCollateralUsdDeviation}, got:  ${totalRedeemUsdDeviation}\n
+       Expected: ${totalRedeem.usd}, got: ${totalRedeemUsdRecieved}
+       Expected usd deviation: ${expectedRedeemTotalUsdDeviation}, got:  ${totalRedeemUsdDeviation}\n
       `
     )
 
@@ -330,7 +336,7 @@ export const testMintRedeemSettleFactory = (getDeployResults: () => TestDeployRe
 
     // Settle long owners vaults and assert that returned collateral matches expected
     for (const vault of longsOwnersVaults) {
-      console.log(`Settle vault № ${longsOwnersVaults.indexOf(vault)}`)
+      console.log(`Settle longsOwnersVaults vault № ${longsOwnersVaults.indexOf(vault)}`)
       await assertSettleVault(testDeployResult, params, vault, vault.oTokenParams, [])
     }
   }
@@ -344,7 +350,8 @@ export async function openVaultAndMint<T extends OTokenParams, C extends TestMin
   oTokenAmountFormatted: number,
   oTokenFactory: OtokenFactory,
   longOtoken?: OTokenParams,
-  longDepositAmountFormatted?: number
+  longDepositAmountFormatted?: number,
+  mockERC20Owners?: { [key: string]: SignerWithAddress }
 ) {
   const { controller, marginPool } = testDeployResult
   const { collateralAmountsFormatted, owner } = vault
@@ -357,16 +364,10 @@ export async function openVaultAndMint<T extends OTokenParams, C extends TestMin
   )
   const vaultId = 1
   const isVaultAlreadyOpened = (await controller.accountVaultCounter(owner.address)).toNumber() === vaultId
-  console.log(
-    `await controller.accountVaultCounter(owner.address)).toNumber()`,
-    (await controller.accountVaultCounter(owner.address)).toNumber()
-  )
-  console.log(`isVaultAlreadyOpened`, isVaultAlreadyOpened)
-
   if (!isVaultAlreadyOpened) {
     for (const [i, amount] of collateralAmounts.entries()) {
       // Transfer collateral tokens from whales to user
-      await getAssetFromWhale(collateralAssets[i], amount, owner.address)
+      getFunds(collateralAssets[i], amount, owner.address, mockERC20Owners)
       // Approve collateral tokens for pending by controller
       await approveERC20(collateralAssets[i], amount, owner, marginPool.address)
     }
@@ -445,6 +446,9 @@ export async function settleVault<T extends OTokenParams, C extends TestMintRede
       to: owner.address,
     }),
   ]
+
+  const isVaultAlreadyOpened = (await controller.accountVaultCounter(owner.address)).toNumber()
+  console.log(`isVaultAlreadyOpened`, isVaultAlreadyOpened)
 
   await controller.connect(owner).operate(settleVaultActions)
 }
@@ -632,25 +636,15 @@ export function calculateMintUsedCollaterals<T extends OTokenParams>(
   longOTokenParams?: OTokenParams,
   longAmount?: number
 ) {
-  const { strikePriceFormatted, collateralAssets, strikeAsset, underlyingAsset, isPut } = oTokenParams
-  let marginRequired: number
-  let longUsedAmount = 0
-  if (longOTokenParams && longAmount) {
-    const spreadMargin = isPut
-      ? getPutSpreadMarginRequired(mintAmount, strikePriceFormatted, longAmount, longOTokenParams?.strikePriceFormatted)
-      : getCallSpreadMarginRequired(
-          mintAmount,
-          strikePriceFormatted,
-          longAmount,
-          longOTokenParams?.strikePriceFormatted
-        )
-    marginRequired = spreadMargin.marginRequired
-    longUsedAmount = spreadMargin.longAmountUsed
-  } else {
-    marginRequired = isPut ? strikePriceFormatted * mintAmount : mintAmount
-  }
+  const { collateralAssets } = oTokenParams
 
-  const marginRequiredUsd = isPut ? marginRequired * prices[strikeAsset] : marginRequired * prices[underlyingAsset]
+  const { marginRequiredUsd, longUsedAmount } = calculateMarginRequired(
+    mintAmount,
+    oTokenParams,
+    prices,
+    longOTokenParams,
+    longAmount
+  )
 
   const collateralValues = collateralAmounts.map((x, i) => prices[collateralAssets[i]] * x)
   const totalCollateralsValue = collateralValues.reduce((a, b) => a + b, 0)
@@ -813,5 +807,59 @@ export async function assertSettleVault<T extends OTokenParams, C extends TestMi
         Expected usd deviation: ${expectedSettleCollateralUsdDeviation}, got:  ${deviationValue}
       `
     )
+  }
+}
+
+export function calculateMarginRequired<T extends OTokenParams>(
+  mintAmount: number,
+  shortOtokenParams: T,
+  prices: OTokenPrices<T>,
+  longOtokenParams?: OTokenParams,
+  longAmount?: number
+) {
+  const { strikePriceFormatted: shortStrikePriceFormatted, strikeAsset, underlyingAsset, isPut } = shortOtokenParams
+
+  let marginRequired: number
+  let longUsedAmount = 0
+  if (longOtokenParams && longAmount) {
+    const spreadMargin = isPut
+      ? getPutSpreadMarginRequired(
+          mintAmount,
+          shortStrikePriceFormatted,
+          longAmount,
+          longOtokenParams?.strikePriceFormatted
+        )
+      : getCallSpreadMarginRequired(
+          mintAmount,
+          shortStrikePriceFormatted,
+          longAmount,
+          longOtokenParams?.strikePriceFormatted
+        )
+    marginRequired = spreadMargin.marginRequired
+    longUsedAmount = spreadMargin.longAmountUsed
+  } else {
+    marginRequired = isPut ? shortStrikePriceFormatted * mintAmount : mintAmount
+  }
+
+  const marginRequiredUsd = isPut ? marginRequired * prices[strikeAsset] : marginRequired * prices[underlyingAsset]
+
+  return {
+    marginRequired,
+    marginRequiredUsd,
+    longUsedAmount,
+  }
+}
+
+export async function getFunds(
+  asset: string,
+  amount: BigNumber,
+  reciever: string,
+  mockERC20Owners?: { [key: string]: SignerWithAddress }
+) {
+  if (mockERC20Owners?.[asset]) {
+    const mockERC20Owner = mockERC20Owners[asset]
+    await MockERC20__factory.connect(asset, mockERC20Owner).mint(reciever, amount)
+  } else {
+    await getAssetFromWhale(asset, amount, reciever)
   }
 }

@@ -1,9 +1,11 @@
 import { parseUnits, formatUnits } from '@ethersproject/units'
-import { ERC20Interface__factory } from '../../typechain-types'
+import { ERC20Interface__factory, MockERC20__factory } from '../../typechain-types'
 import { AddressZero, MaxUint256 } from '@ethersproject/constants'
 import { BigNumber } from '@ethersproject/bignumber'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { Wallet } from '@ethersproject/wallet'
+import { ethers } from 'hardhat'
+import { nanoid } from 'nanoid'
 
 export const addTokenDecimalsToAmount = async (token: string, amount: number, signer: SignerWithAddress | Wallet) => {
   const decimals = await getERC20Decimals(signer, token)
@@ -93,3 +95,10 @@ export const approveERC20 = async (
   signer: SignerWithAddress | Wallet,
   spenderAddress: string
 ) => ERC20Interface__factory.connect(tokenAddress, signer).approve(spenderAddress, amount)
+
+export const deployMockERC20 = async (signer: SignerWithAddress | Wallet, decimals: number) => {
+  const mockErc20Factory = (await ethers.getContractFactory('MockERC20', signer)) as MockERC20__factory
+  const id = nanoid()
+  const mockErc20 = await mockErc20Factory.deploy(`Mock ERC20 ${decimals}dec ${id},`, `MockErc20${id},`, decimals)
+  return mockErc20.address
+}
