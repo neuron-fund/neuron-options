@@ -3,10 +3,5 @@
   "solidity.defaultCompiler": "remote",
   "slither.solcPath": "",
   "slither.hiddenDetectors": [],
-  "solidity.compileUsingRemoteVersion": "v0.8.9+commit.e5eed63a",
-  "workbench.colorCustomizations": {
-    "activityBar.background": "#16009F",
-    "titleBar.activeBackground": "#1F00DF",
-    "titleBar.activeForeground": "#FAF9FF"
-  }
+  "solidity.compileUsingRemoteVersion": "v0.8.9+commit.e5eed63a"
 }

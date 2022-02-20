@@ -125,14 +125,14 @@ library MarginVault {
                     _vault.usedCollateralAmounts[i],
                     collateralDecimals,
                     _newCollateralRatio,
-                    false
+                    true
                 );
 
                 newReservedCollateralValues[i] = toFPImulAndBack(
                     _vault.reservedCollateralValues[i],
                     BASE,
                     _newCollateralRatio,
-                    false
+                    true
                 );
                 freedCollateralAmounts[i] = _vault.usedCollateralAmounts[i].sub(newUsedCollateralAmounts[i]);
                 freedCollateralValues[i] = _vault.reservedCollateralValues[i].sub(newReservedCollateralValues[i]);
