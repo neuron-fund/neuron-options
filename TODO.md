@@ -1,5 +1,3 @@
-TODO always everywhere round down for FPI to uint conversion and check test
-
 TODO isMarginableLong requires in \_depositLong, for restriction adding longs which do not comply with short
 
 TODO test depositCollateral after one mint to vault and mint again
