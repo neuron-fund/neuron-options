@@ -803,7 +803,7 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
    /**
      * @notice calculates maximal short amount can be minted for collateral in a given user and vault
      */
-    function getMaxCollatreatedShortAmount(address user, uint256 vault_id) external view returns (uint256)
+    function getMaxCollataratedShortAmount(address user, uint256 vault_id) external view returns (uint256)
     {   
         return calculator.getMaxShortAmount(vaults[user][vault_id]);
     }
