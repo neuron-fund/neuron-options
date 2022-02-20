@@ -799,6 +799,18 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         emit CollateralAssetWithdrawed(_args.asset, _args.owner, _args.to, _args.vaultId, _args.amount);
     }
 
+
+   /**
+     * @notice calculates maximal short amount can be minted for collateral in a given user and vault
+     */
+    function getMaxCollatreatedShortAmount(address user, uint256 vault_id) external view returns (uint256)
+    {   
+        return calculator.getMaxShortAmount(vaults[user][vault_id]);
+    }
+
+
+
+
     /**
      * @notice mint short oTokens from a vault which creates an obligation that is recorded in the vault
      * @dev only the account owner or operator can mint an oToken, cannot be called when system is partiallyPaused or fullyPaused

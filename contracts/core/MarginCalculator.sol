@@ -939,7 +939,7 @@ contract MarginCalculator is Ownable {
         return availableCollateralTotalValue.div(valueRequiredRate).toScaledUint(BASE, true);
     }
 
-
+ 
     /**
      * @notice calculates collateral required to mint amount of oToken for a given vault
      */
