@@ -308,10 +308,15 @@ export const testMintRedeemSettleFactory = (getDeployResults: () => TestDeployRe
       const deviationAmountFormatted = Number(formatUnits(deviationAmount, collateralDecimals))
       const userCollateralBalanceFormatted = Number(formatUnits(userCollateralBalance, collateralDecimals))
       const deviationUsdValue = deviationAmountFormatted * expireCollateralPrice
-      const specialCase = userCollateralBalanceFormatted == 0 && deviationAmountFormatted != 0 ? false : true
       const deviationUsdPercentage = userCollateralBalanceFormatted == 0 ? 0 : 100.0 * deviationAmountFormatted / userCollateralBalanceFormatted
-      assert( (specialCase && deviationUsdPercentage < expectedPercentageDeviation)
-           || (deviationUsdValue < expectedRedeemOneCollateralUsdDeviation),
+
+      const isExpectedUsdPercentage = deviationUsdPercentage < expectedPercentageDeviation
+      const isExptedUsdValueDeviation = deviationUsdValue < expectedRedeemOneCollateralUsdDeviation
+      const specialCase = userCollateralBalanceFormatted == 0 && deviationAmountFormatted != 0
+      const assertDeviations = specialCase
+        ? isExptedUsdValueDeviation
+        : isExpectedUsdPercentage || isExptedUsdValueDeviation
+      assert( assertDeviations,
         `
          Collateral ${i} redeem with wrong amount.
          deviationUsdPercentage: ${deviationUsdPercentage}
