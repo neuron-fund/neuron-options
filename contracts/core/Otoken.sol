@@ -214,8 +214,8 @@ contract Otoken is ERC20PermitUpgradeable {
         string memory underlying = ERC20Upgradeable(underlyingAsset).symbol();
         string memory strike = ERC20Upgradeable(strikeAsset).symbol();
         string memory collateral = collateralAssets.length > 1
-            ? ERC20Upgradeable(collateralAssets[0]).symbol()
-            : string(abi.encodePacked("MULTI", _uintTo2Chars(collateralAssets.length)));
+            ? string(abi.encodePacked("MULTI", _uintTo2Chars(collateralAssets.length)))
+            : ERC20Upgradeable(collateralAssets[0]).symbol();
         string memory displayStrikePrice = _getDisplayedStrikePrice(strikePrice);
 
         // convert expiry to a readable string
