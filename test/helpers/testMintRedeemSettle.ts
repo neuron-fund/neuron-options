@@ -90,6 +90,7 @@ export type TestMintRedeemSettleParams<T extends OTokenParams, C extends TestMin
 const expectedRedeemOneCollateralUsdDeviation = 2.5
 const expectedRedeemTotalUsdDeviation = 1
 const expectedSettleCollateralUsdDeviation = 2
+const expectedPercentageDeviation = 0.5
 
 export const testMintRedeemSettleFactory = (getDeployResults: () => TestDeployResult) => {
   return async <T extends OTokenParams, C extends TestMintRedeemSettleParamsCheckpoints<T>>(
@@ -302,15 +303,23 @@ export const testMintRedeemSettleFactory = (getDeployResults: () => TestDeployRe
       const userCollateralBalance = await getERC20BalanceOf(redeemer, oTokenParams.collateralAssets[i])
       const collateralDecimals = await getERC20Decimals(redeemer, oTokenParams.collateralAssets[i])
       const expireCollateralPrice = expiryPrices[oTokenParams.collateralAssets[i]]
-      totalRedeemUsdRecieved =
-        totalRedeemUsdRecieved + Number(formatUnits(userCollateralBalance, collateralDecimals)) * expireCollateralPrice
+      totalRedeemUsdRecieved +=  Number(formatUnits(userCollateralBalance, collateralDecimals)) * expireCollateralPrice
       const deviationAmount = userCollateralBalance.sub(expectedCollateralAmount).abs()
       const deviationAmountFormatted = Number(formatUnits(deviationAmount, collateralDecimals))
+      const userCollateralBalanceFormatted = Number(formatUnits(userCollateralBalance, collateralDecimals))
       const deviationUsdValue = deviationAmountFormatted * expireCollateralPrice
-      assert(
-        deviationUsdValue < expectedRedeemOneCollateralUsdDeviation,
+      const deviationUsdPercentage = userCollateralBalanceFormatted == 0 ? 0 : 100.0 * deviationAmountFormatted / userCollateralBalanceFormatted
+
+      const isExpectedUsdPercentage = deviationUsdPercentage < expectedPercentageDeviation
+      const isExptedUsdValueDeviation = deviationUsdValue < expectedRedeemOneCollateralUsdDeviation
+      const specialCase = userCollateralBalanceFormatted == 0 && deviationAmountFormatted != 0
+      const assertDeviations = specialCase
+        ? isExptedUsdValueDeviation
+        : isExpectedUsdPercentage || isExptedUsdValueDeviation
+      assert( assertDeviations,
         `
          Collateral ${i} redeem with wrong amount.
+         deviationUsdPercentage: ${deviationUsdPercentage}
          Expected: ${expectedCollateralAmount}, got: ${userCollateralBalance}
          Expected usd deviation: ${expectedRedeemOneCollateralUsdDeviation}, got:  ${deviationUsdValue}\n
         `

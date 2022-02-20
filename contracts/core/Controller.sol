@@ -840,7 +840,6 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         // in other words -  usedCollateralsAmounts[i] * collateralAssetPriceInStrike[i]
         (
             uint256[] memory collateralsAmountsRequired,
-            ,
             uint256[] memory collateralsAmountsUsed,
             uint256[] memory collateralsValuesUsed,
             uint256 usedLongAmount
