@@ -341,6 +341,7 @@ contract MarginCalculator is Ownable {
         console.log("oTokenTotalCollateralValue     ", oTokenTotalCollateralValue);
 
         // FPI.FixedPointInt memory strikePriceFpi = FPI.fromScaledUint(oToenDetails.strikePrice, BASE);
+        // TODO this is only put calculations, add for call
         // Amounts of collateral to transfer for 1 oToken
         collateralsPayoutRate = new uint256[](oTokenDetails.collaterals.length);
         // TODO this calculations should be done only once after oToken expiry but not on every redeem as its now. It will help save gas for redeemers
@@ -348,7 +349,6 @@ contract MarginCalculator is Ownable {
             console.log("O TOKEN COLLATERAL VALUE       ", oTokenDetails.collateralsValues[i]);
             // the exchangeRate was scaled by 1e8, if 1e8 otoken can take out 1 USDC, the exchangeRate is currently 1e8
             // we want to return: how much USDC units can be taken out by 1 (1e8 units) oToken
-            // TODO possible optimization - store decimals in oToken on creation
             uint256 collateralDecimals = uint256(IERC20Metadata(oTokenDetails.collaterals[i]).decimals());
 
             // TODO possible gas optimization, get rid of external call for each collateral and get values as array with "_getOtokenDetails"
@@ -419,6 +419,9 @@ contract MarginCalculator is Ownable {
      * @return excessCollateral the amount by which the margin is above or below the required amount
      */
     function getExcessCollateral(MarginVault.Vault memory _vault) public view returns (uint256[] memory) {
+        
+        console.log("_vault.shortOtoken", _vault.shortOtoken);
+
         bool hasExpiredShort = OtokenInterface(_vault.shortOtoken).expiryTimestamp() <= block.timestamp;
 
         uint256[] memory excessCollaterals = _vault.unusedCollateralAmounts;
@@ -947,6 +950,7 @@ contract MarginCalculator is Ownable {
             uint256[] memory,
             uint256[] memory,
             uint256[] memory,
+            uint256[] memory,
             uint256
         )
     {
@@ -989,6 +993,7 @@ contract MarginCalculator is Ownable {
             uint256[] memory,
             uint256[] memory,
             uint256[] memory,
+            uint256[] memory,
             uint256
         )
     {
@@ -1001,12 +1006,14 @@ contract MarginCalculator is Ownable {
 
         (
             uint256[] memory collateralsAmountsRequired,
+            uint256[] memory collateralsValuesRequired,
             uint256[] memory collateralsAmountsUsed,
             uint256[] memory collateralsValuesUsed
         ) = _calculateCollateralsRequired(_vaultDetails, valueRequired, toUseLongAmount);
 
         return (
             collateralsAmountsRequired,
+            collateralsValuesRequired,
             collateralsAmountsUsed,
             collateralsValuesUsed,
             toUseLongAmount.toScaledUint(BASE, true)
@@ -1021,6 +1028,7 @@ contract MarginCalculator is Ownable {
         internal
         view
         returns (
+            uint256[] memory,
             uint256[] memory,
             uint256[] memory,
             uint256[] memory
@@ -1060,13 +1068,13 @@ contract MarginCalculator is Ownable {
         }
 
         uint256[] memory collateralsAmountsRequired = new uint256[](collateralsLength);
+        uint256[] memory collateralsValuesRequired = new uint256[](collateralsLength);
 
         FPI.FixedPointInt memory collaterizationRatio = valueRequired.div(availableCollateralTotalValue);
 
         for (uint256 i = 0; i < collateralsLength; i++) {
-            uint256 collateralsValuesRequired;
             if (availableCollateralsValues[i].isGreaterThan(ZERO)) {
-                collateralsValuesRequired = availableCollateralsValues[i].mul(collaterizationRatio).toScaledUint(
+                collateralsValuesRequired[i] = availableCollateralsValues[i].mul(collaterizationRatio).toScaledUint(
                     BASE,
                     true
                 );
@@ -1076,12 +1084,17 @@ contract MarginCalculator is Ownable {
                 );
             } else {
                 collateralsAmountsRequired[i] = 0;
+                collateralsValuesRequired[i] = 0;
             }
+            console.log("BEFORE ADD REAL USE collateralsAmountsUsed[i]", collateralsAmountsUsed[i]);
+            console.log("BEFORE ADD REAL USE collateralsValueUsed[i]", collateralsValuesUsed[i]);
             collateralsAmountsUsed[i] = collateralsAmountsUsed[i].add(collateralsAmountsRequired[i]);
-            collateralsValuesUsed[i] = collateralsValuesUsed[i].add(collateralsValuesRequired);
+            collateralsValuesUsed[i] = collateralsValuesUsed[i].add(collateralsValuesRequired[i]);
+            console.log("AFTER ADD REAL USE collateralsAmountsUsed[i]", collateralsAmountsUsed[i]);
+            console.log("AFTER ADD REAL USE collateralsValueUsed[i]", collateralsValuesUsed[i]);
         }
 
-        return (collateralsAmountsRequired, collateralsAmountsUsed, collateralsValuesUsed);
+        return (collateralsAmountsRequired, collateralsValuesRequired, collateralsAmountsUsed, collateralsValuesUsed);
     }
 
     function _calculateVaultAvailableCollateralsValues(VaultDetails memory _vaultDetails)

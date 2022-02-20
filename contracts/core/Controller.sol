@@ -707,8 +707,8 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
         require(calculator.isMarginableLong(_args.longOtoken, vaults[_args.owner][_args.vaultId]));
 
-        OtokenInterface otoken = OtokenInterface(_args.longOtoken);
-        require(block.timestamp < otoken.expiryTimestamp(), "C18");
+        // OtokenInterface otoken = OtokenInterface(_args.longOtoken);
+        // require(block.timestamp < otoken.expiryTimestamp(), "C18");
 
         vaults[_args.owner][_args.vaultId].addLong(_args.longOtoken, _args.amount);
         pool.transferToPool(_args.longOtoken, _args.from, _args.amount);
