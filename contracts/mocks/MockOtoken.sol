@@ -23,7 +23,6 @@ contract MockOtoken is ERC20PermitUpgradeable {
     address public strikeAsset;
 
     /// @notice assets that is held as collateral against short/written options
-    // TODO Prevent dubplicates of addreses in array of collaterals in oToken and other contracts
     address[] public collateralAssets;
 
     /// @notice amounts of collateralAssets used for collaterization of total supply of this oToken

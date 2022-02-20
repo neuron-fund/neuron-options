@@ -20,7 +20,6 @@ import {CalleeInterface} from "../interfaces/CalleeInterface.sol";
 import {ArrayAddressUtils} from "../libs/ArrayAddressUtils.sol";
 import {FPI} from "../libs/FixedPointInt256.sol";
 
-
 /**
  * Controller Error Codes
  * C1: sender is not full pauser
@@ -166,7 +165,7 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     event ShortOtokenBurned(
         address indexed otoken,
         address indexed accountOwner,
-        address indexed from,
+        address indexed sender,
         uint256 vaultId,
         uint256 amount
     );
@@ -436,7 +435,6 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     function operate(Actions.ActionArgs[] memory _actions) external nonReentrant notFullyPaused {
         (bool vaultUpdated, address vaultOwner, uint256 vaultId) = _runActions(_actions);
         if (vaultUpdated) {
-            _verifyFinalState(vaultOwner, vaultId);
             vaultLatestUpdate[vaultOwner][vaultId] = block.timestamp;
         }
     }
@@ -449,7 +447,6 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
      * @param _vaultId vault id
      */
     function sync(address _owner, uint256 _vaultId) external nonReentrant notFullyPaused {
-        _verifyFinalState(_owner, _vaultId);
         vaultLatestUpdate[_owner][_vaultId] = block.timestamp;
     }
 
@@ -490,10 +487,10 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
      * strike and collateral assets at this specific expiry is available in our Oracle module
      * @param _otoken oToken
      */
-    // function isSettlementAllowed(address _otoken) external view returns (bool) {
-    //     (address[] memory collaterals, address underlying, address strike, uint256 expiry) = _getOtokenDetails(_otoken);
-    //     return _canSettleAssets(underlying, strike, collaterals, expiry);
-    // }
+    function isSettlementAllowed(address _otoken) external view returns (bool) {
+        (address[] memory collaterals, address underlying, address strike, uint256 expiry) = _getOtokenDetails(_otoken);
+        return _canSettleAssets(underlying, strike, collaterals, expiry);
+    }
 
     /**
      * @dev return if underlying, strike, collateral are all allowed to be settled
@@ -644,18 +641,6 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @notice verify the vault final state after executing all actions
-     * @param _owner account owner address
-     * @param _vaultId vault id of the final vault
-     */
-    function _verifyFinalState(address _owner, uint256 _vaultId) internal view {
-        (MarginVault.Vault memory vault, ) = getVaultWithDetails(_owner, _vaultId);
-        // TODO verfify vault.usedCollateralAmount + vault.unusedCollateralAmount = vault.collateralAmount
-
-        require(true, "C14");
-    }
-
-    /**
      * @notice open a new vault inside an account
      * @dev only the account owner or operator can open a vault, cannot be called when system is partiallyPaused or fullyPaused
      * @param _args OpenVaultArgs structure
@@ -669,7 +654,6 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
         require(_args.vaultId == vaultId, "C15");
 
-        // TODO add more checks on assets of vault are the same as oToken
         require(whitelist.isWhitelistedOtoken(_args.shortOtoken), "C23");
 
         OtokenInterface oToken = OtokenInterface(_args.shortOtoken);
@@ -677,9 +661,10 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         // store new vault
         accountVaultCounter[_args.owner] = vaultId;
         vaults[_args.owner][vaultId].shortOtoken = _args.shortOtoken;
-        vaults[_args.owner][vaultId].collateralAssets = oToken.getCollateralAssets();
+        address[] memory collateralAssets = oToken.getCollateralAssets();
+        vaults[_args.owner][vaultId].collateralAssets = collateralAssets;
 
-        uint256 assetsLength = vaults[_args.owner][vaultId].collateralAssets.length;
+        uint256 assetsLength = collateralAssets.length;
 
         vaults[_args.owner][vaultId].collateralAmounts = new uint256[](assetsLength);
         vaults[_args.owner][vaultId].usedCollateralAmounts = new uint256[](assetsLength);
@@ -756,7 +741,6 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         require(whitelist.isWhitelistedCollaterals(_args.assets), "C21");
 
         uint256 collateralsLength = _args.assets.length;
-        // TODO use batch transfer to pool
         for (uint256 i = 0; i < collateralsLength; i++) {
             if (_args.amounts[i] > 0) {
                 pool.transferToPool(_args.assets[i], _args.from, _args.amounts[i]);
@@ -799,24 +783,18 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         emit CollateralAssetWithdrawed(_args.asset, _args.owner, _args.to, _args.vaultId, _args.amount);
     }
 
-
-   /**
+    /**
      * @notice calculates maximal short amount can be minted for collateral in a given user and vault
      */
-    function getMaxCollateratedShortAmount(address user, uint256 vault_id) external view returns (uint256)
-    {   
+    function getMaxCollateratedShortAmount(address user, uint256 vault_id) external view returns (uint256) {
         return calculator.getMaxShortAmount(vaults[user][vault_id]);
     }
-
-
-
 
     /**
      * @notice mint short oTokens from a vault which creates an obligation that is recorded in the vault
      * @dev only the account owner or operator can mint an oToken, cannot be called when system is partiallyPaused or fullyPaused
      * @param _args MintArgs structure
      */
-    // TODO special arg for minting on full collateral in vault, sine its anyway strictly connected to one oToken
     function _mintOtoken(Actions.MintArgs memory _args)
         internal
         notPartiallyPaused
@@ -829,12 +807,10 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         OtokenInterface otoken = OtokenInterface(_args.otoken);
         require(block.timestamp < otoken.expiryTimestamp(), "C24");
 
-        if(_args.amount == 0){ 
-            // TODO remove excess getCollateralRequired computations from this case            
+        if (_args.amount == 0) {
+            // TODO remove excess getCollateralRequired computations from this case
             _args.amount = calculator.getMaxShortAmount(vaults[_args.owner][_args.vaultId]);
         }
-
-        // TODO we do not support collaterizing with long oTokens, either remove long support everywhere or add ability to collaterize with long
 
         // collateralsValuesRequired - is value of each collateral used for minting oToken in strike asset,
         // in other words -  usedCollateralsAmounts[i] * collateralAssetPriceInStrike[i]
@@ -867,9 +843,6 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     {
         // check that vault id is valid for this vault owner
         require(_checkVaultId(_args.owner, _args.vaultId), "C35");
-        // only allow vault owner or vault operator to burn otoken
-        // TODO strange vulnerability, one can burn tokens from vault owner if vault owner just minted it and didnt transfer to anyone
-        require((_args.from == msg.sender) || (_args.from == _args.owner), "C25");
 
         OtokenInterface otoken = OtokenInterface(_args.otoken);
 
@@ -877,7 +850,7 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         require(block.timestamp < otoken.expiryTimestamp(), "C26");
 
         // burn otoken
-        otoken.burnOtoken(_args.from, _args.amount);
+        otoken.burnOtoken(_args.owner, _args.amount);
         // Cases:
         // New short amount needs less collateral or no at all cause long amount is enough
 
@@ -892,7 +865,7 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
         otoken.reduceCollaterization(freedCollateralAmounts, freedCollateralValues, _args.amount);
 
-        emit ShortOtokenBurned(_args.otoken, _args.owner, _args.from, _args.vaultId, _args.amount);
+        emit ShortOtokenBurned(_args.otoken, _args.owner, msg.sender, _args.vaultId, _args.amount);
     }
 
     /**
@@ -915,7 +888,6 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
         require(_canSettleAssets(underlying, strike, collaterals, expiry), "C29");
 
-        // TODO redeemers payOut is just taken from MarginPool and possibly can overflow used for mint amounts
         // which is not desired behaviour. It can take some elses collateral or unused collateral
         uint256[] memory payout = calculator.getPayout(_args.otoken, _args.amount);
 
@@ -924,8 +896,6 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         address[] memory otokenColalterals = otoken.getCollateralAssets();
         for (uint256 i = 0; i < payout.length; i++) {
             if (payout[i] > 0) {
-                // TODO unwrap here for redeemers
-                // TODO pool bulk transfer to user
                 pool.transferToUser(otokenColalterals[i], _args.receiver, payout[i]);
             }
         }
@@ -951,18 +921,14 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         // if there is a long otoken, burn it
         // store otoken address outside of this scope
         {
-            // TODO remove hasShort since it will be always true since now vault is linked to otoken right on open
-            bool hasShort = vault.shortOtoken != address(0);
             bool hasLong = vault.longOtoken != address(0);
 
-            require(hasShort || hasLong, "C30");
+            otoken = OtokenInterface(vault.shortOtoken);
 
-            otoken = hasShort ? OtokenInterface(vault.shortOtoken) : OtokenInterface(vault.longOtoken);
-
-            if (hasLong) {
+            if (hasLong && vault.usedLongAmount > 0) {
                 OtokenInterface longOtoken = OtokenInterface(vault.longOtoken);
 
-                longOtoken.burnOtoken(address(pool), vault.longAmount);
+                longOtoken.burnOtoken(address(pool), vault.usedLongAmount);
             }
         }
 
@@ -974,13 +940,7 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         require(block.timestamp >= expiry, "C31");
         require(_canSettleAssets(underlying, strike, collaterals, expiry), "C29");
 
-        // TODO maybe would be easy to check if payouts is array with all zeros so we can have early return without loop. Will it save gas?
         uint256[] memory payouts = calculator.getExcessCollateral(vault);
-
-        // require that vault is valid (has excess collateral) before settling
-        // to avoid allowing settling undercollateralized naked margin vault
-        // TODO since we removed undercollateralized naked margin vault from the system, this check is no longer needed
-        // require(isValidVault, "C32");
 
         delete vaults[_args.owner][_args.vaultId];
 
@@ -990,7 +950,7 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             }
         }
 
-        // TODO do something with unused longs amounts
+        // TODO for unusedLongAmounts (vault.longAmount - vault.usedLongAmount) redeem if its ITM
         uint256 vaultId = _args.vaultId;
         address payoutRecipient = _args.to;
 
@@ -1060,7 +1020,6 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         bool canSettle = true;
         for (uint256 i = 0; i < _collaterals.length; i++) {
             canSettle = canSettle && oracle.isDisputePeriodOver(_collaterals[i], _expiry);
-            // TODO early return if canSettle false?
         }
         return
             canSettle &&

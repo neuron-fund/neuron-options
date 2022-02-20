@@ -34,7 +34,6 @@ contract Otoken is ERC20PermitUpgradeable {
     address public strikeAsset;
 
     /// @notice assets that is held as collateral against short/written options
-    // TODO Prevent dubplicates of addreses in array of collaterals in oToken and other contracts
     address[] public collateralAssets;
 
     /// @notice amounts of collateralAssets used for collaterization of total supply of this oToken
@@ -197,6 +196,10 @@ contract Otoken is ERC20PermitUpgradeable {
             collateralAssets.length == collateralsAmountsForReduce.length,
             "Otoken: collateralAssets and collateralsAmountsForReduce must be of same length"
         );
+        // TODO remove a lot of reading from store "collateralAssets.length" everywhere in this contract by creating local variables
+
+        // TODO gas optimizaiton - remove 2N (collateralAssets.length) expensive write to storage operations
+        // assign to local variable in cycle, change storage variable to local after cycle only once
         for (uint256 i = 0; i < collateralAssets.length; i++) {
             collateralsValues[i] = collateralsValues[i].sub(collateralsValuesForReduce[i]);
             collateralsAmounts[i] = collateralsAmounts[i].sub(collateralsAmountsForReduce[i]);

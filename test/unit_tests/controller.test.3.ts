@@ -14,8 +14,7 @@
 - Should return collateral amount if there's no short.
 */
 
-
-import { 
+import {
   MockERC20 as MockERC20Instance,
   CallTester as CallTesterInstance,
   MarginCalculator as MarginCalculatorInstance,
@@ -27,8 +26,8 @@ import {
   AddressBook as AddressBookInstance,
   OwnedUpgradeabilityProxy as OwnedUpgradeabilityProxyInstance,
   OtokenImplV1 as OtokenImplV1Instance,
-  ArrayAddressUtils as ArrayAddressUtilsInstance
-} from '../../typechain-types'  
+  ArrayAddressUtils as ArrayAddressUtilsInstance,
+} from '../../typechain-types'
 
 import { ActionArgsStruct } from '../../typechain-types/Controller'
 
@@ -96,12 +95,11 @@ contract(
       weth2 = await MockERC20.new('WETH', 'WETH', wethDecimals)
       // deploy Oracle module
       oracle = await MockOracle.new(addressBook.address, { from: owner })
-      
+
       const libMarginVault = await MarginVault.new()
       // const libArrayAddressUtils  = await ArrayAddressUtils.new()
       // await MarginCalculator.link(libMarginVault)
 
-      
       //await MarginCalculator.link(libArrayAddressUtils)
       calculator = await MarginCalculator.new(oracle.address)
       // margin pool deployment
@@ -117,7 +115,7 @@ contract(
       // set whitelist module address
       await addressBook.setWhitelist(whitelist.address)
       // deploy Controller module
-      
+
       await Controller.link(libMarginVault)
       controllerImplementation = await Controller.new()
 
@@ -139,14 +137,8 @@ contract(
       await usdc.mint(random, createTokenAmount(10000, usdcDecimals))
       await usdc.mint(donor, createTokenAmount(10000, usdcDecimals))
 
-
       await controllerProxy.setOperator(accountOperator1, true, { from: accountOwner1 })
-      assert.equal(
-        await controllerProxy.isOperator(accountOwner1, accountOperator1),
-        true,
-        'Operator address mismatch',
-      )
-
+      assert.equal(await controllerProxy.isOperator(accountOwner1, accountOperator1), true, 'Operator address mismatch')
     })
 
     describe('Long otoken', () => {
@@ -165,10 +157,10 @@ contract(
           [usdc.address],
           tokenAmount,
           tnow.add(expiryTime),
-          true,
+          true
         )
         const collateralAmount = createTokenAmount(100)
-        const collateralValue = createTokenAmount(100) 
+        const collateralValue = createTokenAmount(100)
         await longOtoken.mintOtoken(accountOwner1, createTokenAmount(100), [collateralAmount], [collateralValue])
         await longOtoken.mintOtoken(accountOperator1, createTokenAmount(100), [collateralAmount], [collateralValue])
       })
@@ -205,7 +197,7 @@ contract(
               actionType: ActionType.DepositLongOption,
               owner: accountOwner1,
               secondAddress: accountOwner1,
-              assets: [longOtoken.address,],
+              assets: [longOtoken.address],
               vaultId: vaultCounter.toNumber(),
               amounts: [longToDeposit],
               index: '0',
@@ -237,7 +229,6 @@ contract(
           await longOtoken.approve(marginPool.address, longToDeposit, { from: random })
           await longOtoken.approve(marginPool.address, longToDeposit, { from: accountOperator1 })
           await expectRevert(controllerProxy.operate(actionArgs, { from: accountOperator1 }), 'C16')
-
         })
 
         it('should deposit long otoken into vault from account owner', async () => {
@@ -268,12 +259,12 @@ contract(
           assert.equal(
             marginPoolBalanceAfter.sub(marginPoolBalanceBefore).toString(),
             longToDeposit,
-            'Margin pool balance long otoken balance mismatch',
+            'Margin pool balance long otoken balance mismatch'
           )
           assert.equal(
             senderBalanceBefore.sub(senderBalanceAfter).toString(),
             longToDeposit,
-            'Sender balance long otoken balance mismatch',
+            'Sender balance long otoken balance mismatch'
           )
 
           /*
@@ -290,7 +281,7 @@ contract(
           )
           */
         })
-/*
+        /*
         it('should deposit long otoken into vault from account operator', async () => {
           assert.equal(
             await controllerProxy.isOperator(accountOwner1, accountOperator1),
@@ -906,9 +897,9 @@ contract(
         })
       })
       */
-    })
-    
-/*
+      })
+
+      /*
     describe('Collateral asset', () => {
       describe('Deposit collateral asset', () => {
         it('should deposit a whitelisted collateral asset from account owner', async () => {
@@ -4391,5 +4382,5 @@ contract(
       })    
       */
     })
-
-  })
+  }
+)

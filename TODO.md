@@ -6,6 +6,12 @@ TODO helper function view to get maximum mint of oTokens for vault
 
 DISCUSS restrict ratios for collateral to restrict minting a lot of oTokens for non liquid assets
 
+DISCUSS monetization for protocol?
+
 IMPROVEMENT should unwrap collaterals in oTokens after expire?
 
 IMPROVEMENT get rid of SafeMath if neccessary for optiomization and reduce delpoy size
+
+IMPROVEMENT unwrap assets for redeemers
+
+IMPROVEMENT getExpiredPayoutRate calculations should be done only once after oToken expiry but not on every redeem as its now. It will help save gas for redeemers
