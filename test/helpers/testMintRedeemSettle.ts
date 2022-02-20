@@ -90,7 +90,8 @@ export type TestMintRedeemSettleParams<T extends OTokenParams, C extends TestMin
 const expectedRedeemOneCollateralUsdDeviation = 2.5
 const expectedRedeemTotalUsdDeviation = 1
 const expectedSettleCollateralUsdDeviation = 2
-const expectedPercentageDeviation = 0.01
+const expectedPercentageDeviation = 0.5
+
 export const testMintRedeemSettleFactory = (getDeployResults: () => TestDeployResult) => {
   return async <T extends OTokenParams, C extends TestMintRedeemSettleParamsCheckpoints<T>>(
     params: TestMintRedeemSettleParams<T, C>
@@ -296,14 +297,7 @@ export const testMintRedeemSettleFactory = (getDeployResults: () => TestDeployRe
     )
     await controller.connect(redeemer).operate(redeemActions)
 
-    /** Assert user gets right redeem
-    *   let's use Karnaygh's map for 2 out of 3 assert
-    *   __ |C | !C
-    *   A B|1 | 1
-    *  !A B|1 | 0
-    *  !A!B|0 | 0
-    *   A!B|1 | 0 => (numdigits && (deviation || percent)) || (deviation && percent)
-    */
+    // Assert user gets right redeem
     let totalRedeemUsdRecieved = 0
     for (const [i, expectedCollateralAmount] of totalRedeem.collaterals.entries()) {
       const userCollateralBalance = await getERC20BalanceOf(redeemer, oTokenParams.collateralAssets[i])
@@ -313,16 +307,13 @@ export const testMintRedeemSettleFactory = (getDeployResults: () => TestDeployRe
         totalRedeemUsdRecieved + Number(formatUnits(userCollateralBalance, collateralDecimals)) * expireCollateralPrice
       const deviationAmount = userCollateralBalance.sub(expectedCollateralAmount).abs()
       const deviationAmountFormatted = Number(formatUnits(deviationAmount, collateralDecimals))
-      const deviationInSignificantFigures =
-        Math.abs(Number(userCollateralBalance.toString().slice(0, collateralDecimals)) - Number(expectedCollateralAmount.toString().substring(0, collateralDecimals)))
+      const userCollateralBalanceFormatted = Number(formatUnits(userCollateralBalance, collateralDecimals))
       const deviationUsdValue = deviationAmountFormatted * expireCollateralPrice
-      const deviationPercentage = Math.abs(100.0 - 100.0 * Number(expectedCollateralAmount) / Number(userCollateralBalance))
-      assert( (deviationInSignificantFigures == 0 && (deviationPercentage < expectedPercentageDeviation) || (deviationUsdValue < expectedRedeemOneCollateralUsdDeviation))
-        || (deviationPercentage < expectedPercentageDeviation) && (deviationUsdValue < expectedRedeemOneCollateralUsdDeviation),
+      const deviationUsdPercentage = userCollateralBalanceFormatted == 0 ? 0 : 100.0 * deviationAmountFormatted / userCollateralBalanceFormatted
+      assert( (deviationUsdPercentage < expectedPercentageDeviation) || (deviationUsdValue < expectedRedeemOneCollateralUsdDeviation),
         `
          Collateral ${i} redeem with wrong amount.
-         deviationPercentage: ${deviationPercentage}
-         deviationInSignificantFigures: ${deviationInSignificantFigures}
+         deviationUsdPercentage: ${deviationUsdPercentage}
          Expected: ${expectedCollateralAmount}, got: ${userCollateralBalance}
          Expected usd deviation: ${expectedRedeemOneCollateralUsdDeviation}, got:  ${deviationUsdValue}\n
         `
