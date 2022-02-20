@@ -303,12 +303,13 @@ export const testMintRedeemSettleFactory = (getDeployResults: () => TestDeployRe
       const userCollateralBalance = await getERC20BalanceOf(redeemer, oTokenParams.collateralAssets[i])
       const collateralDecimals = await getERC20Decimals(redeemer, oTokenParams.collateralAssets[i])
       const expireCollateralPrice = expiryPrices[oTokenParams.collateralAssets[i]]
-      totalRedeemUsdRecieved +=  Number(formatUnits(userCollateralBalance, collateralDecimals)) * expireCollateralPrice
+      totalRedeemUsdRecieved += Number(formatUnits(userCollateralBalance, collateralDecimals)) * expireCollateralPrice
       const deviationAmount = userCollateralBalance.sub(expectedCollateralAmount).abs()
       const deviationAmountFormatted = Number(formatUnits(deviationAmount, collateralDecimals))
       const userCollateralBalanceFormatted = Number(formatUnits(userCollateralBalance, collateralDecimals))
       const deviationUsdValue = deviationAmountFormatted * expireCollateralPrice
-      const deviationUsdPercentage = userCollateralBalanceFormatted == 0 ? 0 : 100.0 * deviationAmountFormatted / userCollateralBalanceFormatted
+      const deviationUsdPercentage =
+        userCollateralBalanceFormatted == 0 ? 0 : (100.0 * deviationAmountFormatted) / userCollateralBalanceFormatted
 
       const isExpectedUsdPercentage = deviationUsdPercentage < expectedPercentageDeviation
       const isExptedUsdValueDeviation = deviationUsdValue < expectedRedeemOneCollateralUsdDeviation
@@ -316,7 +317,8 @@ export const testMintRedeemSettleFactory = (getDeployResults: () => TestDeployRe
       const assertDeviations = specialCase
         ? isExptedUsdValueDeviation
         : isExpectedUsdPercentage || isExptedUsdValueDeviation
-      assert( assertDeviations,
+      assert(
+        assertDeviations,
         `
          Collateral ${i} redeem with wrong amount.
          deviationUsdPercentage: ${deviationUsdPercentage}
