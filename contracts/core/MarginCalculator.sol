@@ -61,6 +61,7 @@ contract MarginCalculator is Ownable {
         address[] collaterals; // yvUSDC
         uint256[] collateralsAmounts; // yvUSDC
         uint256[] collateralsValues; // yvUSDC
+        uint256[] collateralsDecimals; // yvUSDC
         address underlying; // WETH
         address strikeAsset; // USDC
         uint256 strikePrice;
@@ -346,10 +347,7 @@ contract MarginCalculator is Ownable {
             // the exchangeRate was scaled by 1e8, if 1e8 otoken can take out 1 USDC, the exchangeRate is currently 1e8
             // we want to return: how much USDC units can be taken out by 1 (1e8 units) oToken
 
-            // TODO possible gas optimization, get rid of external call for each collateral decimals everywhere (search by "decimals()")
-            // and get values as array with "_getOtokenDetails"
-            // store collateral decimals in otoken on moment of its creation and get in oTokenDetails
-            uint256 collateralDecimals = uint256(IERC20Metadata(oTokenDetails.collaterals[i]).decimals());
+            uint256 collateralDecimals = oTokenDetails.collateralsDecimals[i];
 
             // Collateral value is calculated in strike asset, used BASE decimals only for convinience
             FPI.FixedPointInt memory collateralValue = FPI.fromScaledUint(oTokenDetails.collateralsValues[i], BASE);
@@ -493,7 +491,7 @@ contract MarginCalculator is Ownable {
                 continue;
             }
 
-            uint256 collateralDecimals = IERC20Metadata(vaultDetails.collateralAssets[i]).decimals();
+            uint256 collateralDecimals = vaultDetails.collateralsDecimals[i];
 
             // This ratio represents for specific collateral what part does this vault cover total collaterization of oToken by this collateral
             FPI.FixedPointInt memory vaultCollateralRatio = FPI
@@ -581,6 +579,7 @@ contract MarginCalculator is Ownable {
         address[] collateralAssets;
         uint256[] collateralsAmounts;
         uint256[] collateralsValues;
+        uint256[] collateralsDecimals;
         address underlyingAsset;
         address strikeAsset;
         uint256 strikePrice;
@@ -690,6 +689,7 @@ contract MarginCalculator is Ownable {
             vaultDetails.collateralAssets,
             ,
             ,
+            vaultDetails.collateralsDecimals,
             vaultDetails.underlyingAsset,
             vaultDetails.strikeAsset,
             vaultDetails.shortStrikePrice,
@@ -698,10 +698,12 @@ contract MarginCalculator is Ownable {
 
         ) = _getOtokenDetails(address(short));
 
+        /*
         vaultDetails.collateralsDecimals = new uint256[](_vault.collateralAssets.length);
         for (uint256 i = 0; i < _vault.collateralAssets.length; i++) {
             vaultDetails.collateralsDecimals[i] = uint256(IERC20Metadata(_vault.collateralAssets[i]).decimals());
         }
+        */
 
         return vaultDetails;
     }
@@ -831,6 +833,7 @@ contract MarginCalculator is Ownable {
             address[] memory,
             uint256[] memory,
             uint256[] memory,
+            uint256[] memory,
             address,
             address,
             uint256,
@@ -850,6 +853,7 @@ contract MarginCalculator is Ownable {
             address[] memory collaterals, // yvUSDC
             uint256[] memory collateralsAmounts,
             uint256[] memory collateralsValues,
+            uint256[] memory collateralsDecimals,
             address underlying, // WETH
             address strikeAsset, // USDC
             uint256 strikePrice,
@@ -861,6 +865,7 @@ contract MarginCalculator is Ownable {
         oTokenDetails.collaterals = collaterals;
         oTokenDetails.collateralsAmounts = collateralsAmounts;
         oTokenDetails.collateralsValues = collateralsValues;
+        oTokenDetails.collateralsDecimals = collateralsDecimals;
         oTokenDetails.underlying = underlying;
         oTokenDetails.strikeAsset = strikeAsset;
         oTokenDetails.strikePrice = strikePrice;
@@ -1204,6 +1209,7 @@ contract MarginCalculator is Ownable {
             new address[](0), // [yvUSDC, cUSDC, ...etc]
             new uint256[](0), // [0, 200, ...etc]
             new uint256[](0), // [0, 200, ...etc]
+            new uint256[](0), // [18, 8, 10]
             address(0), // WETH
             address(0), // USDC
             0,
@@ -1215,6 +1221,7 @@ contract MarginCalculator is Ownable {
             oTokenDetails.collaterals, // yvUSDC
             oTokenDetails.collateralsAmounts,
             oTokenDetails.collateralsValues, // WETH // USDC
+            oTokenDetails.collateralsDecimals,
             ,
             ,
             ,
@@ -1238,7 +1245,7 @@ contract MarginCalculator is Ownable {
         );
 
         for (uint256 i = 0; i < oTokenDetails.collaterals.length; i++) {
-            uint256 collateralDecimals = uint256(IERC20Metadata(oTokenDetails.collaterals[i]).decimals());
+            uint256 collateralDecimals = oTokenDetails.collateralsDecimals[i];
             FPI.FixedPointInt memory collateralValue = FPI.fromScaledUint(oTokenDetails.collateralsValues[i], BASE);
             FPI.FixedPointInt memory collateralRatio = collateralValue.div(oTokenTotalCollateralValue);
 

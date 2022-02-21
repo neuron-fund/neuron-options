@@ -94,6 +94,7 @@ contract MockOtoken is ERC20PermitUpgradeable {
             address[] memory,
             uint256[] memory,
             uint256[] memory,
+            uint256[] memory,
             address,
             address,
             uint256,
@@ -102,10 +103,17 @@ contract MockOtoken is ERC20PermitUpgradeable {
             uint256
         )
     {
+        uint256 collateralAssetsLength = collateralAssets.length;
+        uint[] memory collateralsDecimals = new uint[](collateralAssetsLength);
+
+        for (uint256 i = 0; i < collateralAssetsLength; i++) {
+            collateralsDecimals[i] = ERC20Upgradeable(collateralAssets[i]).decimals();
+        }
         return (
             collateralAssets,
             collateralsAmounts,
             collateralsValues,
+            collateralsDecimals,
             underlyingAsset,
             strikeAsset,
             strikePrice,
