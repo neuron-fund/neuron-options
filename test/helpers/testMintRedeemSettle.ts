@@ -113,8 +113,10 @@ export const testMintRedeemSettleFactory = (getDeployResults: () => TestDeployRe
       expiry: createValidExpiry(expiryDays),
     } as const
 
+    // Set initial prices
     await setStablePrices(oracle, deployer, params.initialPrices)
 
+    // Whitelist and create oToken
     await whitelistAndCreateOtoken(
       {
         whitelist,
@@ -375,10 +377,11 @@ export async function openVaultAndMint<T extends OTokenParams, C extends TestMin
   )
   const vaultId = 1
   const isVaultAlreadyOpened = (await controller.accountVaultCounter(owner.address)).toNumber() === vaultId
+
   if (!isVaultAlreadyOpened) {
     for (const [i, amount] of collateralAmounts.entries()) {
       // Transfer collateral tokens from whales to user
-      getFunds(collateralAssets[i], amount, owner.address, mockERC20Owners)
+      await getFunds(collateralAssets[i], amount, owner.address, mockERC20Owners)
       // Approve collateral tokens for pending by controller
       await approveERC20(collateralAssets[i], amount, owner, marginPool.address)
     }
@@ -683,7 +686,6 @@ export async function burnVault<T extends OTokenParams, C extends TestMintRedeem
   const burnAction: ActionArgsStruct[] = [
     getAction(ActionType.BurnShortOption, {
       amount: [parseUnits(vault.burnAmountFormatted.toString(), oTokenDecimals)],
-      from: vault.owner.address,
       otoken: [oToken.address],
       owner: vault.owner.address,
       vaultId: 1,
