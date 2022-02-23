@@ -105,6 +105,7 @@ contract Otoken is ERC20PermitUpgradeable {
             address[] memory,
             uint256[] memory,
             uint256[] memory,
+            uint256[] memory,
             address,
             address,
             uint256,
@@ -113,10 +114,19 @@ contract Otoken is ERC20PermitUpgradeable {
             uint256
         )
     {
-        return (
+        
+        uint256 collateralAssetsLength = collateralAssets.length;
+        uint[] memory collateralsDecimals = new uint[](collateralAssetsLength);
+
+        for (uint256 i = 0; i < collateralAssetsLength; i++) {
+            collateralsDecimals[i] = ERC20Upgradeable(collateralAssets[i]).decimals();
+        }
+
+        return(
             collateralAssets,
             collateralsAmounts,
             collateralsValues,
+            collateralsDecimals,
             underlyingAsset,
             strikeAsset,
             strikePrice,
@@ -153,17 +163,18 @@ contract Otoken is ERC20PermitUpgradeable {
         uint256[] calldata collateralsValuesForMint
     ) external {
         require(msg.sender == controller, "Otoken: Only Controller can mint Otokens");
+        
+        uint256 collateralAssetsLength = collateralAssets.length;
+
         require(
-            collateralAssets.length == collateralsValuesForMint.length,
+            collateralAssetsLength == collateralsValuesForMint.length,
             "Otoken: collateralAssets and collateralsValuesForMint must be of same length"
         );
         require(
-            collateralAssets.length == collateralsAmountsForMint.length,
+            collateralAssetsLength == collateralsAmountsForMint.length,
             "Otoken: collateralAssets and collateralsAmountsForMint must be of same length"
         );
-        for (uint256 i = 0; i < collateralAssets.length; i++) {
-            // TODO gas optimizaiton - remove 2N (collateralAssets.length) expensive write to storage operations
-            // assign to local variable in cycle, change storage variable to local after cycle only once
+        for (uint256 i = 0; i < collateralAssetsLength; i++) {
             collateralsValues[i] = collateralsValuesForMint[i].add(collateralsValues[i]);
             collateralsAmounts[i] = collateralsAmounts[i].add(collateralsAmountsForMint[i]);
         }
@@ -188,19 +199,18 @@ contract Otoken is ERC20PermitUpgradeable {
         uint256 oTokenAmountBurnt
     ) external {
         require(msg.sender == controller, "Otoken: Only Controller can burn Otokens");
+
+        uint256 collateralAssetsLength = collateralAssets.length;
+
         require(
-            collateralAssets.length == collateralsValuesForReduce.length,
+            collateralAssetsLength == collateralsValuesForReduce.length,
             "Otoken: collateralAssets and collateralsValuesForReduce must be of same length"
         );
         require(
-            collateralAssets.length == collateralsAmountsForReduce.length,
+            collateralAssetsLength == collateralsAmountsForReduce.length,
             "Otoken: collateralAssets and collateralsAmountsForReduce must be of same length"
         );
-        // TODO remove a lot of reading from store "collateralAssets.length" everywhere in this contract by creating local variables
-
-        // TODO gas optimizaiton - remove 2N (collateralAssets.length) expensive write to storage operations
-        // assign to local variable in cycle, change storage variable to local after cycle only once
-        for (uint256 i = 0; i < collateralAssets.length; i++) {
+        for (uint256 i = 0; i < collateralAssetsLength; i++) {
             collateralsValues[i] = collateralsValues[i].sub(collateralsValuesForReduce[i]);
             collateralsAmounts[i] = collateralsAmounts[i].sub(collateralsAmountsForReduce[i]);
         }

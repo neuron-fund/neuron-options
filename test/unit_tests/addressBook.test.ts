@@ -184,11 +184,7 @@ describe('AddressBook', () => {
       await arrayAddressUtils.deployed()
 
       marginCalculator = (await (
-        await ethers.getContractFactory('MarginCalculator', {
-          libraries: {
-            ArrayAddressUtils: arrayAddressUtils.address,
-          },
-        })
+        await ethers.getContractFactory('MarginCalculator')
       ).deploy(oracleAddress)) as MarginCalculatorInstance
       await marginCalculator.deployed()
     })

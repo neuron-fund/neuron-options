@@ -92,8 +92,6 @@ library MarginVault {
      * @param _newUsedLongAmount new used long amount
      */
     function removeShort(
-        // TODO Will using memory here will save gas since we have a lot of reading from _vault opearations?
-        // can copy _vault to memory read it when needed and only set values to storage in the end
         Vault storage _vault,
         address _shortOtoken,
         uint256 _amount,
@@ -104,15 +102,16 @@ library MarginVault {
         require(_vault.shortOtoken == _shortOtoken, "V3");
 
         uint256 newShortAmount = _vault.shortAmount.sub(_amount);
+        uint256 collateralAssetsLength = _vault.collateralAssets.length;
 
-        uint256[] memory newUsedCollateralAmounts = new uint256[](_vault.collateralAssets.length);
-        uint256[] memory newReservedCollateralValues = new uint256[](_vault.collateralAssets.length);
-        freedCollateralAmounts = new uint256[](_vault.collateralAssets.length);
-        freedCollateralValues = new uint256[](_vault.collateralAssets.length);
+        uint256[] memory newUsedCollateralAmounts = new uint256[](collateralAssetsLength);
+        uint256[] memory newReservedCollateralValues = new uint256[](collateralAssetsLength);
+        freedCollateralAmounts = new uint256[](collateralAssetsLength);
+        freedCollateralValues = new uint256[](collateralAssetsLength);
         uint256[] memory newUnusedCollateralAmounts = _vault.unusedCollateralAmounts;
         if (newShortAmount == 0) {
             newUnusedCollateralAmounts = _vault.collateralAmounts;
-            for (uint256 i = 0; i < _vault.collateralAssets.length; i++) {
+            for (uint256 i = 0; i < collateralAssetsLength; i++) {
                 newUsedCollateralAmounts[i] = 0;
                 newReservedCollateralValues[i] = 0;
                 freedCollateralAmounts[i] = _vault.usedCollateralAmounts[i];
@@ -120,7 +119,7 @@ library MarginVault {
             }
         } else {
             // usedLeftRatio is multiplier which is used to calculate the new used collateral values and used amounts
-            for (uint256 i = 0; i < _vault.collateralAssets.length; i++) {
+            for (uint256 i = 0; i < collateralAssetsLength; i++) {
                 uint256 collateralDecimals = uint256(IERC20Metadata(_vault.collateralAssets[i]).decimals());
                 newUsedCollateralAmounts[i] = toFPImulAndBack(
                     _vault.usedCollateralAmounts[i],

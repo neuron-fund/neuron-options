@@ -1002,7 +1002,7 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         )
     {
         OtokenInterface otoken = OtokenInterface(_otoken);
-        (address[] memory collaterals, , , address underlying, address strike, , uint256 expiry, , ) = otoken
+        (address[] memory collaterals, , , , address underlying, address strike, , uint256 expiry, , ) = otoken
             .getOtokenDetails();
         return (collaterals, underlying, strike, expiry);
     }
