@@ -2,8 +2,6 @@ TODO isMarginableLong requires in \_depositLong, for restriction adding longs wh
 
 TODO test depositCollateral after one mint to vault and mint again
 
-TODO helper function view to get maximum mint of oTokens for vault
-
 DISCUSS restrict ratios for collateral to restrict minting a lot of oTokens for non liquid assets
 
 DISCUSS monetization for protocol?
