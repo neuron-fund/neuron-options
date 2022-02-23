@@ -936,7 +936,6 @@ contract MarginCalculator is Ownable {
             uint256[] memory,
             uint256[] memory,
             uint256[] memory,
-            uint256[] memory,
             uint256
         )
     {
@@ -976,7 +975,6 @@ contract MarginCalculator is Ownable {
             uint256[] memory,
             uint256[] memory,
             uint256[] memory,
-            uint256[] memory,
             uint256
         )
     {
@@ -991,14 +989,13 @@ contract MarginCalculator is Ownable {
 
         (
             uint256[] memory collateralsAmountsRequired,
-            uint256[] memory collateralsValuesRequired,
+            ,
             uint256[] memory collateralsAmountsUsed,
             uint256[] memory collateralsValuesUsed
         ) = _calculateCollateralsRequired(_vaultDetails, valueRequired, toUseLongAmount);
 
         return (
             collateralsAmountsRequired,
-            collateralsValuesRequired,
             collateralsAmountsUsed,
             collateralsValuesUsed,
             toUseLongAmount.toScaledUint(BASE, true)
@@ -1254,7 +1251,7 @@ contract MarginCalculator is Ownable {
                 .mul(collateralRatio)
                 .toScaledUint(collateralDecimals, true);
 
-            collateralsValues[i] = amount.mul(collateralRatio).toScaledUint(collateralDecimals, true);
+            collateralsValues[i] = collateralValue.mul(collateralRatio).toScaledUint(BASE, true);
         }
 
         return (collateralsAmounts, collateralsValues);
