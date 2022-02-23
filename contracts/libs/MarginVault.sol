@@ -25,6 +25,7 @@ import "hardhat/console.sol";
  * V10: shortOtoken should be empty when performing addShort or the same as vault already have
  * V11: _collateralAssets and _amounts length mismatch
  * V12: _collateralAssets and vault.collateralAssets length mismatch
+ * V13: _amount for withdrawing long is exceeding unused long amount in the vault
  */
 
 /**
@@ -188,9 +189,10 @@ library MarginVault {
         // check that the removed long oToken exists in the vault at the specified index
         require(_vault.longOtoken == _longOtoken, "V6");
 
-        uint256 newLongAmount = _vault.longAmount.sub(_amount);
+        uint256 vaultLongAmountBefore = _vault.longAmount;
+        require((vaultLongAmountBefore - _vault.usedLongAmount) >= _amount, "V13");
 
-        _vault.longAmount = newLongAmount;
+        _vault.longAmount = vaultLongAmountBefore.sub(_amount);
     }
 
     /**
