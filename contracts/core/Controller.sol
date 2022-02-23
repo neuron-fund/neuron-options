@@ -711,6 +711,7 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         notPartiallyPaused
         onlyAuthorized(msg.sender, _args.owner)
     {
+        // TODO check logic of this function
         require(_checkVaultId(_args.owner, _args.vaultId), "C35");
 
         OtokenInterface otoken = OtokenInterface(_args.asset);
