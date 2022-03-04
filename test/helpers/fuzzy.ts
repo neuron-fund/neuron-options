@@ -1,9 +1,10 @@
 import Chance from 'chance'
 import { ethers } from 'hardhat'
 import { mockErc2OwnersPrivateKeys } from '../../utils/accounts'
+import { calculateMarginRequired } from './e2e/margin'
+import { OtokenCollateralsAmounts, OTokenParams } from './e2e/types'
 import { deployMockERC20 } from './erc20'
 import { OTokenPrices } from './otoken'
-import { calculateMarginRequired, OtokenCollateralsAmounts, OTokenParams } from './testMintRedeemSettle'
 
 // {
 //   oTokenParams: {
@@ -36,21 +37,17 @@ import { calculateMarginRequired, OtokenCollateralsAmounts, OTokenParams } from 
 //   ],
 // },
 
-export declare type Seed = number | string;
+export declare type Seed = number | string
 
 export const getSeed = (): Seed => {
   if (!process.env.CHANCE_SEED) {
-    const seedGenerator = new Chance();
-    return seedGenerator.hash();
+    const seedGenerator = new Chance()
+    return seedGenerator.hash()
   }
-  return process.env.CHANCE_SEED;
-};
+  return process.env.CHANCE_SEED
+}
 
-export const generateFuzzyTestParams = async (
-  testSeed: Seed,
-  canHaveBurn?: boolean,
-  canHaveLong?: boolean
-) => {
+export const generateFuzzyTestParams = async (testSeed: Seed, canHaveBurn?: boolean, canHaveLong?: boolean) => {
   console.log(`testSeed=${testSeed}`)
   const chance = new Chance(testSeed)
   const isITM = chance.bool()

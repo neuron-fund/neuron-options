@@ -667,9 +667,9 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         uint256 assetsLength = collateralAssets.length;
 
         vaults[_args.owner][vaultId].collateralAmounts = new uint256[](assetsLength);
-        vaults[_args.owner][vaultId].usedCollateralAmounts = new uint256[](assetsLength);
-        vaults[_args.owner][vaultId].unusedCollateralAmounts = new uint256[](assetsLength);
-        vaults[_args.owner][vaultId].reservedCollateralValues = new uint256[](assetsLength);
+        vaults[_args.owner][vaultId].availableCollateralAmounts = new uint256[](assetsLength);
+        vaults[_args.owner][vaultId].reservedCollateralAmounts = new uint256[](assetsLength);
+        vaults[_args.owner][vaultId].usedCollateralValues = new uint256[](assetsLength);
 
         emit VaultOpened(_args.owner, vaultId);
     }

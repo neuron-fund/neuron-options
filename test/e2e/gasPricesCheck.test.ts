@@ -1,5 +1,5 @@
 import path from 'path'
-import { USDT, DAI, WETH, USDC } from '../../constants/externalAddresses'
+import { USDC, DAI, WETH, USDT } from '../../constants/externalAddresses'
 import { prettyObjectStringify } from '../../utils/log'
 import { testDeploy } from '../helpers/fixtures'
 import { testMintRedeemSettleFactory } from '../helpers/e2e/testMintRedeemSettle'
@@ -7,7 +7,7 @@ import { testMintRedeemSettleFactory } from '../helpers/e2e/testMintRedeemSettle
 const testsParams = [
   {
     oTokenParams: {
-      collateralAssets: [USDT, DAI],
+      collateralAssets: [USDC, DAI, USDT],
       underlyingAsset: WETH,
       strikeAsset: USDC,
       strikePriceFormatted: 3800,
@@ -15,47 +15,57 @@ const testsParams = [
       isPut: true,
     },
     initialPrices: {
-      [USDT]: 1.4,
       [USDC]: 1,
-      [DAI]: 1.5,
+      [USDT]: 1,
+      [DAI]: 1,
       [WETH]: 4200,
     },
     expiryPrices: {
-      [USDT]: 1.1,
       [USDC]: 1,
-      [DAI]: 1.5,
+      [USDT]: 1,
+      [DAI]: 1,
       [WETH]: 3500,
-    },
-    checkpointsDays: {
-      2: {
-        prices: {
-          [USDT]: 1.2,
-          [USDC]: 1,
-          [DAI]: 1.3,
-          [WETH]: 4200,
-        },
-      },
-      4: {
-        prices: {
-          [USDT]: 1.3,
-          [USDC]: 1,
-          [DAI]: 1.4,
-          [WETH]: 4200,
-        },
-      },
     },
     vaults: [
       {
-        collateralAmountsFormatted: [3800, 3800],
-        oTokenAmountFormatted: 0.2,
-        mintOnCheckoints: {
-          2: {
-            oTokenAmountFormatted: 0.3,
-          },
-          4: {
-            oTokenAmountFormatted: 0.2,
-          },
-        },
+        collateralAmountsFormatted: [3800, 3800, 3800],
+        oTokenAmountFormatted: 3,
+      },
+    ],
+  },
+  {
+    oTokenParams: {
+      collateralAssets: [USDC, DAI, USDT],
+      underlyingAsset: WETH,
+      strikeAsset: USDC,
+      strikePriceFormatted: 3800,
+      expiryDays: 7,
+      isPut: true,
+    },
+    initialPrices: {
+      [USDC]: 1,
+      [USDT]: 1,
+      [DAI]: 1,
+      [WETH]: 4200,
+    },
+    expiryPrices: {
+      [USDC]: 1,
+      [USDT]: 1,
+      [DAI]: 1,
+      [WETH]: 3500,
+    },
+    vaults: [
+      {
+        collateralAmountsFormatted: [3800, 0, 0],
+        oTokenAmountFormatted: 1,
+      },
+      {
+        collateralAmountsFormatted: [0, 0, 3800],
+        oTokenAmountFormatted: 1,
+      },
+      {
+        collateralAmountsFormatted: [0, 3800, 0],
+        oTokenAmountFormatted: 1,
       },
     ],
   },

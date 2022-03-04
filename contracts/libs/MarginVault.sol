@@ -57,9 +57,9 @@ library MarginVault {
         // quantity of ERC-20 deposited as collateral in the vault for each ERC-20 address in collateralAssets
         uint256[] collateralAmounts;
         // Collateral which is currently used for minting oTokens and can't be used until expiry
-        uint256[] usedCollateralAmounts;
-        uint256[] reservedCollateralValues;
-        uint256[] unusedCollateralAmounts;
+        uint256[] reservedCollateralAmounts;
+        uint256[] usedCollateralValues;
+        uint256[] availableCollateralAmounts;
     }
 
     /**
@@ -105,45 +105,45 @@ library MarginVault {
         uint256 newShortAmount = _vault.shortAmount.sub(_amount);
         uint256 collateralAssetsLength = _vault.collateralAssets.length;
 
-        uint256[] memory newUsedCollateralAmounts = new uint256[](collateralAssetsLength);
-        uint256[] memory newReservedCollateralValues = new uint256[](collateralAssetsLength);
+        uint256[] memory newReservedCollateralAmounts = new uint256[](collateralAssetsLength);
+        uint256[] memory newUsedCollateralValues = new uint256[](collateralAssetsLength);
         freedCollateralAmounts = new uint256[](collateralAssetsLength);
         freedCollateralValues = new uint256[](collateralAssetsLength);
-        uint256[] memory newUnusedCollateralAmounts = _vault.unusedCollateralAmounts;
+        uint256[] memory newAvailableCollateralAmounts = _vault.availableCollateralAmounts;
         if (newShortAmount == 0) {
-            newUnusedCollateralAmounts = _vault.collateralAmounts;
+            newAvailableCollateralAmounts = _vault.collateralAmounts;
             for (uint256 i = 0; i < collateralAssetsLength; i++) {
-                newUsedCollateralAmounts[i] = 0;
-                newReservedCollateralValues[i] = 0;
-                freedCollateralAmounts[i] = _vault.usedCollateralAmounts[i];
-                freedCollateralValues[i] = _vault.reservedCollateralValues[i];
+                newReservedCollateralAmounts[i] = 0;
+                newUsedCollateralValues[i] = 0;
+                freedCollateralAmounts[i] = _vault.reservedCollateralAmounts[i];
+                freedCollateralValues[i] = _vault.usedCollateralValues[i];
             }
         } else {
             // usedLeftRatio is multiplier which is used to calculate the new used collateral values and used amounts
             for (uint256 i = 0; i < collateralAssetsLength; i++) {
                 uint256 collateralDecimals = uint256(IERC20Metadata(_vault.collateralAssets[i]).decimals());
-                newUsedCollateralAmounts[i] = toFPImulAndBack(
-                    _vault.usedCollateralAmounts[i],
+                newReservedCollateralAmounts[i] = toFPImulAndBack(
+                    _vault.reservedCollateralAmounts[i],
                     collateralDecimals,
                     _newCollateralRatio,
                     true
                 );
 
-                newReservedCollateralValues[i] = toFPImulAndBack(
-                    _vault.reservedCollateralValues[i],
+                newUsedCollateralValues[i] = toFPImulAndBack(
+                    _vault.usedCollateralValues[i],
                     BASE,
                     _newCollateralRatio,
                     true
                 );
-                freedCollateralAmounts[i] = _vault.usedCollateralAmounts[i].sub(newUsedCollateralAmounts[i]);
-                freedCollateralValues[i] = _vault.reservedCollateralValues[i].sub(newReservedCollateralValues[i]);
-                newUnusedCollateralAmounts[i] = newUnusedCollateralAmounts[i].add(freedCollateralAmounts[i]);
+                freedCollateralAmounts[i] = _vault.reservedCollateralAmounts[i].sub(newReservedCollateralAmounts[i]);
+                freedCollateralValues[i] = _vault.usedCollateralValues[i].sub(newUsedCollateralValues[i]);
+                newAvailableCollateralAmounts[i] = newAvailableCollateralAmounts[i].add(freedCollateralAmounts[i]);
             }
         }
         _vault.shortAmount = newShortAmount;
-        _vault.usedCollateralAmounts = newUsedCollateralAmounts;
-        _vault.reservedCollateralValues = newReservedCollateralValues;
-        _vault.unusedCollateralAmounts = newUnusedCollateralAmounts;
+        _vault.reservedCollateralAmounts = newReservedCollateralAmounts;
+        _vault.usedCollateralValues = newUsedCollateralValues;
+        _vault.availableCollateralAmounts = newAvailableCollateralAmounts;
         _vault.usedLongAmount = _newUsedLongAmount;
     }
 
@@ -210,7 +210,7 @@ library MarginVault {
         require(_collateralAssets.length == _vault.collateralAssets.length, "V12");
         for (uint256 i = 0; i < _collateralAssets.length; i++) {
             _vault.collateralAmounts[i] = _vault.collateralAmounts[i].add(_amounts[i]);
-            _vault.unusedCollateralAmounts[i] = _vault.unusedCollateralAmounts[i].add(_amounts[i]);
+            _vault.availableCollateralAmounts[i] = _vault.availableCollateralAmounts[i].add(_amounts[i]);
         }
     }
 
@@ -232,7 +232,7 @@ library MarginVault {
         require(_vault.collateralAssets[_index] == _collateralAsset, "V9");
 
         uint256 newCollateralAmount = _vault.collateralAmounts[_index].sub(_amount);
-        _vault.unusedCollateralAmounts[_index] = _vault.unusedCollateralAmounts[_index].sub(_amount);
+        _vault.availableCollateralAmounts[_index] = _vault.availableCollateralAmounts[_index].sub(_amount);
         _vault.collateralAmounts[_index] = newCollateralAmount;
     }
 
@@ -248,15 +248,15 @@ library MarginVault {
         );
 
         for (uint256 i = 0; i < _amounts.length; i++) {
-            uint256 newUsedCollateralAmount = _vault.usedCollateralAmounts[i].add(_amounts[i]);
+            uint256 newReservedCollateralAmount = _vault.reservedCollateralAmounts[i].add(_amounts[i]);
 
-            _vault.usedCollateralAmounts[i] = newUsedCollateralAmount;
+            _vault.reservedCollateralAmounts[i] = newReservedCollateralAmount;
             require(
-                _vault.usedCollateralAmounts[i] <= _vault.collateralAmounts[i],
+                _vault.reservedCollateralAmounts[i] <= _vault.collateralAmounts[i],
                 "Trying to use collateral which exceeds vault's balance"
             );
-            _vault.unusedCollateralAmounts[i] = _vault.collateralAmounts[i].sub(newUsedCollateralAmount);
-            _vault.reservedCollateralValues[i] = _vault.reservedCollateralValues[i].add(_reservedCollateralValues[i]);
+            _vault.availableCollateralAmounts[i] = _vault.collateralAmounts[i].sub(newReservedCollateralAmount);
+            _vault.usedCollateralValues[i] = _vault.usedCollateralValues[i].add(_reservedCollateralValues[i]);
         }
 
         _vault.usedLongAmount = _vault.usedLongAmount.add(_usedLongAmount);

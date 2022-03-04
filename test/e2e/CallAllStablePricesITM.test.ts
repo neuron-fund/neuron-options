@@ -2,7 +2,7 @@ import path from 'path'
 import { USDC, DAI, WETH, CRV_CVX_ETH, LIDO_ST_ETH } from '../../constants/externalAddresses'
 import { prettyObjectStringify } from '../../utils/log'
 import { testDeploy } from '../helpers/fixtures'
-import { testMintRedeemSettleFactory } from '../helpers/testMintRedeemSettle'
+import { testMintRedeemSettleFactory } from '../helpers/e2e/testMintRedeemSettle'
 
 const testsParams = [
   {

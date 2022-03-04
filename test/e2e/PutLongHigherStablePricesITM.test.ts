@@ -2,7 +2,7 @@ import path from 'path'
 import { USDC, WETH, CRV_CVX_ETH, LIDO_ST_ETH } from '../../constants/externalAddresses'
 import { prettyObjectStringify } from '../../utils/log'
 import { testDeploy } from '../helpers/fixtures'
-import { testMintRedeemSettleFactory } from '../helpers/testMintRedeemSettle'
+import { testMintRedeemSettleFactory } from '../helpers/e2e/testMintRedeemSettle'
 
 const oTokenParams = {
   collateralAssets: [CRV_CVX_ETH, LIDO_ST_ETH],
@@ -53,66 +53,66 @@ const testsParams = [
       },
     ],
   },
-  {
-    oTokenParams,
-    initialPrices: {
-      [USDC]: 1,
-      [CRV_CVX_ETH]: 3800,
-      [LIDO_ST_ETH]: 3800,
-      [WETH]: 3800,
-    },
-    expiryPrices: {
-      [USDC]: 1,
-      [CRV_CVX_ETH]: 3400,
-      [LIDO_ST_ETH]: 3400,
-      [WETH]: 3400,
-    },
-    longsOwners: [
-      {
-        oTokenParams: longOTokenParams,
-        oTokenAmountFormatted: 1,
-        collateralAmountsFormatted: [1, 1],
-      },
-    ],
-    vaults: [
-      {
-        collateralAmountsFormatted: [0.1, 0.1],
-        longToDeposit: longOTokenParams,
-        longToDepositAmountFormatted: 1,
-        oTokenAmountFormatted: 1,
-      },
-    ],
-  },
-  {
-    oTokenParams,
-    initialPrices: {
-      [USDC]: 1,
-      [CRV_CVX_ETH]: 3800,
-      [LIDO_ST_ETH]: 3800,
-      [WETH]: 3800,
-    },
-    expiryPrices: {
-      [USDC]: 1,
-      [CRV_CVX_ETH]: 3100,
-      [LIDO_ST_ETH]: 3100,
-      [WETH]: 3100,
-    },
-    longsOwners: [
-      {
-        oTokenParams: longOTokenParams,
-        oTokenAmountFormatted: 1,
-        collateralAmountsFormatted: [1, 1],
-      },
-    ],
-    vaults: [
-      {
-        collateralAmountsFormatted: [0.1, 0.1],
-        longToDeposit: longOTokenParams,
-        longToDepositAmountFormatted: 1,
-        oTokenAmountFormatted: 1,
-      },
-    ],
-  },
+  // {
+  //   oTokenParams,
+  //   initialPrices: {
+  //     [USDC]: 1,
+  //     [CRV_CVX_ETH]: 3800,
+  //     [LIDO_ST_ETH]: 3800,
+  //     [WETH]: 3800,
+  //   },
+  //   expiryPrices: {
+  //     [USDC]: 1,
+  //     [CRV_CVX_ETH]: 3400,
+  //     [LIDO_ST_ETH]: 3400,
+  //     [WETH]: 3400,
+  //   },
+  //   longsOwners: [
+  //     {
+  //       oTokenParams: longOTokenParams,
+  //       oTokenAmountFormatted: 1,
+  //       collateralAmountsFormatted: [1, 1],
+  //     },
+  //   ],
+  //   vaults: [
+  //     {
+  //       collateralAmountsFormatted: [0.1, 0.1],
+  //       longToDeposit: longOTokenParams,
+  //       longToDepositAmountFormatted: 1,
+  //       oTokenAmountFormatted: 1,
+  //     },
+  //   ],
+  // },
+  // {
+  //   oTokenParams,
+  //   initialPrices: {
+  //     [USDC]: 1,
+  //     [CRV_CVX_ETH]: 3800,
+  //     [LIDO_ST_ETH]: 3800,
+  //     [WETH]: 3800,
+  //   },
+  //   expiryPrices: {
+  //     [USDC]: 1,
+  //     [CRV_CVX_ETH]: 3100,
+  //     [LIDO_ST_ETH]: 3100,
+  //     [WETH]: 3100,
+  //   },
+  //   longsOwners: [
+  //     {
+  //       oTokenParams: longOTokenParams,
+  //       oTokenAmountFormatted: 1,
+  //       collateralAmountsFormatted: [1, 1],
+  //     },
+  //   ],
+  //   vaults: [
+  //     {
+  //       collateralAmountsFormatted: [0.1, 0.1],
+  //       longToDeposit: longOTokenParams,
+  //       longToDepositAmountFormatted: 1,
+  //       oTokenAmountFormatted: 1,
+  //     },
+  //   ],
+  // },
 ] as const
 
 describe(path.basename(__filename), function () {

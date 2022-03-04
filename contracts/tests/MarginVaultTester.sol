@@ -24,7 +24,7 @@ contract MarginVaultTester {
         //vault[msg.sender][_vaultIndex].collateralAmounts
         for (uint256 i = 0; i < _collateralAssets.length; i++) {
             vault[msg.sender][_vaultIndex].collateralAmounts.push(0);
-            vault[msg.sender][_vaultIndex].unusedCollateralAmounts.push(0);
+            vault[msg.sender][_vaultIndex].availableCollateralAmounts.push(0);
         }
     }
 
@@ -42,9 +42,9 @@ contract MarginVaultTester {
         uint256 _amount,
         FPI.FixedPointInt memory _newCollateralRatio,
         uint256 _newUsedLongAmount
-     ) external {
+    ) external {
         vault[msg.sender][_vaultIndex].removeShort(_shortOtoken, _amount, _newCollateralRatio, _newUsedLongAmount);
-     }
+    }
 
     function testAddLong(
         uint256 _vaultIndex,
