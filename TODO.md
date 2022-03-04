@@ -5,9 +5,7 @@ TODO test depositCollateral after one mint to vault and mint again
 DISCUSS restrict ratios for collateral to restrict minting a lot of oTokens for non liquid assets
 TODO Restrict by absolute figures in collateral value for all minted options, restrictions for minting oTokens on whitelist level
 
-DISCUSS monetization for protocol?
-
-IMPROVEMENT should unwrap collaterals in oTokens after expire?
+TODO test deposit long and than mint more longs, check if right settleVault and redeem for long and short
 
 IMPROVEMENT get rid of SafeMath if neccessary for optiomization and reduce delpoy size
 
