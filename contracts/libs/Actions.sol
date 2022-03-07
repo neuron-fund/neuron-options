@@ -31,7 +31,6 @@ pragma solidity 0.8.9;
  * A22 can only parse arguments for call actions
  * A23 target address cannot be address(0)
  * A24 amounts for minting oToken should be array with 1 element
- * A25 assets for minting oToken should be array with 1 element and represent addres of the oToken to mint
  * A26 param "assets" should have 1 element for redeem action
  * A27 param "assets" first element should not be zero address for redeem action
  * A28 param "amounts" should have 1 element for redeem action
@@ -82,8 +81,6 @@ library Actions {
         uint256 vaultId;
         // address to which we transfer the minted oTokens
         address to;
-        // oToken that is to be minted
-        address otoken;
         // amount of oTokens that is to be minted
         uint256 amount;
     }
@@ -115,8 +112,6 @@ library Actions {
         uint256 vaultId;
         // address from which we transfer the asset
         address from;
-        // asset that is to be deposited
-        address[] assets;
         // amount of asset that is to be deposited
         uint256[] amounts;
     }
@@ -196,16 +191,9 @@ library Actions {
         require(_args.actionType == ActionType.MintShortOption, "A4");
         require(_args.owner != address(0), "A5");
         require(_args.amounts.length == 1, "A24");
-        require(_args.assets.length == 1, "A25");
 
         return
-            MintArgs({
-                owner: _args.owner,
-                vaultId: _args.vaultId,
-                to: _args.secondAddress,
-                otoken: _args.assets[0],
-                amount: _args.amounts[0]
-            });
+            MintArgs({owner: _args.owner, vaultId: _args.vaultId, to: _args.secondAddress, amount: _args.amounts[0]});
     }
 
     /**
@@ -232,14 +220,12 @@ library Actions {
             "A8"
         );
         require(_args.owner != address(0), "A9");
-        require(_args.assets.length == _args.amounts.length, "A30");
 
         return
             DepositCollateralArgs({
                 owner: _args.owner,
                 vaultId: _args.vaultId,
                 from: _args.secondAddress,
-                assets: _args.assets,
                 amounts: _args.amounts
             });
     }
@@ -321,6 +307,7 @@ library Actions {
         return SettleVaultArgs({owner: _args.owner, vaultId: _args.vaultId, to: _args.secondAddress});
     }
 
+    // TODO wahts call action do?
     /**
      * @notice parses the passed in action arguments to get the arguments for a call action
      * @param _args general action arguments structure
