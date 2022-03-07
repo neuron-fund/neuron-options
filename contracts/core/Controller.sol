@@ -739,14 +739,14 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         // only allow vault owner or vault operator to deposit collateral
         require((_args.from == msg.sender) || (_args.from == _args.owner), "C20");
 
-        require(whitelist.isWhitelistedCollaterals(_args.assets), "C21");
+        address[] memory collateralAssets = vaults[_args.owner][_args.vaultId].collateralAssets;
+        uint256 collateralsLength = collateralAssets.length;
 
-        uint256 collateralsLength = _args.assets.length;
         for (uint256 i = 0; i < collateralsLength; i++) {
             if (_args.amounts[i] > 0) {
-                pool.transferToPool(_args.assets[i], _args.from, _args.amounts[i]);
+                pool.transferToPool(collateralAssets[i], _args.from, _args.amounts[i]);
                 emit CollateralAssetDeposited(
-                    _args.assets[i],
+                    collateralAssets[i],
                     _args.owner,
                     _args.from,
                     _args.vaultId,
@@ -754,7 +754,7 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
                 );
             }
         }
-        vaults[_args.owner][_args.vaultId].addCollaterals(_args.assets, _args.amounts);
+        vaults[_args.owner][_args.vaultId].addCollaterals(collateralAssets, _args.amounts);
     }
 
     /**
@@ -802,10 +802,10 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         onlyAuthorized(msg.sender, _args.owner)
     {
         require(_checkVaultId(_args.owner, _args.vaultId), "C35");
-        require(whitelist.isWhitelistedOtoken(_args.otoken), "C23");
-        require(vaults[_args.owner][_args.vaultId].shortOtoken == _args.otoken, "C41");
 
-        OtokenInterface otoken = OtokenInterface(_args.otoken);
+        address vaultShortOtoken = vaults[_args.owner][_args.vaultId].shortOtoken;
+
+        OtokenInterface otoken = OtokenInterface(vaultShortOtoken);
         require(block.timestamp < otoken.expiryTimestamp(), "C24");
 
         if (_args.amount == 0) {
@@ -822,14 +822,14 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             uint256 usedLongAmount
         ) = calculator.getCollateralRequired(vaults[_args.owner][_args.vaultId], _args.amount);
         otoken.mintOtoken(_args.to, _args.amount, collateralsAmountsUsed, collateralsValuesUsed);
-        vaults[_args.owner][_args.vaultId].addShort(_args.otoken, _args.amount);
+        vaults[_args.owner][_args.vaultId].addShort(vaultShortOtoken, _args.amount);
         vaults[_args.owner][_args.vaultId].useCollateralBulk(
             collateralsAmountsRequired,
             usedLongAmount,
             collateralsValuesUsed
         );
 
-        emit ShortOtokenMinted(_args.otoken, _args.owner, _args.to, _args.vaultId, _args.amount);
+        emit ShortOtokenMinted(vaultShortOtoken, _args.owner, _args.to, _args.vaultId, _args.amount);
     }
 
     /**
