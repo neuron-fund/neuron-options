@@ -595,7 +595,7 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             Actions.ActionType actionType = action.actionType;
 
             // Check to assets and amounts length to be the same
-            require(action.assets.length == action.amounts.length, "C38");
+            //require(action.assets.length == action.amounts.length, "C38");
 
             // actions except Settle, Redeem, Liquidate and Call are "Vault-updating actinos"
             // only allow update 1 vault in each operate call

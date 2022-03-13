@@ -242,40 +242,62 @@ export async function assertSettleVault<T extends OTokenParams, C extends TestMi
   }
 }
 
-export async function prepareDepositCollateralAction<
-  T extends OTokenParams,
-  C extends TestMintRedeemSettleParamsCheckpoints<T>
->(
+export async function prepareDepositCollateralAction<T extends OTokenParams>(
+  vaultId: number,
   controller: Controller,
   marginPool: MarginPool,
   oTokenParamsRaw: T,
-  vault: TestMintRedeemSettleParamsVaultOwned<T, C>,
+  vaultOwner: SignerWithAddress,
   collateralAmountsFormatted: OtokenCollateralsAmounts<T>,
   mockERC20Owners?: { [key: string]: SignerWithAddress }
 ) {
-  const { owner } = vault
   const { collateralAssets } = oTokenParamsRaw
   const collateralAmounts = await Promise.all(
-    collateralAmountsFormatted.map(async (amount, i) => addTokenDecimalsToAmount(collateralAssets[i], amount, owner))
+    collateralAmountsFormatted.map(async (amount, i) =>
+      addTokenDecimalsToAmount(collateralAssets[i], amount, vaultOwner)
+    )
   )
-  const vaultId = 1
-  const isVaultAlreadyOpened = (await controller.accountVaultCounter(owner.address)).toNumber() === vaultId
+  const isVaultAlreadyOpened = (await controller.accountVaultCounter(vaultOwner.address)).toNumber() === vaultId
 
   if (!isVaultAlreadyOpened) {
     for (const [i, amount] of collateralAmounts.entries()) {
       // Transfer collateral tokens from whales to user
-      await getFunds(collateralAssets[i], amount, owner.address, mockERC20Owners)
+      await getFunds(collateralAssets[i], amount, vaultOwner.address, mockERC20Owners)
       // Approve collateral tokens for pending by controller
-      await approveERC20(collateralAssets[i], amount, owner, marginPool.address)
+      await approveERC20(collateralAssets[i], amount, vaultOwner, marginPool.address)
     }
     return getAction(ActionType.DepositCollateral, {
-      owner: owner.address,
+      owner: vaultOwner.address,
       amounts: collateralAmounts,
       assets: [...collateralAssets],
       vaultId,
-      from: owner.address,
+      from: vaultOwner.address,
     })
   }
+}
+
+export async function prepareDepositLongAction(
+  vaultId: number,
+  vaultOwner: SignerWithAddress,
+  marginPoolAddress: string,
+  oTokenFactory: OtokenFactory,
+  longOtoken: OTokenParams,
+  longDepositAmountFormatted: number
+) {
+  const longAmount = longDepositAmountFormatted && parseUnits(longDepositAmountFormatted.toString(), oTokenDecimals)
+  const longOTokenParams = {
+    ...longOtoken,
+    expiry: createValidExpiry(longOtoken.expiryDays),
+  } as const
+  const longOToken = await findOToken(vaultOwner, oTokenFactory, longOTokenParams)
+  await approveERC20(longOToken.address, longAmount, vaultOwner, marginPoolAddress)
+  return getAction(ActionType.DepositLongOption, {
+    owner: vaultOwner.address,
+    from: vaultOwner.address,
+    longOtoken: [longOToken.address],
+    amount: [longAmount],
+    vaultId,
+  })
 }
 
 export async function openVaultAndMint<T extends OTokenParams, C extends TestMintRedeemSettleParamsCheckpoints<T>>(
@@ -291,36 +313,8 @@ export async function openVaultAndMint<T extends OTokenParams, C extends TestMin
   mockERC20Owners?: { [key: string]: SignerWithAddress }
 ) {
   const { collateralAmountsFormatted, owner } = vault
-  const { collateralAssets } = oTokenParamsRaw
-
   const oTokenAmount = parseUnits(oTokenAmountFormatted.toString(), oTokenDecimals)
-
-  const collateralAmounts = await Promise.all(
-    collateralAmountsFormatted.map(async (amount, i) => addTokenDecimalsToAmount(collateralAssets[i], amount, owner))
-  )
-  const vaultId = 1
-  const isVaultAlreadyOpened = (await controller.accountVaultCounter(owner.address)).toNumber() === vaultId
-
-  if (!isVaultAlreadyOpened) {
-    for (const [i, amount] of collateralAmounts.entries()) {
-      // Transfer collateral tokens from whales to user
-      await getFunds(collateralAssets[i], amount, owner.address, mockERC20Owners)
-      // Approve collateral tokens for pending by controller
-      await approveERC20(collateralAssets[i], amount, owner, marginPool.address)
-    }
-  }
-
-  const longOTokenParams =
-    longOtoken &&
-    ({
-      ...longOtoken,
-      expiry: createValidExpiry(longOtoken.expiryDays),
-    } as const)
-  const longOToken = longOTokenParams && (await findOToken(owner, oTokenFactory, longOTokenParams))
-  const longToDeposit = longDepositAmountFormatted && parseUnits(longDepositAmountFormatted.toString(), oTokenDecimals)
-  if (longOToken) {
-    await approveERC20(longOToken.address, longToDeposit, owner, marginPool.address)
-  }
+  const vaultId = (await controller.accountVaultCounter(owner.address)).toNumber() + 1
 
   const openVaultAction = getAction(ActionType.OpenVault, {
     owner: owner.address,
@@ -328,28 +322,24 @@ export async function openVaultAndMint<T extends OTokenParams, C extends TestMin
     vaultId,
   })
 
-  const depositCollateralAction = getAction(ActionType.DepositCollateral, {
-    owner: owner.address,
-    amounts: collateralAmounts,
-    assets: [...collateralAssets],
+  const depositCollateralAction = await prepareDepositCollateralAction(
     vaultId,
-    from: owner.address,
-  })
+    controller,
+    marginPool,
+    oTokenParamsRaw,
+    owner,
+    collateralAmountsFormatted,
+    mockERC20Owners
+  )
 
   const depositLongAction =
-    longOToken &&
-    getAction(ActionType.DepositLongOption, {
-      owner: owner.address,
-      from: owner.address,
-      longOtoken: [longOToken.address],
-      amount: [longToDeposit],
-      vaultId,
-    })
+    vault.longToDeposit &&
+    await prepareDepositLongAction(vaultId, owner, marginPool.address, oTokenFactory, longOtoken, longDepositAmountFormatted)
 
   const openAndDepositActions = [openVaultAction, depositCollateralAction, depositLongAction].filter(Boolean)
 
   const mintActions: ActionArgsStruct[] = [
-    ...(!isVaultAlreadyOpened && openAndDepositActions),
+    ...openAndDepositActions,
     getAction(ActionType.MintShortOption, {
       owner: owner.address,
       amount: [oTokenAmount],
