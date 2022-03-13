@@ -26,7 +26,7 @@ import {
 } from './types'
 import { addExpiryToOtokenParams, calculateOtokenInfo, calculateRedeemForOtokenAmount, OtokenInfo } from './otoken'
 import { burnVault, redeem, settleVault } from './controller'
-import { assertSettleVault, mintInVault, openVaultAndMint } from './vaults'
+import { assertSettleVault, depositMintInVault, openVaultAndMint } from './vaults'
 
 // Maxiumum deviation of usd value of redeem and vault settle. Calculated from balances of redeemer and vault owner respectively
 export const EXPECTED_DEVIATIONS = {
@@ -295,15 +295,15 @@ async function mintOnCheckpoints<T extends OTokenParams, C extends TestMintRedee
     const vaultsToMintOnCheckpoint = vaults.filter(x => x.mintOnCheckoints?.[checkpoint])
     for (const vault of vaultsToMintOnCheckpoint) {
       const amountToMint = vault.mintOnCheckoints[checkpoint].oTokenAmountFormatted
-      const collateralAmount = vault.mintOnCheckoints[checkpoint].depositCollateralAmount
-      const mintedAmount = await mintInVault(
+      const collateralsAmount = vault.mintOnCheckoints[checkpoint]?.depositCollateralsAmounts
+      const mintedAmount = await depositMintInVault(
         controller,
         marginPool,
         params.oTokenParams,
         vault,
         oToken,
         amountToMint,
-        collateralAmount,
+        collateralsAmount,
         mockERC20Owners
       )
       await oToken.connect(vault.owner).transfer(redeemer.address, mintedAmount)

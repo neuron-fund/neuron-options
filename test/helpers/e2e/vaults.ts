@@ -65,7 +65,7 @@ export function calculateVaultTotalMint<T extends OTokenParams, C extends TestMi
     }
 
     const collateralAmountsLeft = vault.collateralAmountsFormatted.map(
-      (x, i) => x - (collateralsReservedAmounts[i] || 0) + (vaultCheckpoint?.depositCollateralAmount[i] || 0)
+      (x, i) => x - (collateralsReservedAmounts[i] || 0) + (vaultCheckpoint?.depositCollateralsAmounts[i] || 0)
     ) as unknown as OtokenCollateralsAmounts<T>
     const collateralAmountsWithCheckpoint = collateralAmountsLeft
     //const isValid = collateralAmountsLeft.some(x => x >= 0)
@@ -303,29 +303,29 @@ export async function prepareDepositLongAction(
   })
 }
 
-export async function mintInVault<T extends OTokenParams, C extends TestMintRedeemSettleParamsCheckpoints<T>>(
+export async function depositMintInVault<T extends OTokenParams, C extends TestMintRedeemSettleParamsCheckpoints<T>>(
   controller: Controller,
   marginPool: MarginPool,
   oTokenParamsRaw: T,
   vault: TestMintRedeemSettleParamsVaultOwned<T, C>,
   oToken: Otoken,
   oTokenAmountFormatted: number,
-  depositCollateralAmountsFormatted?: number,
+  depositCollateralsAmounts?: [number],
   mockERC20Owners?: { [key: string]: SignerWithAddress }
 ) {
-  const { collateralAmountsFormatted, owner } = vault
+  const { owner } = vault
   const oTokenAmount = parseUnits(oTokenAmountFormatted.toString(), oTokenDecimals)
   const vaultId = (await controller.accountVaultCounter(owner.address)).toNumber() + 1
 
   const depositCollateralAction =
-    depositCollateralAmountsFormatted &&
+    depositCollateralsAmounts &&
     (await prepareDepositCollateralAction(
       vaultId,
       controller,
       marginPool,
       oTokenParamsRaw,
       owner,
-      collateralAmountsFormatted,
+      depositCollateralsAmounts,
       mockERC20Owners
     ))
 
