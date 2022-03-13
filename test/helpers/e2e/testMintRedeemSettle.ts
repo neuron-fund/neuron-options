@@ -1,5 +1,6 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { assert } from 'chai'
+import { OtokenCollateralsAmounts } from './types'
 import { parseUnits, formatUnits } from 'ethers/lib/utils'
 import { ethers, getNamedAccounts, network } from 'hardhat'
 import { MarginPool, Oracle, Otoken, OtokenFactory, Whitelist } from '../../../typechain-types'
@@ -25,7 +26,7 @@ import {
 } from './types'
 import { addExpiryToOtokenParams, calculateOtokenInfo, calculateRedeemForOtokenAmount, OtokenInfo } from './otoken'
 import { burnVault, redeem, settleVault } from './controller'
-import { assertSettleVault, openVaultAndMint } from './vaults'
+import { assertSettleVault, mintInVault, openVaultAndMint } from './vaults'
 
 // Maxiumum deviation of usd value of redeem and vault settle. Calculated from balances of redeemer and vault owner respectively
 export const EXPECTED_DEVIATIONS = {
@@ -99,18 +100,7 @@ export const testMintRedeemSettleFactory = (getDeployResults: () => TestDeployRe
     }
 
     // Mint oTokens for checkpoints and wait time
-    await mintOnCheckpoints(
-      controller,
-      marginPool,
-      oToken,
-      oracle,
-      oTokenFactory,
-      params,
-      vaults,
-      deployer,
-      redeemer,
-      mockERC20Owners
-    )
+    await mintOnCheckpoints(controller, marginPool, oToken, oracle, params, vaults, deployer, redeemer, mockERC20Owners)
 
     // Get burn oTokens from redeemer
     for (const vault of vaults) {
@@ -292,30 +282,28 @@ async function mintOnCheckpoints<T extends OTokenParams, C extends TestMintRedee
   marginPool: MarginPool,
   oToken: Otoken,
   oracle: Oracle,
-  oTokenFactory: OtokenFactory,
   params: TestMintRedeemSettleParams<T, C>,
   vaults: TestMintRedeemSettleParamsVaultOwned<T, C>[],
   deployer: SignerWithAddress,
   redeemer: SignerWithAddress,
   mockERC20Owners: { [key: string]: SignerWithAddress }
 ) {
-  const checkpoints = Object.keys(params.checkpointsDays || [])
+  const checkpoints = Object.keys(params.checkpointsDays || []).map(Number)
   for (const checkpoint of checkpoints) {
-    await waitNDays(Number(checkpoint), network.provider)
+    await waitNDays(checkpoint, network.provider)
     await setStablePrices(oracle, deployer, params.checkpointsDays[checkpoint].prices)
     const vaultsToMintOnCheckpoint = vaults.filter(x => x.mintOnCheckoints?.[checkpoint])
     for (const vault of vaultsToMintOnCheckpoint) {
       const amountToMint = vault.mintOnCheckoints[checkpoint].oTokenAmountFormatted
-      const mintedAmount = await openVaultAndMint(
+      const collateralAmount = vault.mintOnCheckoints[checkpoint].depositCollateralAmount
+      const mintedAmount = await mintInVault(
         controller,
         marginPool,
         params.oTokenParams,
-        oToken,
         vault,
+        oToken,
         amountToMint,
-        oTokenFactory,
-        vault.longToDeposit,
-        vault.longToDepositAmountFormatted,
+        collateralAmount,
         mockERC20Owners
       )
       await oToken.connect(vault.owner).transfer(redeemer.address, mintedAmount)
