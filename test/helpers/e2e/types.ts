@@ -12,7 +12,7 @@ export type OTokenParams = {
 }
 
 export type VaultCheckpointsMint<T extends OTokenParams, C extends TestMintRedeemSettleParamsCheckpoints<T>> = {
-  [key in keyof C]?: { oTokenAmountFormatted: number }
+  [key in keyof C]: { oTokenAmountFormatted: number }
 }
 
 export type OtokenCollateralsAmounts<T extends OTokenParams> = FixedSizeArray<T['collateralAssets']['length'], number>

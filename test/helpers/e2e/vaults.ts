@@ -354,7 +354,6 @@ export async function openVaultAndMint<T extends OTokenParams, C extends TestMin
       owner: owner.address,
       amount: [oTokenAmount],
       vaultId,
-      otoken: [oToken.address],
       to: owner.address,
     }),
   ].filter(Boolean)
