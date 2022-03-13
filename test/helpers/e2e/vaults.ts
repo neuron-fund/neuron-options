@@ -156,10 +156,14 @@ export function calculateMintReservedCollaterals<T extends OTokenParams>(
     `
   )
   const usedCollateralsRatios = collateralValues.map(x => x / totalCollateralsValue)
+  const collateralsReservedAmounts = usedCollateralsRatios.map(
+    (ratio, i) => (ratio * marginRequiredUsd) / prices[collateralAssets[i]]
+  )
+  const collateralsReservedValues = collateralsReservedAmounts.map((x, i) => x * prices[collateralAssets[i]])
+
   return {
-    collateralsReservedAmounts: usedCollateralsRatios.map(
-      (x, i) => (x * marginRequiredUsd) / prices[collateralAssets[i]]
-    ),
+    collateralsReservedAmounts,
+    collateralsReservedValues,
     longUsedAmount,
   }
 }
