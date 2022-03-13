@@ -126,7 +126,7 @@ export const testMintRedeemSettleFactory = (getDeployResults: () => TestDeployRe
       `Redeemer balance of oToken is not correct\n Expected: ${totalOtokenRedeemable}\n Got: ${redeemerBalanceAfterMint}`
     )
 
-    // TODO it waits more days then needed when checkpoinDays provided in params
+    // TODO it waits more days than needed when checkpoinDays provided in params
     await waitNDays(expiryDays + 1, network.provider)
     await setStablePrices(oracle, deployer, expiryPrices)
 
@@ -202,14 +202,14 @@ async function createAndAssertOtoken(
     },
     oTokenParams
   )
-  const longOToken = await findOToken(connectTo, oTokenFactory, oTokenParams)
+  const otoken = await findOToken(connectTo, oTokenFactory, oTokenParams)
   assert(
-    longOToken.address !== AddressZero,
+    otoken.address !== AddressZero,
     `Long Otoken with address is zero. Otoken params:
      ${prettyObjectStringify(oTokenParams)}`
   )
 
-  return longOToken
+  return otoken
 }
 
 async function assertRedeem<T extends OTokenParams, C extends TestMintRedeemSettleParamsCheckpoints<T>>(
