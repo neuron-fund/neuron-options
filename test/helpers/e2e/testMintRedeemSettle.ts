@@ -82,16 +82,16 @@ export const testMintRedeemSettleFactory = (getDeployResults: () => TestDeployRe
     await initLongs(controller, marginPool, oTokenFactory, whitelist, longsVaults, vaults, deployer, mockERC20Owners)
 
     // Mint oTokens for vaults with oTokenAmountFormatted specified or 0 checkpoint
-    const initalMintVaults = vaults.filter(x => x.oTokenAmountFormatted)
-    for (const vault of initalMintVaults) {
+    //const initalMintVaults = vaults.filter(x => x.oTokenAmountFormatted)
+    for (const vault of vaults) {
       const mintedAmount = await openVaultAndMint(
         controller,
         marginPool,
-        params.oTokenParams,
-        oToken,
         vault,
-        vault.oTokenAmountFormatted,
+        oToken,
         oTokenFactory,
+        params.oTokenParams,
+        vault.oTokenAmountFormatted,
         vault.longToDeposit,
         vault.longToDepositAmountFormatted,
         mockERC20Owners
@@ -329,11 +329,11 @@ async function initLongs<T extends OTokenParams, C extends TestMintRedeemSettleP
     const mintedOTokenBalance = await openVaultAndMint(
       controller,
       marginPool,
-      longOTokenParams,
-      longOtoken,
       longVault,
-      longVault.oTokenAmountFormatted,
+      longOtoken,
       oTokenFactory,
+      longOTokenParams,
+      longVault.oTokenAmountFormatted,
       undefined,
       undefined,
       mockERC20Owners

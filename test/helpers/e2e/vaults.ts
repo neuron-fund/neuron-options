@@ -65,7 +65,7 @@ export function calculateVaultTotalMint<T extends OTokenParams, C extends TestMi
     }
 
     const collateralAmountsLeft = vault.collateralAmountsFormatted.map(
-      (x, i) => x - (collateralsReservedAmounts[i] || 0) + (vaultCheckpoint?.depositCollateralsAmounts[i] || 0)
+      (x, i) => x - (collateralsReservedAmounts[i] || 0) + (vaultCheckpoint.depositCollateralsAmounts?.[i] || 0)
     ) as unknown as OtokenCollateralsAmounts<T>
     const collateralAmountsWithCheckpoint = collateralAmountsLeft
     //const isValid = collateralAmountsLeft.some(x => x >= 0)
@@ -315,7 +315,7 @@ export async function depositMintInVault<T extends OTokenParams, C extends TestM
 ) {
   const { owner } = vault
   const oTokenAmount = parseUnits(oTokenAmountFormatted.toString(), oTokenDecimals)
-  const vaultId = (await controller.accountVaultCounter(owner.address)).toNumber() + 1
+  const vaultId = (await controller.accountVaultCounter(owner.address)).toNumber()
 
   const depositCollateralAction =
     depositCollateralsAmounts &&
@@ -348,17 +348,17 @@ export async function depositMintInVault<T extends OTokenParams, C extends TestM
 export async function openVaultAndMint<T extends OTokenParams, C extends TestMintRedeemSettleParamsCheckpoints<T>>(
   controller: Controller,
   marginPool: MarginPool,
-  oTokenParamsRaw: T,
-  oToken: Otoken,
   vault: TestMintRedeemSettleParamsVaultOwned<T, C>,
-  oTokenAmountFormatted: number,
+  oToken: Otoken,
   oTokenFactory: OtokenFactory,
+  oTokenParamsRaw?: T,
+  oTokenAmountFormatted?: number,
   longOtoken?: OTokenParams,
   longDepositAmountFormatted?: number,
   mockERC20Owners?: { [key: string]: SignerWithAddress }
 ) {
   const { collateralAmountsFormatted, owner } = vault
-  const oTokenAmount = parseUnits(oTokenAmountFormatted.toString(), oTokenDecimals)
+  const oTokenAmount = oTokenAmountFormatted && parseUnits(oTokenAmountFormatted.toString(), oTokenDecimals)
   const vaultId = (await controller.accountVaultCounter(owner.address)).toNumber() + 1
 
   const openVaultAction = getAction(ActionType.OpenVault, {
@@ -367,15 +367,17 @@ export async function openVaultAndMint<T extends OTokenParams, C extends TestMin
     vaultId,
   })
 
-  const depositCollateralAction = await prepareDepositCollateralAction(
-    vaultId,
-    controller,
-    marginPool,
-    oTokenParamsRaw,
-    owner,
-    collateralAmountsFormatted,
-    mockERC20Owners
-  )
+  const depositCollateralAction =
+    oTokenParamsRaw &&
+    (await prepareDepositCollateralAction(
+      vaultId,
+      controller,
+      marginPool,
+      oTokenParamsRaw,
+      owner,
+      collateralAmountsFormatted,
+      mockERC20Owners
+    ))
 
   const depositLongAction =
     vault.longToDeposit &&
@@ -392,12 +394,13 @@ export async function openVaultAndMint<T extends OTokenParams, C extends TestMin
 
   const mintActions: ActionArgsStruct[] = [
     ...openAndDepositActions,
-    getAction(ActionType.MintShortOption, {
-      owner: owner.address,
-      amount: [oTokenAmount],
-      vaultId,
-      to: owner.address,
-    }),
+    oTokenAmount &&
+      getAction(ActionType.MintShortOption, {
+        owner: owner.address,
+        amount: [oTokenAmount],
+        vaultId,
+        to: owner.address,
+      }),
   ].filter(Boolean)
 
   await controller.connect(owner).operate(mintActions)
