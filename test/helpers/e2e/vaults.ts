@@ -82,8 +82,7 @@ export function calculateVaultTotalMint<T extends OTokenParams, C extends TestMi
 
     longOTokenAmountLeftFormatted = longOTokenAmountLeftFormatted - longUsedAmount
 
-    oTokenParams.collateralAssets.forEach((a, i) => {
-      const collateral = oTokenParams.collateralAssets[i]
+    oTokenParams.collateralAssets.forEach((collateral, i) => {
       collateralsReservedAmounts[i] = (collateralsReservedAmounts[i] || 0) + amountForThisMint[i]
       collateralsReservedValues[i] =
         (collateralsReservedValues[i] || 0) + amountForThisMint[i] * checkpoints[checkpoint].prices[collateral]
