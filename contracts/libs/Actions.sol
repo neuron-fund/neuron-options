@@ -39,6 +39,8 @@ pragma solidity 0.8.9;
  * A31 param "assets" should have 1 element for depositLong action
  * A32 param "amounts" should have 1 element for depositLong action
  * A33 param "amounts" should have 1 element for withdrawLong action
+ * A34 param "amounts" should have 1 element for burnShort action
+ * A35 param "assets" should have 1 element for burnShort action
  */
 library Actions {
     // possible actions that can be performed
@@ -209,6 +211,8 @@ library Actions {
     function _parseBurnArgs(ActionArgs memory _args) internal pure returns (BurnArgs memory) {
         require(_args.actionType == ActionType.BurnShortOption, "A6");
         require(_args.owner != address(0), "A7");
+        require(_args.amounts.length == 1, "A34");
+        require(_args.assets.length == 1, "A35");
 
         return
             BurnArgs({owner: _args.owner, vaultId: _args.vaultId, otoken: _args.assets[0], amount: _args.amounts[0]});
