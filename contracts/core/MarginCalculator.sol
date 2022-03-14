@@ -734,6 +734,15 @@ contract MarginCalculator is Ownable {
         bool isSameLongCollaterals = keccak256(abi.encode(long.collaterals)) ==
             keccak256(abi.encode(short.collaterals));
 
+        console.log("_vault.longOtoken != _vault.shortOtoken", _vault.longOtoken != _vault.shortOtoken);
+        console.log("isSameLongCollaterals", isSameLongCollaterals);
+        console.log("long.underlying == short.underlying", long.underlying == short.underlying);
+        console.log("long.strikeAsset == short.strikeAsset", long.strikeAsset == short.strikeAsset);
+        console.log("long.expiry == short.expiry", long.expiry == short.expiry);
+        console.log("long.strikePrice != short.strikePrice", long.strikePrice != short.strikePrice);
+        console.log("long.isPut == short.isPut", long.isPut == short.isPut);
+
+
         return
             _vault.longOtoken != _vault.shortOtoken &&
             isSameLongCollaterals &&
@@ -1005,7 +1014,9 @@ contract MarginCalculator is Ownable {
         uint256[] memory collateralsAmountsRequired = new uint256[](collateralsLength);
         uint256[] memory collateralsValuesRequired = new uint256[](collateralsLength);
 
-        FPI.FixedPointInt memory collaterizationRatio = valueRequired.div(availableCollateralTotalValue);
+        
+        FPI.FixedPointInt memory collaterizationRatio = valueRequired.isGreaterThan(ZERO) 
+        ? valueRequired.div(availableCollateralTotalValue) : ZERO;
 
         for (uint256 i = 0; i < collateralsLength; i++) {
             if (availableCollateralsValues[i].isGreaterThan(ZERO)) {

@@ -695,7 +695,7 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
         require(whitelist.isWhitelistedOtoken(_args.longOtoken), "C17");
 
-        require(calculator.isMarginableLong(_args.longOtoken, vaults[_args.owner][_args.vaultId]));
+        require(calculator.isMarginableLong(_args.longOtoken, vaults[_args.owner][_args.vaultId]), "not marginable long");
 
         // OtokenInterface otoken = OtokenInterface(_args.longOtoken);
         // require(block.timestamp < otoken.expiryTimestamp(), "C18");
