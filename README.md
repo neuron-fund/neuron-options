@@ -6,6 +6,10 @@
 
 `npx hardhat compile`
 
+## typechain
+
+`npx hardhat typechain`
+
 ## Test
 
 `npx hardhat test`

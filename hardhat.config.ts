@@ -85,25 +85,25 @@ const config: HardhatUserConfig = {
   // TODO typed named accounts
   namedAccounts: {
     deployer: {
-      default: 0,
+      default: 10,
     },
     pricerBot: {
-      default: 1,
+      default: 11,
     },
     user: {
-      default: 2,
+      default: 12,
     },
     redeemer: {
-      default: 3,
+      default: 13,
     },
     random_user: {
-      default: 4,
+      default: 14,
     },
     random_user2: {
-      default: 5,
+      default: 15,
     },
     random_user3: {
-      default: 6,
+      default: 16,
     },
   },
 }

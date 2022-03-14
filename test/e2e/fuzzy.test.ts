@@ -2,10 +2,10 @@ import path from 'path'
 import { prettyObjectStringify } from '../../utils/log'
 import { testDeploy } from '../helpers/fixtures'
 import { generateFuzzyTestParams, getSeed, Seed } from '../helpers/fuzzy'
-import { testMintRedeemSettleFactory } from '../helpers/testMintRedeemSettle'
+import { testMintRedeemSettleFactory } from '../helpers/e2e/testMintRedeemSettle'
 
 //let testFuzzyNumbers
-let numberOfTests = 10
+let numberOfTests = 0
 let seedArray: Seed[] = []
 
 if (process.env.CHANCE_SEED) numberOfTests = 1

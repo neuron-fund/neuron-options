@@ -9,7 +9,7 @@ import "hardhat/console.sol";
 contract ActionTester {
     Actions.OpenVaultArgs private openVaultArgs;
     Actions.DepositCollateralArgs private depositCollateralArgs;
-    Actions.WithdrawArgs private withdrawArgs;
+    Actions.WithdrawCollateralArgs private withdrawCollateralArgs;
     Actions.MintArgs private mintArgs;
     Actions.BurnArgs private burnArgs;
     Actions.RedeemArgs private redeemArgs;
@@ -25,11 +25,11 @@ contract ActionTester {
     }
 
     function testParseWithdrawAction(Actions.ActionArgs memory _args) external {
-        withdrawArgs = Actions._parseWithdrawArgs(_args);
+        withdrawCollateralArgs = Actions._parseWithdrawCollateralArgs(_args);
     }
 
-    function getWithdrawArgs() external view returns (Actions.WithdrawArgs memory) {
-        return withdrawArgs;
+    function getWithdrawArgs() external view returns (Actions.WithdrawCollateralArgs memory) {
+        return withdrawCollateralArgs;
     }
 
     function testParseOpenVaultAction(Actions.ActionArgs memory _args) external {

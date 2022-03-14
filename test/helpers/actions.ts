@@ -86,7 +86,6 @@ export const MintShortOptionArgsMappings = {
   owner: 'owner',
   vaultId: 'vaultId',
   to: 'secondAddress',
-  otoken: 'assets',
   amount: 'amounts',
 } as const
 
