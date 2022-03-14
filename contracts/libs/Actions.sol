@@ -38,6 +38,7 @@ pragma solidity 0.8.9;
  * A30 param "amounts" should be same length as param "assets"
  * A31 param "assets" should have 1 element for depositLong action
  * A32 param "amounts" should have 1 element for depositLong action
+ * A33 param "amounts" should have 1 element for withdrawLong action
  */
 library Actions {
     // possible actions that can be performed
@@ -67,9 +68,6 @@ library Actions {
         uint256 vaultId;
         // amount of asset that is to be transfered
         uint256[] amounts;
-        // each vault can hold multiple short / long / collateral assets but we are restricting the scope to only 1 of each in this version
-        // in future versions this would be the index of the short / long / collateral asset that needs to be modified
-        uint256 index;
         // any other data that needs to be passed in for arbitrary function calls
         bytes data;
     }
@@ -90,6 +88,7 @@ library Actions {
         address owner;
         // index of the vault from which the oToken will be burned
         uint256 vaultId;
+        // TODO otoken param is not required
         // oToken that is to be burned
         address otoken;
         // amount of oTokens that is to be burned
@@ -138,20 +137,26 @@ library Actions {
         uint256 amount;
     }
 
-    struct WithdrawArgs {
+    struct WithdrawLongArgs {
         // address of the account owner
         address owner;
         // index of the vault from which the asset will be withdrawn
         uint256 vaultId;
         // address to which we transfer the asset
         address to;
-        // asset that is to be withdrawn
-        address asset;
-        // each vault can hold multiple short / long / collateral assets but we are restricting the scope to only 1 of each in this version
-        // in future versions this would be the index of the short / long / collateral asset that needs to be modified
-        uint256 index;
-        // amount of asset that is to be withdrawn
+        // amounts of long that is to be withdrawn
         uint256 amount;
+    }
+
+    struct WithdrawCollateralArgs {
+        // address of the account owner
+        address owner;
+        // index of the vault from which the asset will be withdrawn
+        uint256 vaultId;
+        // address to which we transfer the asset
+        address to;
+        // amounts of collateral assets that is to be withdrawn
+        uint256[] amounts;
     }
 
     struct SettleVaultArgs {
@@ -259,22 +264,41 @@ library Actions {
      * @param _args general action arguments structure
      * @return arguments for a withdraw action
      */
-    function _parseWithdrawArgs(ActionArgs memory _args) internal pure returns (WithdrawArgs memory) {
-        require(
-            (_args.actionType == ActionType.WithdrawLongOption) || (_args.actionType == ActionType.WithdrawCollateral),
-            "A10"
-        );
+    function _parseWithdrawLongArgs(ActionArgs memory _args) internal pure returns (WithdrawLongArgs memory) {
+        require((_args.actionType == ActionType.WithdrawLongOption), "A10");
+        require(_args.owner != address(0), "A11");
+        require(_args.secondAddress != address(0), "A12");
+        require(_args.amounts.length == 1, "A33");
+
+        return
+            WithdrawLongArgs({
+                owner: _args.owner,
+                vaultId: _args.vaultId,
+                to: _args.secondAddress,
+                amount: _args.amounts[0]
+            });
+    }
+
+    /**
+     * @notice parses the passed in action arguments to get the arguments for a withdraw action
+     * @param _args general action arguments structure
+     * @return arguments for a withdraw action
+     */
+    function _parseWithdrawCollateralArgs(ActionArgs memory _args)
+        internal
+        pure
+        returns (WithdrawCollateralArgs memory)
+    {
+        require((_args.actionType == ActionType.WithdrawCollateral), "A10");
         require(_args.owner != address(0), "A11");
         require(_args.secondAddress != address(0), "A12");
 
         return
-            WithdrawArgs({
+            WithdrawCollateralArgs({
                 owner: _args.owner,
                 vaultId: _args.vaultId,
                 to: _args.secondAddress,
-                asset: _args.assets[0],
-                index: _args.index,
-                amount: _args.amounts[0]
+                amounts: _args.amounts
             });
     }
 

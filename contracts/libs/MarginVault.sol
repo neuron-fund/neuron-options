@@ -26,6 +26,7 @@ import "hardhat/console.sol";
  * V11: _collateralAssets and _amounts length mismatch
  * V12: _collateralAssets and vault.collateralAssets length mismatch
  * V13: _amount for withdrawing long is exceeding unused long amount in the vault
+ * V14: amounts for withdrawing collaterals should be same length as collateral assets of vault
  */
 
 /**
@@ -217,23 +218,20 @@ library MarginVault {
     /**
      * @dev decrease the collateral balance in a vault
      * @param _vault vault to remove collateral from
-     * @param _collateralAsset address of the _collateralAsset being removed from the user's vault
-     * @param _amount number of _collateralAssets being removed from the user's vault
-     * @param _index index of _collateralAssets in the user's vault.collateralAssets array
+     * @param _amounts number of _collateralAssets being removed from the user's vault
      */
-    function removeCollateral(
-        Vault storage _vault,
-        address _collateralAsset,
-        uint256 _amount,
-        uint256 _index
-    ) external {
-        // check that the removed collateral exists in the vault at the specified index
-        require(_index < _vault.collateralAssets.length, "V8");
-        require(_vault.collateralAssets[_index] == _collateralAsset, "V9");
+    function removeCollateral(Vault storage _vault, uint256[] memory _amounts) external {
+        address[] memory collateralAssets = _vault.collateralAssets;
+        require(_amounts.length == collateralAssets.length, "V14");
 
-        uint256 newCollateralAmount = _vault.collateralAmounts[_index].sub(_amount);
-        _vault.availableCollateralAmounts[_index] = _vault.availableCollateralAmounts[_index].sub(_amount);
-        _vault.collateralAmounts[_index] = newCollateralAmount;
+        uint256[] memory availableCollateralAmounts = _vault.availableCollateralAmounts;
+        uint256[] memory collateralAmounts = _vault.collateralAmounts;
+        for (uint256 i = 0; i < collateralAssets.length; i++) {
+            collateralAmounts[i] = _vault.collateralAmounts[i].sub(_amounts[i]);
+            availableCollateralAmounts[i] = availableCollateralAmounts[i].sub(_amounts[i]);
+        }
+        _vault.collateralAmounts = collateralAmounts;
+        _vault.availableCollateralAmounts = availableCollateralAmounts;
     }
 
     function useCollateralBulk(
