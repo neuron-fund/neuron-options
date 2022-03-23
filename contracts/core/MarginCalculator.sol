@@ -326,6 +326,12 @@ contract MarginCalculator is Ownable {
         // FPI.FixedPointInt memory strikePriceFpi = FPI.fromScaledUint(oToenDetails.strikePrice, BASE);
         // Amounts of collateral to transfer for 1 oToken
         collateralsPayoutRate = new uint256[](oTokenDetails.collaterals.length);
+
+        // In case of all oToken amount was burnt
+        if (oTokenTotalCollateralValue == 0) {
+            return collateralsPayoutRate;
+        }
+
         FPI.FixedPointInt memory collateraizedTotalAmount = FPI.fromScaledUint(
             oTokenDetails.collaterizedTotalAmount,
             BASE
@@ -1014,9 +1020,9 @@ contract MarginCalculator is Ownable {
         uint256[] memory collateralsAmountsRequired = new uint256[](collateralsLength);
         uint256[] memory collateralsValuesRequired = new uint256[](collateralsLength);
 
-        
-        FPI.FixedPointInt memory collaterizationRatio = valueRequired.isGreaterThan(ZERO) 
-        ? valueRequired.div(availableCollateralTotalValue) : ZERO;
+        FPI.FixedPointInt memory collaterizationRatio = valueRequired.isGreaterThan(ZERO)
+            ? valueRequired.div(availableCollateralTotalValue)
+            : ZERO;
 
         for (uint256 i = 0; i < collateralsLength; i++) {
             if (availableCollateralsValues[i].isGreaterThan(ZERO)) {
