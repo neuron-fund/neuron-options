@@ -8,7 +8,7 @@ import {
 import { artifacts, contract, web3 } from 'hardhat'
 import { assert } from 'chai'
 
-import { createValidExpiry, createTokenAmount } from './helpers/utils'
+import { createValidExpiry, createTokenAmount } from '../helpers/utils'
 import { expectRevert, expectEvent, time } from '@openzeppelin/test-helpers'
 import { BigNumber } from '@ethersproject/bignumber/lib/bignumber'
 

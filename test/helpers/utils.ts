@@ -1,6 +1,6 @@
-import { MockERC20 as MockERC20Instance } from '../../../typechain-types'
+import { MockERC20 as MockERC20Instance } from '../../typechain-types'
 
-import { VaultStruct } from '../../../typechain-types/CalculatorTester'
+import { VaultStruct } from '../../typechain-types/CalculatorTester'
 
 //import util from '@0x/protocol-utils'
 import { BigNumber } from 'ethers'
@@ -55,11 +55,11 @@ export const createVault = (
     collateralAssets: collateralAssets ? collateralAssets : [],
     shortAmount: shortAmount !== undefined ? shortAmount : '0',
     longAmount: longAmount !== undefined ? longAmount : '0',
-    collateralAmounts: collateralAmounts ? collateralAmounts : [],
-    usedCollateralAmounts: [],
-    unusedCollateralAmounts: [],
-    reservedCollateralValues: [],
     usedLongAmount: 0,
+    collateralAmounts: collateralAmounts ? collateralAmounts : [],
+    reservedCollateralAmounts: [],
+    usedCollateralValues: [],
+    availableCollateralAmounts: []    
   }
 }
 

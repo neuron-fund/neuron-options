@@ -10,7 +10,7 @@ import { artifacts, contract, web3 } from 'hardhat'
 import { BigNumber } from 'ethers'
 import { assert } from 'chai'
 
-import { createTokenAmount } from './helpers/utils'
+import { createTokenAmount } from '../helpers/utils'
 
 import { expectRevert, expectEvent, time } from '@openzeppelin/test-helpers'
 

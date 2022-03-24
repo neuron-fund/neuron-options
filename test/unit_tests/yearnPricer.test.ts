@@ -6,7 +6,7 @@ import {
   YearnPricer as YearnPricerInstance,
 } from '../../typechain-types' 
 
-import { underlyingPriceToYTokenPrice, createScaledNumber } from './helpers/utils'
+import { underlyingPriceToYTokenPrice, createScaledNumber } from '../helpers/utils'
 
 import { artifacts, contract } from 'hardhat'
 import { assert } from 'chai'

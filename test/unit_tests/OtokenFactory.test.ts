@@ -9,7 +9,7 @@ import {
 import { artifacts, contract, web3 } from 'hardhat'
 import { assert, expect} from 'chai'
 
-import { createValidExpiry, createTokenAmount } from './helpers/utils'
+import { createValidExpiry, createTokenAmount } from '../helpers/utils'
 import { expectRevert, expectEvent, time } from '@openzeppelin/test-helpers'
 import { BigNumber } from '@ethersproject/bignumber/lib/bignumber'
 
@@ -179,7 +179,7 @@ contract('OTokenFactory', ([user1, user2, controller]) => {
         otokenFactory.createOtoken(weth.address, usdc.address, [usdc.address], 0, expiry, isPut, {
           from: user1,
         }),
-        "OtokenFactory: Can't create a $0 strike put option",
+        "OtokenFactory: Can't create a $0 strike option",
       )
     })
 

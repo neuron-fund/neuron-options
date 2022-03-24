@@ -20,7 +20,7 @@ import {
 
 import { ActionArgsStruct } from '../../typechain-types/Controller'
 
-import { createScaledNumber, createTokenAmount, underlyingPriceToCtokenPrice, resp2bn } from './helpers/utils'
+import { createScaledNumber, createTokenAmount, underlyingPriceToCtokenPrice, resp2bn } from '../helpers/utils'
 import { artifacts, contract, web3 } from 'hardhat'
 import { expect, assert } from 'chai'
 
@@ -192,13 +192,12 @@ contract(
           owner: seller, 
           vaultId: vaultId,
           to: seller,
-          otoken: [longCall.address],
           amount: [longsToMint]
         })
       ]
 
       await controllerProxy.operate(actionArgs, { from: seller })
-      console.log('seller longs', (await longCall.balanceOf(seller)).toString())
+      // console.log('seller longs', (await longCall.balanceOf(seller)).toString())
       
 
     })
@@ -251,7 +250,6 @@ contract(
             owner: user, 
             vaultId: vaultId,
             to: user,
-            otoken: [shortCall.address],
             amount: [0]
           })
         ]
@@ -310,7 +308,6 @@ contract(
             owner: user, 
             vaultId: vaultId,
             to: user,
-            otoken: [shortCall.address],
             amount: [0]
           })
         ]
@@ -322,7 +319,7 @@ contract(
         // const mintedShorts = await shortCall.balanceOf(user)
 
       })
-      it('should revert if long and short token has different has different expiry', async () => {
+      it('should revert if long and short token has different expiry', async () => {
         const shortCall: MockOtokenInstance = await MockOtoken.new()
         const vaultCounter = resp2bn(await controllerProxy.accountVaultCounter(user))
         const vaultId = vaultCounter.toNumber() + 1
@@ -371,7 +368,6 @@ contract(
             owner: user, 
             vaultId: vaultId,
             to: user,
-            otoken: [shortCall.address],
             amount: [0]
           })
         ]
@@ -393,7 +389,7 @@ contract(
         const collaterals = [weth2.address,]
         await whitelist.whitelistCollaterals(collaterals)
 
-        const expiryTime = BigNumber.from(60 * 60 * 24) // after 1 day 
+        //const expiryTime = BigNumber.from(60 * 60 * 24) // after 1 day 
 
         // init short call
         await shortCall.init(
@@ -432,7 +428,6 @@ contract(
             owner: user, 
             vaultId: vaultId,
             to: user,
-            otoken: [shortCall.address],
             amount: [shortsToMint]
           })
         ]
@@ -446,12 +441,79 @@ contract(
         assert.isTrue(mintedShorts.toString() == shortsToMint.toString());
       })
       it('should free long when burn short collaterated by this long', async () => {
-        const shortCall: MockOtokenInstance = await MockOtoken.new()
         const vaultCounter = resp2bn(await controllerProxy.accountVaultCounter(user))
         const vaultId = vaultCounter.toNumber() // vault from previous step
 
+        const currenVault = await controllerProxy.vaults(user, vaultCounter)
+
+        const shortCall: MockOtokenInstance = await MockOtoken.at(currenVault.shortOtoken)
+        const mintedShorts = await shortCall.balanceOf(user)
+        const shortsToBurn = Number(mintedShorts.toString())/2
+
         const actionArgs = [
           getAction(ActionType.BurnShortOption, {
+            owner: user,
+            vaultId: vaultId,
+            otoken: [shortCall.address],
+            amount: [shortsToBurn],
+          })
+        ]
+
+
+        //console.log((await longCall.balanceOf(user)).toString())
+
+        await controllerProxy.operate(actionArgs, { from: user })
+        const afterBurnVault = await controllerProxy.vaults(user, vaultCounter)
+
+
+        //console.log(currenVault.longAmount.toString(), currenVault.usedLongAmount.toString())
+        //console.log(afterBurnVault.longAmount.toString(), afterBurnVault.usedLongAmount.toString())
+        //console.log((await longCall.balanceOf(user)).toString())
+
+        const proportionLongs = Number(currenVault.usedLongAmount.toString())/Number(afterBurnVault.usedLongAmount.toString())
+        const proportionShorts = Number(mintedShorts.toString())/Number(shortsToBurn.toString())
+
+        assert.strictEqual(proportionLongs, proportionShorts)
+      })
+      it('should free long and collaterals when burn short collaterated by this long and collateral tokens', async () => {
+        const shortCall: MockOtokenInstance = await MockOtoken.new()
+        const vaultCounter = resp2bn(await controllerProxy.accountVaultCounter(user))
+        const vaultId = vaultCounter.toNumber() + 1 // vault from previous step
+
+        const strikeShort = createTokenAmount(120)
+
+        const collaterals = [weth2.address,]
+        
+        // await whitelist.whitelistCollaterals(collaterals)
+
+        const longsToDeposit = createTokenAmount(5)
+        const shortsToMint = createTokenAmount(10)
+        const shortsToBurn1 = createTokenAmount(5)
+        const shortsToBurn2 = createTokenAmount(5)       
+
+
+        const collateralAmounts = [createTokenAmount(1000, wethDecimals)]
+        await weth2.approve(marginPool.address, collateralAmounts[0], { from: user })
+
+        await whitelist.whitelistOtoken(shortCall.address, { from: owner })
+        assert.isTrue(await whitelist.isWhitelistedOtoken(shortCall.address))
+        await longCall.transfer(user, longsToDeposit, {'from': seller})
+        await longCall.approve(marginPool.address, longsToDeposit, { from: user })
+
+
+        // init short call
+        await shortCall.init(
+          addressBook.address,
+          weth.address,
+          usdc.address,
+          collaterals,
+          strikeShort,
+          expiry,
+          false,
+        )
+
+        const actionArgs = [
+          getAction(ActionType.OpenVault, {
             owner: user,
             shortOtoken: shortCall.address,
             vaultId: vaultId,
@@ -461,30 +523,170 @@ contract(
             vaultId: vaultId,
             from: user,
             longOtoken: [longCall.address],
-            amount: [shortsToMint],
+            amount: [longsToDeposit],
+          }),
+          getAction(ActionType.DepositCollateral, {
+            owner: user,
+            vaultId: vaultId,
+            from: user,
+            assets: collaterals,
+            amounts: collateralAmounts
           }),
           getAction(ActionType.MintShortOption, {
             owner: user, 
             vaultId: vaultId,
             to: user,
-            otoken: [shortCall.address],
             amount: [shortsToMint]
           })
         ]
-
-        // await controllerProxy.operate(actionArgs, { from: user })
-
         await controllerProxy.operate(actionArgs, { from: user })
+        const [beforeBurnVault,]  = await controllerProxy.getVaultWithDetails(user, vaultId)
 
-        const mintedShorts = await shortCall.balanceOf(user)
 
-        assert.isTrue(mintedShorts.toString() == shortsToMint.toString());
-      })
-      
-    })
+        // first burn
+        await controllerProxy.operate(
+          [
+            getAction(ActionType.BurnShortOption, {
+              owner: user,
+              vaultId: vaultId,
+              otoken: [shortCall.address],
+              amount: [shortsToBurn1],
+            })
+          ],
+          { from: user }
+        )
+        const [afterFirstBurnVault,] = await controllerProxy.getVaultWithDetails(user, vaultId)
 
+        // should free collateral first 
+        assert.strictEqual(beforeBurnVault.usedLongAmount.toString(), afterFirstBurnVault.usedLongAmount.toString())
+        assert.strictEqual(beforeBurnVault.reservedCollateralAmounts[0].toString(), createTokenAmount(5, wethDecimals))
+        assert.isTrue(afterFirstBurnVault.reservedCollateralAmounts[0].toString() == '0')
+
+        // second burn
+        await controllerProxy.operate(
+          [
+            getAction(ActionType.BurnShortOption, {
+              owner: user,
+              vaultId: vaultId,
+              otoken: [shortCall.address],
+              amount: [shortsToBurn2],
+            })
+          ],
+          { from: user }
+        )
+        const [afterSecondBurnVault,] = await controllerProxy.getVaultWithDetails(user, vaultId)
+        
+
+        // should free long if no collaterals
+        assert.isTrue(afterSecondBurnVault.usedLongAmount.toString()=='0')
+      })    
+      it('should free long and collaterals when burn short if long strike < short strike', async () => {
+        const shortCall: MockOtokenInstance = await MockOtoken.new()
+        const vaultCounter = resp2bn(await controllerProxy.accountVaultCounter(user))
+        const vaultId = vaultCounter.toNumber() + 1 // vault from previous step
+
+        const strikeShort = createTokenAmount(90)
+
+        const collaterals = [weth2.address,]
+        
+        // await whitelist.whitelistCollaterals(collaterals)
+
+        const longsToDeposit = createTokenAmount(5)
+        const shortsToMint = createTokenAmount(10)
+        const shortsToBurn1 = createTokenAmount(5)
+        const shortsToBurn2 = createTokenAmount(5)       
+
+
+        const collateralAmounts = [createTokenAmount(1000, wethDecimals)]
+        await weth2.approve(marginPool.address, collateralAmounts[0], { from: user })
+
+        await whitelist.whitelistOtoken(shortCall.address, { from: owner })
+        assert.isTrue(await whitelist.isWhitelistedOtoken(shortCall.address))
+        await longCall.transfer(user, longsToDeposit, {'from': seller})
+        await longCall.approve(marginPool.address, longsToDeposit, { from: user })
+
+
+        // init short call
+        await shortCall.init(
+          addressBook.address,
+          weth.address,
+          usdc.address,
+          collaterals,
+          strikeShort,
+          expiry,
+          false,
+        )
+
+        const actionArgs = [
+          getAction(ActionType.OpenVault, {
+            owner: user,
+            shortOtoken: shortCall.address,
+            vaultId: vaultId,
+          }),
+          getAction(ActionType.DepositLongOption, {
+            owner: user,
+            vaultId: vaultId,
+            from: user,
+            longOtoken: [longCall.address],
+            amount: [longsToDeposit],
+          }),
+          getAction(ActionType.DepositCollateral, {
+            owner: user,
+            vaultId: vaultId,
+            from: user,
+            assets: collaterals,
+            amounts: collateralAmounts
+          }),
+          getAction(ActionType.MintShortOption, {
+            owner: user, 
+            vaultId: vaultId,
+            to: user,
+            amount: [shortsToMint]
+          })
+        ]
+        await controllerProxy.operate(actionArgs, { from: user })
+        const [beforeBurnVault,]  = await controllerProxy.getVaultWithDetails(user, vaultId)
+
+
+        // first burn
+        await controllerProxy.operate(
+          [
+            getAction(ActionType.BurnShortOption, {
+              owner: user,
+              vaultId: vaultId,
+              otoken: [shortCall.address],
+              amount: [shortsToBurn1],
+            })
+          ],
+          { from: user }
+        )
+        const [afterFirstBurnVault,] = await controllerProxy.getVaultWithDetails(user, vaultId)
+
+        // should free collateral first 
+        assert.strictEqual(beforeBurnVault.usedLongAmount.toString(), afterFirstBurnVault.usedLongAmount.toString())
+        assert.strictEqual(beforeBurnVault.reservedCollateralAmounts[0].toString(), createTokenAmount(5, wethDecimals))
+        assert.isTrue(afterFirstBurnVault.reservedCollateralAmounts[0].toString() == '0')
+
+        // second burn
+        await controllerProxy.operate(
+          [
+            getAction(ActionType.BurnShortOption, {
+              owner: user,
+              vaultId: vaultId,
+              otoken: [shortCall.address],
+              amount: [shortsToBurn2],
+            })
+          ],
+          { from: user }
+        )
+        const [afterSecondBurnVault,] = await controllerProxy.getVaultWithDetails(user, vaultId)
+        
+
+        // should free long if no collaterals
+        assert.isTrue(afterSecondBurnVault.usedLongAmount.toString()=='0')
+      })    
+    })    
     describe('Redeem', () => {
-      /*
       const expiryTime = BigNumber.from(60 * 60 * 24) // after 1 day 
       it('should redeem from undercollaretized call', async () => {
         // Call
@@ -544,7 +746,6 @@ contract(
             owner: user, 
             vaultId: vaultId,
             to: user,
-            otoken: [shortCall.address],
             amount: [shortsToMint]
           })
         ]
@@ -577,11 +778,6 @@ contract(
         ]
 
         await controllerProxy.operate(actionArgsRedeem, { from: redeemer })
-
-
-
-
-
 
       })
       it('should redeem from undercollaretized put', async () => {
@@ -643,7 +839,6 @@ contract(
             owner: user, 
             vaultId: vaultId,
             to: user,
-            otoken: [shortPut.address],
             amount: [shortsToMint]
           })
         ]
@@ -731,7 +926,6 @@ contract(
             owner: user, 
             vaultId: vaultId,
             to: user,
-            otoken: [shortCall.address],
             amount: [shortsToMint]
           })
         ]
@@ -740,11 +934,8 @@ contract(
 
         const mintedShorts = await shortCall.balanceOf(user)
 
-        console.log(mintedShorts.toString())
+        assert.strictEqual(mintedShorts.toString(),'12300000000')
       })
-
-
-      */
     })
   }
 

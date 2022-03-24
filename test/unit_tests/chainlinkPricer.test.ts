@@ -14,7 +14,7 @@ const MockOracle = artifacts.require('MockOracle.sol')
 const MockChainlinkAggregator = artifacts.require('MockChainlinkAggregator.sol')
 const MockERC20 = artifacts.require('MockERC20.sol')
 
-import { createTokenAmount } from './helpers/utils'
+import { createTokenAmount } from '../helpers/utils'
 
 // address(0)
 const ZERO_ADDR = '0x0000000000000000000000000000000000000000'

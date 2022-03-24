@@ -70,13 +70,11 @@ contract MarginVaultTester {
         vault[msg.sender][_vaultIndex].addCollaterals(_collateralAssets, _amounts);
     }
 
-    // TODO rewrite
-    // function testRemoveCollateral(
-    //     uint256 _vaultIndex,
-    //     address _collateralAsset,
-    //     uint256 _amount,
-    //     uint256 _index
-    // ) external {
-    //     vault[msg.sender][_vaultIndex].removeCollateral(_collateralAsset, _amount, _index);
-    // }
+    
+    function testRemoveCollateral(
+        uint256 _vaultIndex,
+        uint256[] calldata _amounts
+    ) external {
+        vault[msg.sender][_vaultIndex].removeCollateral(_amounts);
+    }
 }

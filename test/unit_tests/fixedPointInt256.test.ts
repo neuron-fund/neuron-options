@@ -2,7 +2,7 @@ import {
   FixedPointInt256Tester as FixedPointInt256TesterInstance
 } from '../../typechain-types' 
 
-import { createScaledNumber, createTokenAmount, underlyingPriceToCtokenPrice } from './helpers/utils'
+import { createScaledNumber, createTokenAmount, underlyingPriceToCtokenPrice } from '../helpers/utils'
 
 import { artifacts, contract, web3 } from 'hardhat'
 import { expect, assert } from 'chai'

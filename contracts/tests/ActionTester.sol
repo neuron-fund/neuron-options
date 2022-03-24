@@ -10,6 +10,7 @@ contract ActionTester {
     Actions.OpenVaultArgs private openVaultArgs;
     Actions.DepositCollateralArgs private depositCollateralArgs;
     Actions.WithdrawCollateralArgs private withdrawCollateralArgs;
+    Actions.WithdrawLongArgs private withdrawLongArgs;
     Actions.MintArgs private mintArgs;
     Actions.BurnArgs private burnArgs;
     Actions.RedeemArgs private redeemArgs;
@@ -26,6 +27,10 @@ contract ActionTester {
 
     function testParseWithdrawAction(Actions.ActionArgs memory _args) external {
         withdrawCollateralArgs = Actions._parseWithdrawCollateralArgs(_args);
+    }
+
+    function testParseWithdrawLong(Actions.ActionArgs memory _args) external {
+        withdrawLongArgs = Actions._parseWithdrawLongArgs(_args);
     }
 
     function getWithdrawArgs() external view returns (Actions.WithdrawCollateralArgs memory) {

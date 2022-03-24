@@ -12,7 +12,7 @@ import { artifacts, contract } from 'hardhat'
 import { expect, assert } from 'chai'
 
 
-import { createScaledNumber, createTokenAmount, underlyingPriceToCtokenPrice } from './helpers/utils'
+import { createScaledNumber, createTokenAmount, underlyingPriceToCtokenPrice } from '../helpers/utils'
 import { BigNumber } from 'ethers'
 
 

@@ -6,7 +6,7 @@ import {
   WstethPricer as WstethPricerInstance,
 } from '../../typechain-types' 
 
-import { createScaledNumber, underlyingPriceToYTokenPrice } from './helpers/utils'
+import { createScaledNumber, underlyingPriceToYTokenPrice } from '../helpers/utils'
 
 import { artifacts, contract } from 'hardhat'
 import { assert } from 'chai'
