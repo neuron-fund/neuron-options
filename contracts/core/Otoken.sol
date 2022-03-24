@@ -114,15 +114,14 @@ contract Otoken is ERC20PermitUpgradeable {
             uint256
         )
     {
-        
         uint256 collateralAssetsLength = collateralAssets.length;
-        uint[] memory collateralsDecimals = new uint[](collateralAssetsLength);
+        uint256[] memory collateralsDecimals = new uint256[](collateralAssetsLength);
 
         for (uint256 i = 0; i < collateralAssetsLength; i++) {
             collateralsDecimals[i] = ERC20Upgradeable(collateralAssets[i]).decimals();
         }
 
-        return(
+        return (
             collateralAssets,
             collateralsAmounts,
             collateralsValues,
@@ -163,7 +162,7 @@ contract Otoken is ERC20PermitUpgradeable {
         uint256[] calldata collateralsValuesForMint
     ) external {
         require(msg.sender == controller, "Otoken: Only Controller can mint Otokens");
-        
+
         uint256 collateralAssetsLength = collateralAssets.length;
 
         require(
@@ -174,10 +173,14 @@ contract Otoken is ERC20PermitUpgradeable {
             collateralAssetsLength == collateralsAmountsForMint.length,
             "Otoken: collateralAssets and collateralsAmountsForMint must be of same length"
         );
+        uint256[] memory _collateralsAmounts = collateralsAmounts;
+        uint256[] memory _collateralsValues = collateralsValues;
         for (uint256 i = 0; i < collateralAssetsLength; i++) {
-            collateralsValues[i] = collateralsValuesForMint[i].add(collateralsValues[i]);
-            collateralsAmounts[i] = collateralsAmounts[i].add(collateralsAmountsForMint[i]);
+            _collateralsValues[i] = collateralsValuesForMint[i].add(_collateralsValues[i]);
+            _collateralsAmounts[i] = _collateralsAmounts[i].add(collateralsAmountsForMint[i]);
         }
+        collateralsValues = _collateralsValues;
+        collateralsAmounts = _collateralsAmounts;
         collaterizedTotalAmount = collaterizedTotalAmount.add(amount);
         _mint(account, amount);
     }

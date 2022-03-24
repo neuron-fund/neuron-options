@@ -1,6 +1,7 @@
 TODO isMarginableLong requires in \_depositLong, for restriction adding longs which do not comply with short
 TODO withdraw bulk collaterals
 TODO test depositCollateral after one mint to vault and mint again
+TODO close vault with zero short amount
 
 DISCUSS restrict ratios for collateral to restrict minting a lot of oTokens for non liquid assets
 TODO Restrict by absolute figures in collateral value for all minted options, restrictions for minting oTokens on whitelist level
