@@ -6,12 +6,12 @@
   "scripts": {
     "start": "npx hardhat node --hostname 0.0.0.0",
     "test": "FORK_BLOCK_NUMBER=13719189 npx hardhat test",
-    "unit-tests": "FORK_BLOCK_NUMBER=13719189 npx hardhat test ./test/unit_tests/*",
-    "local-unit-tests": "npx hardhat test --network localhost ./test/unit_tests/*",
+    "unit-tests": "npx hardhat test ./test/unit_tests/* --config ./hardhat_test.config.ts",
     "start-local-fork": "FORK_BLOCK_NUMBER=13719189 npx hardhat node --no-deploy",
     "start-local": "npx hardhat node --config ./hardhat_test.config.ts",
     "size-contracts": "OPTIMIZER=200 npx hardhat compile --quiet --no-typechain && npx hardhat size-contracts",
-    "watch-size": "watch 'npm run size-contracts' ./contracts"
+    "watch-size": "watch 'npm run size-contracts' ./contracts",
+    "prepare": "husky install"
   },
   "author": "",
   "license": "ISC",
@@ -37,6 +37,7 @@
     "hardhat-deploy-ethers": "*",
     "hardhat-gas-reporter": "^1.0.6",
     "hardhat-typechain": "^0.3.5",
+    "husky": "^7.0.4",
     "ts-generator": "^0.1.1",
     "ts-morph": "^13.0.2",
     "ts-node": "^10.4.0",

@@ -665,6 +665,7 @@ contract(
         // should free collateral first 
         assert.strictEqual(beforeBurnVault.usedLongAmount.toString(), afterFirstBurnVault.usedLongAmount.toString())
         assert.strictEqual(beforeBurnVault.reservedCollateralAmounts[0].toString(), createTokenAmount(5, wethDecimals))
+        afterFirstBurnVault.reservedCollateralAmounts[0].toString()
         assert.isTrue(afterFirstBurnVault.reservedCollateralAmounts[0].toString() == '0')
 
         // second burn
