@@ -607,7 +607,7 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
 
       await expect(actionTester.testParseBurnAction(data)).to.be.revertedWith('A7')
     })
-    it('should be able to parse arguments for a burn short action', async () => {
+    xit('should be able to parse arguments for a burn short action', async () => {
       // const {deployer: owner, random_user: random} = await getNamedAccounts();
       const actionType = ActionType.BurnShortOption
       const assets = [ZERO_ADDR, ZERO_ADDR] 
@@ -636,7 +636,7 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
       assert.equal(burnArgs.vaultId.toString(), vaultId)
       //assert.equal(burnArgs.index.toString(), index)
     })
-    it('should be able to parse arguments for a burn short action', async () => {
+    xit('should be able to parse arguments for a burn short action', async () => {
       // const {deployer: owner, random_user: random} = await getNamedAccounts();
       const actionType = ActionType.BurnShortOption
       const assets = [ZERO_ADDR, ZERO_ADDR] 
@@ -703,7 +703,7 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
         owner: random_user,
         secondAddress: random_user2,
         data: random_user3,
-        assets: [ZERO_ADDR, ZERO_ADDR], 
+        assets: [ZERO_ADDR, ZERO_ADDR],
         vaultId: 0,
         amounts: [0, 0],
         index: 0,

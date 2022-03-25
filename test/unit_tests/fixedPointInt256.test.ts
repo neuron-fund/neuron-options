@@ -124,7 +124,7 @@ contract('FixedPointInt256 lib', () => {
       const c = { value: createTokenAmount(3, 40) }
       // this should overflow because 6e+76 > Max Int
       // await expectRevert(lib.testMul(b, c), 'SignedSafeMath: multiplication overflow')
-      await expectRevert(lib.testMul(b, c), 'Error: VM Exception while processing transaction: reverted with panic code 0x11 (Arithmetic operation underflowed or overflowed outside of an unchecked block)')
+      await expectRevert(lib.testMul(b, c), 'VM Exception while processing transaction: reverted with panic code 0x11 (Arithmetic operation underflowed or overflowed outside of an unchecked block)')
 
     })
   })
