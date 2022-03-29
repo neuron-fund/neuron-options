@@ -580,7 +580,7 @@ contract(
         // should free long if no collaterals
         assert.isTrue(afterSecondBurnVault.usedLongAmount.toString()=='0')
       })    
-      xit('should free long and collaterals when burn short if long strike < short strike', async () => {
+      it('should free long and collaterals when burn short if long strike < short strike', async () => {
         const shortCall: MockOtokenInstance = await MockOtoken.new()
         const vaultCounter = resp2bn(await controllerProxy.accountVaultCounter(user))
         const vaultId = vaultCounter.toNumber() + 1 // vault from previous step
@@ -665,8 +665,9 @@ contract(
         // should free collateral first 
         assert.strictEqual(beforeBurnVault.usedLongAmount.toString(), afterFirstBurnVault.usedLongAmount.toString())
         assert.strictEqual(beforeBurnVault.reservedCollateralAmounts[0].toString(), createTokenAmount(5, wethDecimals))
-        afterFirstBurnVault.reservedCollateralAmounts[0].toString()
-        assert.isTrue(afterFirstBurnVault.reservedCollateralAmounts[0].toString() == '0')
+        assert.strictEqual(afterFirstBurnVault.reservedCollateralAmounts[0].toString(), createTokenAmount(5, wethDecimals-1))
+        assert.strictEqual(afterFirstBurnVault.usedLongAmount.toString(), createTokenAmount(5))
+        //assert.strictEqual(afterFirstBurnVault.reservedCollateralAmounts[0].toString(), '0')
 
         // second burn
         await controllerProxy.operate(
@@ -685,6 +686,7 @@ contract(
 
         // should free long if no collaterals
         assert.isTrue(afterSecondBurnVault.usedLongAmount.toString()=='0')
+        assert.isTrue(afterSecondBurnVault.reservedCollateralAmounts[0].toString()=='0')
       })    
     })    
     describe('Redeem', () => {
