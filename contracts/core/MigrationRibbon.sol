@@ -57,6 +57,8 @@ contract MigrationRibbon is UUPSUpgradeable, OwnableUpgradeable {
 
     error RoundNotCompleted();
 
+    error FundsLastRoundNotWithdrawn();
+
     // ----------------------------------------------------------
     // -----------------------  GETTERS  ------------------------
     // ----------------------------------------------------------
@@ -107,13 +109,17 @@ contract MigrationRibbon is UUPSUpgradeable, OwnableUpgradeable {
 
     // Before call approve [_amount] ribbonVault(ERC20) token
     function deposit(uint256 _amount) external {
-        if (_amount == 0) revert NotEnoughFunds();
+        uint16 currentRound = getCurrentRound();
 
+        // Validation
+        if (_amount == 0) revert NotEnoughFunds();
+        if (currentRound <= lastRound) revert FundsLastRoundNotWithdrawn();
+
+        // Initial ribbon withdraw
         ribbonVault.transferFrom(msg.sender, address(this), _amount);
         ribbonVault.initiateWithdraw(_amount);
 
         // Save deposit to storage
-        uint16 currentRound = getCurrentRound();
         depositReceipts[currentRound].push(DepositReceipt({recipient: msg.sender, amount: _amount}));
         amounts[currentRound] += _amount;
 
@@ -127,41 +133,35 @@ contract MigrationRibbon is UUPSUpgradeable, OwnableUpgradeable {
         // Can call once per round
         if (currentRound <= lastRound) revert RoundNotCompleted();
 
-        // Get all last rounds
-        for (uint16 r = lastRound; r < currentRound; r++) {
-            uint256 amount = amounts[r];
+        uint256 amount = amounts[lastRound];
 
-            // Complete withdraw
-            if (amount > 0) {
-                // Withdraw ribbon deposit (asset tokens)
-                ribbonVault.completeWithdraw();
+        // Complete withdraw
+        if (amount > 0) {
+            // Withdraw ribbon deposit (asset tokens)
+            ribbonVault.completeWithdraw();
 
-                DepositReceipt[] memory deposits = depositReceipts[r];
-                uint256 depositsLength = deposits.length;
+            DepositReceipt[] memory deposits = depositReceipts[lastRound];
+            uint256 depositsLength = deposits.length;
 
-                // ETH
-                if (address(ribbonAssetToken) == WETH) {
-                    uint256 balance = address(this).balance;
+            // ETH
+            if (address(ribbonAssetToken) == WETH) {
+                uint256 balance = address(this).balance;
 
-                    for (uint256 i; i < depositsLength; i++) {
-                        /* [! Need eth deposit function] */
-                    }
-                }
-                // Other TOKENS
-                else {
-                    uint256 balance = ribbonAssetToken.balanceOf(address(this));
-
-                    for (uint256 i; i < depositsLength; i++) {
-                        neuronCollateralVault.depositFor(
-                            (deposits[i].amount * balance) / amount,
-                            deposits[i].recipient
-                        );
-                    }
+                for (uint256 i; i < depositsLength; i++) {
+                    /* [! Need eth deposit function] */
                 }
             }
+            // Other TOKENS
+            else {
+                uint256 balance = ribbonAssetToken.balanceOf(address(this));
 
-            emit Withdraw(r);
+                for (uint256 i; i < depositsLength; i++) {
+                    neuronCollateralVault.depositFor((deposits[i].amount * balance) / amount, deposits[i].recipient);
+                }
+            }
         }
+
+        emit Withdraw(lastRound);
 
         // Update round to storage
         lastRound = currentRound;
