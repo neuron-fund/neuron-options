@@ -2,7 +2,6 @@
 pragma solidity 0.8.9;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
@@ -17,6 +16,7 @@ contract MigrationRibbon is UUPSUpgradeable, OwnableUpgradeable {
     struct DepositReceipt {
         address recipient;
         uint256 amount;
+        address neuronCollateralVault;
     }
 
     // ----------------------------------------------------------
@@ -24,6 +24,8 @@ contract MigrationRibbon is UUPSUpgradeable, OwnableUpgradeable {
     // ----------------------------------------------------------
 
     IERC20 internal constant WETH = IERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
+
+    address internal constant ZERO_ADDRESS = address(0);
 
     // ----------------------------------------------------------
     // -----------------------  STORAGE  ------------------------
@@ -33,13 +35,13 @@ contract MigrationRibbon is UUPSUpgradeable, OwnableUpgradeable {
 
     IERC20 public ribbonAssetToken;
 
-    NeuronCollateralVaultInterface public neuronCollateralVault;
+    mapping(address => bool) public authorizedNeuronCollateralVaults;
 
     mapping(uint16 => DepositReceipt[]) public depositReceipts;
 
     uint16 public lastRound;
 
-    mapping(uint16 => uint256) internal amounts;
+    mapping(uint16 => uint256) internal pendingWithdrawsAmounts;
 
     // ----------------------------------------------------------
     // -----------------------  EVENTS  -------------------------
@@ -53,11 +55,15 @@ contract MigrationRibbon is UUPSUpgradeable, OwnableUpgradeable {
     // -----------------------  ERRORS  -------------------------
     // ----------------------------------------------------------
 
-    error NotEnoughFunds();
+    error ZeroDepositAmount();
 
     error RoundNotCompleted();
 
     error FundsLastRoundNotWithdrawn();
+
+    error ZeroAddress();
+
+    error NotAuthorizedNeuronCollateralVault();
 
     // ----------------------------------------------------------
     // -----------------------  GETTERS  ------------------------
@@ -71,16 +77,16 @@ contract MigrationRibbon is UUPSUpgradeable, OwnableUpgradeable {
     // -----------------------  SETTERS  ------------------------
     // ----------------------------------------------------------
 
-    function setNeuronCollateralVault(address _neuronCollateralVault) external {
-        neuronCollateralVault = NeuronCollateralVaultInterface(_neuronCollateralVault);
+    function setNeuronCollateralVault(address _neuronCollateralVault, bool _value) external onlyOwner {
+        authorizedNeuronCollateralVaults[_neuronCollateralVault] = _value;
     }
 
     // ----------------------------------------------------------
     // ---------------------  INITIALIZE  -----------------------
     // ----------------------------------------------------------
 
-    function initialize(address _ribbonVault, address _neuronCollateralVault) public initializer {
-        // ??? need zero-address validation?
+    function initialize(address _ribbonVault, address[] calldata _neuronCollateralVaults) public initializer {
+        if (_ribbonVault == ZERO_ADDRESS) revert ZeroAddress();
 
         // Inherited
         __UUPSUpgradeable_init();
@@ -92,7 +98,14 @@ contract MigrationRibbon is UUPSUpgradeable, OwnableUpgradeable {
         lastRound = getCurrentRound();
 
         // Neuron
-        neuronCollateralVault = NeuronCollateralVaultInterface(_neuronCollateralVault);
+        uint256 neuronCollateralVaultsLength = _neuronCollateralVaults.length;
+        for (uint256 i; i < neuronCollateralVaultsLength; i++) {
+            address neuronCollateralVault = _neuronCollateralVaults[i];
+
+            if (neuronCollateralVault == ZERO_ADDRESS) revert ZeroAddress();
+
+            authorizedNeuronCollateralVaults[neuronCollateralVault] = true;
+        }
     }
 
     // ----------------------------------------------------------
@@ -108,20 +121,23 @@ contract MigrationRibbon is UUPSUpgradeable, OwnableUpgradeable {
     // ----------------------------------------------------------
 
     // Before call approve [_amount] ribbonVault(ERC20) token
-    function deposit(uint256 _amount) external {
+    function deposit(uint256 _amount, address _neuronCollateralVault) external {
         uint16 currentRound = getCurrentRound();
 
         // Validation
-        if (_amount == 0) revert NotEnoughFunds();
-        if (currentRound <= lastRound) revert FundsLastRoundNotWithdrawn();
+        if (_amount == 0) revert ZeroDepositAmount();
+        if (currentRound > lastRound) revert FundsLastRoundNotWithdrawn();
+        if (!authorizedNeuronCollateralVaults[_neuronCollateralVault]) revert NotAuthorizedNeuronCollateralVault();
 
         // Initial ribbon withdraw
         ribbonVault.transferFrom(msg.sender, address(this), _amount);
         ribbonVault.initiateWithdraw(_amount);
 
         // Save deposit to storage
-        depositReceipts[currentRound].push(DepositReceipt({recipient: msg.sender, amount: _amount}));
-        amounts[currentRound] += _amount;
+        depositReceipts[currentRound].push(
+            DepositReceipt({recipient: msg.sender, amount: _amount, neuronCollateralVault: _neuronCollateralVault})
+        );
+        pendingWithdrawsAmounts[currentRound] += _amount;
 
         emit Deposit(msg.sender, _amount);
     }
@@ -133,7 +149,7 @@ contract MigrationRibbon is UUPSUpgradeable, OwnableUpgradeable {
         // Can call once per round
         if (currentRound <= lastRound) revert RoundNotCompleted();
 
-        uint256 amount = amounts[lastRound];
+        uint256 amount = pendingWithdrawsAmounts[lastRound];
 
         // Complete withdraw
         if (amount > 0) {
@@ -156,7 +172,10 @@ contract MigrationRibbon is UUPSUpgradeable, OwnableUpgradeable {
                 uint256 balance = ribbonAssetToken.balanceOf(address(this));
 
                 for (uint256 i; i < depositsLength; i++) {
-                    neuronCollateralVault.depositFor((deposits[i].amount * balance) / amount, deposits[i].recipient);
+                    NeuronCollateralVaultInterface(deposits[i].neuronCollateralVault).depositFor(
+                        (deposits[i].amount * balance) / amount,
+                        deposits[i].recipient
+                    );
                 }
             }
         }
