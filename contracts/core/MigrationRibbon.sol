@@ -47,7 +47,7 @@ contract MigrationRibbon is UUPSUpgradeable, OwnableUpgradeable {
     // -----------------------  EVENTS  -------------------------
     // ----------------------------------------------------------
 
-    event Deposit(address indexed recipient, uint256 amount);
+    event Deposit(address indexed recipient, address indexed neuronCollateralVault, uint256 amount);
 
     event Withdraw(uint16 indexed round);
 
@@ -139,7 +139,7 @@ contract MigrationRibbon is UUPSUpgradeable, OwnableUpgradeable {
         );
         pendingWithdrawsAmounts[currentRound] += _amount;
 
-        emit Deposit(msg.sender, _amount);
+        emit Deposit(msg.sender, _neuronCollateralVault, _amount);
     }
 
     // Need call every week, after new round, this will allow withdraw funds faster
