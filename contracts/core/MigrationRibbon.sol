@@ -23,7 +23,7 @@ contract MigrationRibbon is UUPSUpgradeable, OwnableUpgradeable {
     // ----------------------  CONSTANTS  -----------------------
     // ----------------------------------------------------------
 
-    address internal constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    IERC20 internal constant WETH = IERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
 
     // ----------------------------------------------------------
     // -----------------------  STORAGE  ------------------------
@@ -144,7 +144,7 @@ contract MigrationRibbon is UUPSUpgradeable, OwnableUpgradeable {
             uint256 depositsLength = deposits.length;
 
             // ETH
-            if (address(ribbonAssetToken) == WETH) {
+            if (ribbonAssetToken == WETH) {
                 uint256 balance = address(this).balance;
 
                 for (uint256 i; i < depositsLength; i++) {
