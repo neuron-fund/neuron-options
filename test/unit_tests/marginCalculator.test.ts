@@ -103,15 +103,16 @@ contract('MarginCalculator', () => {
     eth100Put = await MockOtoken.new()
     eth300PutCUSDC = await MockOtoken.new()
 
-    await eth300Put.init(addressBook.address, weth.address, usdc.address, [usdc.address], scaleNum(300), expiry, true)
-    await eth250Put.init(addressBook.address, weth.address, usdc.address, [usdc.address], scaleNum(250), expiry, true)
-    await eth200Put.init(addressBook.address, weth.address, usdc.address, [usdc.address], scaleNum(200), expiry, true)
-    await eth100Put.init(addressBook.address, weth.address, usdc.address, [usdc.address], scaleNum(100), expiry, true)
+    await eth300Put.init(addressBook.address, weth.address, usdc.address, [usdc.address],['0'], scaleNum(300), expiry, true)
+    await eth250Put.init(addressBook.address, weth.address, usdc.address, [usdc.address],['0'], scaleNum(250), expiry, true)
+    await eth200Put.init(addressBook.address, weth.address, usdc.address, [usdc.address],['0'], scaleNum(200), expiry, true)
+    await eth100Put.init(addressBook.address, weth.address, usdc.address, [usdc.address],['0'], scaleNum(100), expiry, true)
     await eth300PutCUSDC.init(
       addressBook.address,
       weth.address,
       usdc.address,
       [cusdc.address],
+      ['0'],
       scaleNum(300),
       expiry,
       true,
@@ -122,15 +123,16 @@ contract('MarginCalculator', () => {
     eth200Call = await MockOtoken.new()
     eth100Call = await MockOtoken.new()
     eth300CallCETH = await MockOtoken.new()
-    await eth300Call.init(addressBook.address, weth.address, usdc.address, [weth.address], scaleNum(300), expiry, false)
-    await eth250Call.init(addressBook.address, weth.address, usdc.address, [weth.address], scaleNum(250), expiry, false)
-    await eth200Call.init(addressBook.address, weth.address, usdc.address, [weth.address], scaleNum(200), expiry, false)
-    await eth100Call.init(addressBook.address, weth.address, usdc.address, [weth.address], scaleNum(100), expiry, false)
+    await eth300Call.init(addressBook.address, weth.address, usdc.address, [weth.address],['0'], scaleNum(300), expiry, false)
+    await eth250Call.init(addressBook.address, weth.address, usdc.address, [weth.address],['0'], scaleNum(250), expiry, false)
+    await eth200Call.init(addressBook.address, weth.address, usdc.address, [weth.address],['0'], scaleNum(200), expiry, false)
+    await eth100Call.init(addressBook.address, weth.address, usdc.address, [weth.address],['0'], scaleNum(100), expiry, false)
     await eth300CallCETH.init(
       addressBook.address,
       weth.address,
       usdc.address,
       [ceth.address],
+      ['0'],
       scaleNum(300),
       expiry,
       false,
@@ -157,8 +159,8 @@ contract('MarginCalculator', () => {
       closeExpiry = now + time.duration.days(1).toNumber()
       put = await MockOtoken.new()
       call = await MockOtoken.new()
-      await put.init(addressBook.address, weth.address, usdc.address, [usdc.address], scaleNum(250), closeExpiry, true)
-      await call.init(addressBook.address, weth.address, usdc.address, [usdc.address], scaleNum(250), closeExpiry, false)
+      await put.init(addressBook.address, weth.address, usdc.address, [usdc.address],['0'], scaleNum(250), closeExpiry, true)
+      await call.init(addressBook.address, weth.address, usdc.address, [usdc.address],['0'], scaleNum(250), closeExpiry, false)
       await oracle.setIsFinalized(weth.address, closeExpiry, true)
       // set USDC expiry price to 1
       await oracle.setExpiryPrice(usdc.address, closeExpiry, scaleNum(1))
@@ -262,6 +264,7 @@ contract('MarginCalculator', () => {
           weth.address,
           usdc.address,
           [usdc.address],
+          ['0'],
           createTokenAmount(25, 6),
           expiry,
           true,

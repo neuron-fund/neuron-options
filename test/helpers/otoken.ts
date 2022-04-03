@@ -11,6 +11,7 @@ export type CreateOtokenParamsObject = {
   underlyingAsset: CreateOtokenParams[0]
   strikeAsset: CreateOtokenParams[1]
   collateralAssets: Readonly<CreateOtokenParams[2]>
+  collateralConstraints: Readonly<CreateOtokenParams[3]>
   strikePriceFormatted: number
   expiry: CreateOtokenParams[4]
   isPut: CreateOtokenParams[5]
@@ -39,12 +40,13 @@ export const whitelistAndCreateOtoken = async (
   },
   params: CreateOtokenParamsObject
 ) => {
-  const { underlyingAsset, strikeAsset, collateralAssets, strikePriceFormatted, expiry, isPut } = params
+  const { underlyingAsset, strikeAsset, collateralAssets, collateralConstraints, strikePriceFormatted, expiry, isPut } = params
 
   const strikePrice = parseUnits(strikePriceFormatted.toString(), chainlinkUsdPriceFeedDecimals)
   const collateralAssetsMutable = [...collateralAssets]
+  const collateralConstraintsMutable = [...collateralConstraints]
 
-  const oTokenParams = [underlyingAsset, strikeAsset, collateralAssetsMutable, strikePrice, expiry, isPut] as const
+  const oTokenParams = [underlyingAsset, strikeAsset, collateralAssetsMutable, collateralConstraintsMutable, strikePrice, expiry, isPut] as const
 
   await whitelist.connect(protocolOwner).whitelistCollaterals(collateralAssetsMutable)
   await whitelist.connect(protocolOwner).whitelistProduct(underlyingAsset, strikeAsset, collateralAssetsMutable, isPut)

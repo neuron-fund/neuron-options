@@ -33,6 +33,9 @@ contract MockOtoken is ERC20PermitUpgradeable {
     /// updated upon every mint
     uint256[] public collateralsValues;
 
+    /// @notice amounts of collateralConstraints used to limit the maximum number of untrusted collateral tokens (0 - no limit)
+    uint256[] internal collateralConstraints;
+
     /// @notice strike price with decimals = 8
     uint256 public strikePrice;
 
@@ -60,6 +63,7 @@ contract MockOtoken is ERC20PermitUpgradeable {
         address _underlyingAsset,
         address _strikeAsset,
         address[] calldata _collateralAssets,
+        uint256[] calldata _collateralConstraints,
         uint256 _strikePrice,
         uint256 _expiryTimestamp,
         bool _isPut
@@ -69,10 +73,12 @@ contract MockOtoken is ERC20PermitUpgradeable {
             _collateralAssets.length <= Constants.MAX_COLLATERAL_ASSETS,
             "collateralAssets must be less than or equal to MAX_COLLATERAL_ASSETS"
         );
+        require(_collateralAssets.length == _collateralConstraints.length, "_collateralConstraints and _collateralAssets must have same length");
         controller = AddressBookInterface(_addressBook).getController();
         underlyingAsset = _underlyingAsset;
         strikeAsset = _strikeAsset;
         collateralAssets = _collateralAssets;
+        collateralConstraints = _collateralConstraints;
         collateralsAmounts = new uint256[](collateralAssets.length);
         collateralsValues = new uint256[](collateralAssets.length);
         strikePrice = _strikePrice;
@@ -127,6 +133,10 @@ contract MockOtoken is ERC20PermitUpgradeable {
         return collateralAssets;
     }
 
+    function getCollateralConstraints() external view returns (uint256[] memory) {
+        return collateralConstraints;
+    }
+
     function getCollateralsAmounts() external view returns (uint256[] memory) {
         return collateralsAmounts;
     }
@@ -149,19 +159,31 @@ contract MockOtoken is ERC20PermitUpgradeable {
         uint256[] calldata collateralsAmountsForMint,
         uint256[] calldata collateralsValuesForMint
     ) external {
-        //require(msg.sender == controller, "Otoken: Only Controller can mint Otokens");
+        require(msg.sender == controller, "Otoken: Only Controller can mint Otokens");
+
+        uint256 collateralAssetsLength = collateralAssets.length;
+
         require(
-            collateralAssets.length == collateralsValuesForMint.length,
+            collateralAssetsLength == collateralsValuesForMint.length,
             "Otoken: collateralAssets and collateralsValuesForMint must be of same length"
         );
-        require(
-            collateralAssets.length == collateralsAmountsForMint.length,
-            "Otoken: collateralAssets and collateralsAmountsForMint must be of same length"
-        );
-        for (uint256 i = 0; i < collateralAssets.length; i++) {
-            collateralsValues[i] = collateralsValuesForMint[i].add(collateralsValues[i]);
-            collateralsAmounts[i] = collateralsAmounts[i].add(collateralsAmountsForMint[i]);
+        uint256[] memory _collateralsAmounts = collateralsAmounts;
+        uint256[] memory _collateralsValues = collateralsValues;
+        uint256[] memory _collateralConstraints = collateralConstraints;
+
+        for (uint256 i = 0; i < collateralAssetsLength; i++) {
+            _collateralsValues[i] = collateralsValuesForMint[i].add(_collateralsValues[i]);
+            _collateralsAmounts[i] = _collateralsAmounts[i].add(collateralsAmountsForMint[i]);
+            if(_collateralConstraints[i] > 0) {
+                require
+                (
+                    _collateralConstraints[i] >= _collateralsAmounts[i],
+                    "Otoken: collateral token constraint exceeded"
+                );
+            }
         }
+        collateralsValues = _collateralsValues;
+        collateralsAmounts = _collateralsAmounts;
         collaterizedTotalAmount = collaterizedTotalAmount.add(amount);
         _mint(account, amount);
     }

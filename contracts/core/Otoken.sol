@@ -44,6 +44,9 @@ contract Otoken is ERC20PermitUpgradeable {
     /// updated upon every mint
     uint256[] public collateralsValues;
 
+    /// @notice amounts of collateralConstraints used to limit the maximum number of untrusted collateral tokens (0 - no limit)
+    uint256[] internal collateralConstraints;
+
     /// @notice strike price with decimals = 8
     uint256 public strikePrice;
 
@@ -62,6 +65,7 @@ contract Otoken is ERC20PermitUpgradeable {
      * @param _underlyingAsset asset that the option references
      * @param _strikeAsset asset that the strike price is denominated in
      * @param _collateralAssets asset that is held as collateral against short/written options
+     * @param _collateralConstraints limits the maximum number of untrusted collateral tokens (0 - no limit)
      * @param _strikePrice strike price with decimals = 8
      * @param _expiryTimestamp expiration timestamp of the option, represented as a unix timestamp
      * @param _isPut True if a put option, False if a call option
@@ -71,6 +75,7 @@ contract Otoken is ERC20PermitUpgradeable {
         address _underlyingAsset,
         address _strikeAsset,
         address[] calldata _collateralAssets,
+        uint256[] calldata _collateralConstraints,
         uint256 _strikePrice,
         uint256 _expiryTimestamp,
         bool _isPut
@@ -80,10 +85,12 @@ contract Otoken is ERC20PermitUpgradeable {
             _collateralAssets.length <= Constants.MAX_COLLATERAL_ASSETS,
             "collateralAssets must be less than or equal to MAX_COLLATERAL_ASSETS"
         );
+        require(_collateralAssets.length == _collateralConstraints.length, "_collateralConstraints and _collateralAssets must have same length");
         controller = AddressBookInterface(_addressBook).getController();
         underlyingAsset = _underlyingAsset;
         strikeAsset = _strikeAsset;
         collateralAssets = _collateralAssets;
+        collateralConstraints = _collateralConstraints;
         collateralsAmounts = new uint256[](collateralAssets.length);
         collateralsValues = new uint256[](collateralAssets.length);
         strikePrice = _strikePrice;
@@ -139,6 +146,10 @@ contract Otoken is ERC20PermitUpgradeable {
         return collateralAssets;
     }
 
+    function getCollateralConstraints() external view returns (uint256[] memory) {
+        return collateralConstraints;
+    }
+
     function getCollateralsAmounts() external view returns (uint256[] memory) {
         return collateralsAmounts;
     }
@@ -169,15 +180,20 @@ contract Otoken is ERC20PermitUpgradeable {
             collateralAssetsLength == collateralsValuesForMint.length,
             "Otoken: collateralAssets and collateralsValuesForMint must be of same length"
         );
-        require(
-            collateralAssetsLength == collateralsAmountsForMint.length,
-            "Otoken: collateralAssets and collateralsAmountsForMint must be of same length"
-        );
         uint256[] memory _collateralsAmounts = collateralsAmounts;
         uint256[] memory _collateralsValues = collateralsValues;
+        uint256[] memory _collateralConstraints = collateralConstraints;
+
         for (uint256 i = 0; i < collateralAssetsLength; i++) {
             _collateralsValues[i] = collateralsValuesForMint[i].add(_collateralsValues[i]);
             _collateralsAmounts[i] = _collateralsAmounts[i].add(collateralsAmountsForMint[i]);
+            if(_collateralConstraints[i] > 0) {
+                require
+                (
+                    _collateralConstraints[i] >= _collateralsAmounts[i],
+                    "Otoken: collateral token constraint exceeded"
+                );
+            }
         }
         collateralsValues = _collateralsValues;
         collateralsAmounts = _collateralsAmounts;

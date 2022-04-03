@@ -47,12 +47,12 @@ contract('MarginVault', ([deployer, controller]) => {
     await addressBook.setController(controller)
     // deploy otoken
     otoken = await Otoken.new()
-    await otoken.init(addressBook.address, weth.address, usdc.address, [usdc.address], strikePrice, expiry, isPut, {
+    await otoken.init(addressBook.address, weth.address, usdc.address, [usdc.address],['0'], strikePrice, expiry, isPut, {
       from: deployer,
     })
     // deploy second otoken
     otoken2 = await Otoken.new()
-    await otoken2.init(addressBook.address, weth.address, usdc.address, [usdc.address], strikePrice, expiry, isPut, {
+    await otoken2.init(addressBook.address, weth.address, usdc.address, [usdc.address],['0'], strikePrice, expiry, isPut, {
       from: deployer,
     })
     // margin vault

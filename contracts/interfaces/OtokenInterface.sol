@@ -25,6 +25,8 @@ interface OtokenInterface {
 
     function getCollateralsAmounts() external view returns (uint256[] memory);
 
+    function getCollateralConstraints() external view returns (uint256[] memory);
+
     function collateralsValues(uint256) external view returns (uint256);
 
     function getCollateralsValues() external view returns (uint256[] memory);
@@ -62,6 +64,7 @@ interface OtokenInterface {
         address _underlyingAsset,
         address _strikeAsset,
         address[] memory _collateralAssets,
+        uint256[] memory _collateralConstraints,
         uint256 _strikePrice,
         uint256 _expiryTimestamp,
         bool _isPut
