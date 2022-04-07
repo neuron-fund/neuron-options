@@ -4,11 +4,12 @@ pragma solidity 0.8.9;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "hardhat/console.sol";
 
 import {NeuronCollateralVaultInterface} from "../interfaces/NeuronCollateralVaultInterface.sol";
-import {RibbonVaultInterface} from "../interfaces/RibbonVaultInterface.sol";
+import {ILiquidityMigrationVault} from "../interfaces/ILiquidityMigrationVault.sol";
 
-contract MigrationRibbon is UUPSUpgradeable, OwnableUpgradeable {
+contract LiquidityMigration is UUPSUpgradeable, OwnableUpgradeable {
     // ----------------------------------------------------------
     // ---------------------  STRUCTURES  -----------------------
     // ----------------------------------------------------------
@@ -31,9 +32,9 @@ contract MigrationRibbon is UUPSUpgradeable, OwnableUpgradeable {
     // -----------------------  STORAGE  ------------------------
     // ----------------------------------------------------------
 
-    RibbonVaultInterface public ribbonVault;
+    ILiquidityMigrationVault public liquidityMigrationVault;
 
-    IERC20 public ribbonAssetToken;
+    IERC20 public assetToken;
 
     mapping(address => bool) public authorizedNeuronCollateralVaults;
 
@@ -47,9 +48,9 @@ contract MigrationRibbon is UUPSUpgradeable, OwnableUpgradeable {
     // -----------------------  EVENTS  -------------------------
     // ----------------------------------------------------------
 
-    event Deposit(address indexed recipient, address indexed neuronCollateralVault, uint256 amount);
+    event Deposited(address indexed recipient, address indexed neuronCollateralVault, uint256 amount);
 
-    event Withdraw(uint16 indexed round);
+    event Withdrawn(uint16 indexed round);
 
     // ----------------------------------------------------------
     // -----------------------  ERRORS  -------------------------
@@ -70,7 +71,7 @@ contract MigrationRibbon is UUPSUpgradeable, OwnableUpgradeable {
     // ----------------------------------------------------------
 
     function getCurrentRound() public view returns (uint16) {
-        return ribbonVault.vaultState().round;
+        return liquidityMigrationVault.vaultState().round;
     }
 
     // ----------------------------------------------------------
@@ -85,16 +86,15 @@ contract MigrationRibbon is UUPSUpgradeable, OwnableUpgradeable {
     // ---------------------  INITIALIZE  -----------------------
     // ----------------------------------------------------------
 
-    function initialize(address _ribbonVault, address[] calldata _neuronCollateralVaults) public initializer {
-        if (_ribbonVault == ZERO_ADDRESS) revert ZeroAddress();
+    function initialize(address _liquidityMigrationVault, address[] calldata _neuronCollateralVaults) public initializer {
+        if (_liquidityMigrationVault == ZERO_ADDRESS) revert ZeroAddress();
 
         // Inherited
-        __UUPSUpgradeable_init();
         __Ownable_init();
 
         // Ribbon
-        ribbonVault = RibbonVaultInterface(_ribbonVault);
-        ribbonAssetToken = IERC20(ribbonVault.vaultParams().asset);
+        liquidityMigrationVault = ILiquidityMigrationVault(_liquidityMigrationVault);
+        assetToken = IERC20(liquidityMigrationVault.vaultParams().asset);
         lastRound = getCurrentRound();
 
         // Neuron
@@ -126,12 +126,21 @@ contract MigrationRibbon is UUPSUpgradeable, OwnableUpgradeable {
 
         // Validation
         if (_amount == 0) revert ZeroDepositAmount();
-        if (currentRound > lastRound) revert FundsLastRoundNotWithdrawn();
+        if(currentRound > lastRound) {
+            // Last round is empty
+            if(pendingWithdrawsAmounts[lastRound] == 0) {
+                lastRound = currentRound;
+            } 
+            // Has not withdrawn funds
+            else {
+                revert FundsLastRoundNotWithdrawn();
+            }
+        }
         if (!authorizedNeuronCollateralVaults[_neuronCollateralVault]) revert NotAuthorizedNeuronCollateralVault();
 
         // Initial ribbon withdraw
-        ribbonVault.transferFrom(msg.sender, address(this), _amount);
-        ribbonVault.initiateWithdraw(_amount);
+        liquidityMigrationVault.transferFrom(msg.sender, address(this), _amount);
+        liquidityMigrationVault.initiateWithdraw(_amount);
 
         // Save deposit to storage
         depositReceipts[currentRound].push(
@@ -139,7 +148,7 @@ contract MigrationRibbon is UUPSUpgradeable, OwnableUpgradeable {
         );
         pendingWithdrawsAmounts[currentRound] += _amount;
 
-        emit Deposit(msg.sender, _neuronCollateralVault, _amount);
+        emit Deposited(msg.sender, _neuronCollateralVault, _amount);
     }
 
     // Need call every week, after new round, this will allow withdraw funds faster
@@ -154,13 +163,13 @@ contract MigrationRibbon is UUPSUpgradeable, OwnableUpgradeable {
         // Complete withdraw
         if (amount > 0) {
             // Withdraw ribbon deposit (asset tokens)
-            ribbonVault.completeWithdraw();
+            liquidityMigrationVault.completeWithdraw();
 
             DepositReceipt[] memory deposits = depositReceipts[lastRound];
             uint256 depositsLength = deposits.length;
 
             // ETH
-            if (ribbonAssetToken == WETH) {
+            if (assetToken == WETH) {
                 uint256 balance = address(this).balance;
 
                 for (uint256 i; i < depositsLength; i++) {
@@ -169,7 +178,7 @@ contract MigrationRibbon is UUPSUpgradeable, OwnableUpgradeable {
             }
             // Other TOKENS
             else {
-                uint256 balance = ribbonAssetToken.balanceOf(address(this));
+                uint256 balance = assetToken.balanceOf(address(this));
 
                 for (uint256 i; i < depositsLength; i++) {
                     NeuronCollateralVaultInterface(deposits[i].neuronCollateralVault).depositFor(
@@ -180,7 +189,7 @@ contract MigrationRibbon is UUPSUpgradeable, OwnableUpgradeable {
             }
         }
 
-        emit Withdraw(lastRound);
+        emit Withdrawn(lastRound);
 
         // Update round to storage
         lastRound = currentRound;

@@ -2,7 +2,8 @@
   "compilerOptions": {
     "module": "commonjs",
     "esModuleInterop": true,
-    "downlevelIteration": true
+    "downlevelIteration": true,
+    "resolveJsonModule": true
   },
   "exclude": ["node_modules"]
 }
