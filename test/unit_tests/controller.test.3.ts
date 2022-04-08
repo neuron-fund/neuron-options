@@ -255,7 +255,46 @@ contract(
           controllerProxy.operate(actionArgs, { from: user }),
           'Vault value is not enough to collaterize the amount'
         )
-      })      
+      }),
+      it('should mint on unconstained token', async () => {    
+        const vaultCounter = resp2bn(await controllerProxy.accountVaultCounter(user))
+        const vaultId = vaultCounter.toNumber()
+
+        const collaterals = [usdc.address, usdc07.address, usdc09.address]
+        // await whitelist.whitelistCollaterals(collaterals
+
+        const collateralsAmounts = [
+          createTokenAmount(1000, usdcDecimals), 
+          0, 
+          0
+        ]
+        const mintAmount = createTokenAmount(1000/100);
+
+        const actionArgs = [
+          getAction(ActionType.DepositCollateral, {
+            owner: user, 
+            vaultId: vaultId, 
+            from: user, 
+            assets: collaterals, 
+            amounts: collateralsAmounts
+          }),
+          getAction(ActionType.MintShortOption, {
+            owner: user, 
+            vaultId: vaultId,
+            to: user,
+            amount: [mintAmount]
+          })
+        ]
+
+        await controllerProxy.operate(actionArgs, { from: user })
+
+
+        const mintedShorts = await shortOtoken.balanceOf(user)
+
+        console.log(mintedShorts.toString)
+
+
+      })  
     })    
   }  
 )
