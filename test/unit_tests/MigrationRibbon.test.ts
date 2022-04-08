@@ -12,7 +12,8 @@ import {
     IUniswapRouterV2,
 } from '../../typechain-types'
 import { UNISWAP_ROUTER_V2, WETH } from '../../constants/externalAddresses';
-import LiquidityMigrationHelper from '../helpers/LiquidityMigrationHelper';
+import LiquidityMigrationVaultHelper from '../helpers/LiquidityMigrationVaultHelper';
+import LiquidityMigrationNeuronCollateralVaultHelper from '../helpers/LiquidityMigrationNeuronCollateralVaultHelper';
 
 // ----------------------------------------------------------
 // ----------------------  CONFIG  --------------------------
@@ -76,7 +77,8 @@ function _runTests(config: Config) {
         let assetToken: ERC20;
 
         // Helpers
-        let liquidityMigrationHelper: LiquidityMigrationHelper;
+        let liquidityMigrationVaultHelper: LiquidityMigrationVaultHelper;
+        let liquidityMigrationNeuronCollateralVaultHelper: LiquidityMigrationNeuronCollateralVaultHelper;
 
         // Other
         let liquidityMigrationVaultTokensBalance: BigNumber;
@@ -88,13 +90,13 @@ function _runTests(config: Config) {
         // ----------------------------------------------------------
 
         beforeEach(async () => {
-            liquidityMigrationHelper = new LiquidityMigrationHelper({
+            liquidityMigrationVaultHelper = new LiquidityMigrationVaultHelper({
                 liquidityMigrationVaultAddress: config.liquidityMigrationVaultAddress,
                 underlyingPricer: config.underlyingPricer,
                 collateralPricer: config.collateralPricer,
                 asset: config.asset,
             });
-            currentRound = await liquidityMigrationHelper.nextRound();
+            currentRound = await liquidityMigrationVaultHelper.nextRound();
 
             // Get accounts
             const accounts = await ethers.getSigners();
@@ -105,10 +107,8 @@ function _runTests(config: Config) {
             donor = accounts[2];
             donorAddress = await donor.getAddress();
 
-            // Deploy
-            mockNeuronCollateralVault = await _deployContract('MockNeuronCollateralVault');
+            // Deploy 
             liquidityMigrationVault = await _getContract('ILiquidityMigrationVault', config.liquidityMigrationVaultAddress);
-            liquidityMigration = await _deployProxy('LiquidityMigration', [config.liquidityMigrationVaultAddress, [mockNeuronCollateralVault.address]]);
 
             // Create asset tokens
             const { asset } = await liquidityMigrationVault.vaultParams();
@@ -118,12 +118,20 @@ function _runTests(config: Config) {
 
             expect(assetBalance).to.gt(0, 'Asset tokens not received');
 
+            // Deploy
+            console.log(`YYS ${asset}`);
+            liquidityMigrationNeuronCollateralVaultHelper = new LiquidityMigrationNeuronCollateralVaultHelper(asset);
+            mockNeuronCollateralVault = await liquidityMigrationNeuronCollateralVaultHelper.deploy();
+
+            liquidityMigration = await _deployProxy('LiquidityMigration', [config.liquidityMigrationVaultAddress, [mockNeuronCollateralVault.address]]);
+
+
             // Get vault tokens
             await assetToken.connect(user).approve(liquidityMigrationVault.address, assetBalance);
             await liquidityMigrationVault.connect(user).deposit(assetBalance);
 
 
-            currentRound = await liquidityMigrationHelper.nextRound();
+            currentRound = await liquidityMigrationVaultHelper.nextRound();
 
             await liquidityMigrationVault.connect(user).maxRedeem();
             liquidityMigrationVaultTokensBalance = await liquidityMigrationVault.balanceOf(userAddress);
@@ -132,43 +140,109 @@ function _runTests(config: Config) {
         });
 
         // ----------------------------------------------------------
-        // -----------------------  TESTS  --------------------------
+        // ------------------  TESTS DEPOSITS  ----------------------
         // ----------------------------------------------------------
 
-        it('Deposit', async () => {
-            const initialUserVaultBalance = await liquidityMigrationVault.balanceOf(await user.getAddress());
+        // it('Single deposit', async () => {
+        //     const initialUserVaultBalance = await liquidityMigrationVault.balanceOf(await user.getAddress());
 
-            await liquidityMigrationVault.connect(user).approve(liquidityMigration.address, liquidityMigrationVaultTokensBalance);
-            await liquidityMigration.connect(user).deposit(liquidityMigrationVaultTokensBalance, mockNeuronCollateralVault.address);
+        //     await liquidityMigrationVault.connect(user).approve(liquidityMigration.address, liquidityMigrationVaultTokensBalance);
+        //     await liquidityMigration.connect(user).deposit(liquidityMigrationVaultTokensBalance, mockNeuronCollateralVault.address);
 
-            const depositReceipt = await liquidityMigration.depositReceipts(currentRound, 0);
+        //     const depositReceipt = await liquidityMigration.depositReceipts(currentRound, 0);
 
-            const resultUserVaultBalance = await liquidityMigrationVault.balanceOf(await user.getAddress());
+        //     const resultUserVaultBalance = await liquidityMigrationVault.balanceOf(await user.getAddress());
 
-            expect(resultUserVaultBalance).to.eq(
-                initialUserVaultBalance.sub(liquidityMigrationVaultTokensBalance),
-                'Vault tokens have not received',
-            );
-            expect(depositReceipt.amount).to.eq(
-                liquidityMigrationVaultTokensBalance,
-                'Not all sent vault tokens are received',
-            );
-        });
+        //     expect(resultUserVaultBalance).to.eq(
+        //         initialUserVaultBalance.sub(liquidityMigrationVaultTokensBalance),
+        //         'Vault tokens have not received',
+        //     );
+        //     expect(depositReceipt.amount).to.eq(
+        //         liquidityMigrationVaultTokensBalance,
+        //         'Not all sent vault tokens are received',
+        //     );
+        // });
 
-        it('Zero deposit', async () => {
-            await liquidityMigrationVault.connect(user).approve(liquidityMigration.address, 0);
-            await expectRevert(liquidityMigration.connect(user).deposit(0, mockNeuronCollateralVault.address), 'ZeroDepositAmount()');
-        });
+        // it('Zero deposit', async () => {
+        //     await liquidityMigrationVault.connect(user).approve(liquidityMigration.address, 0);
+        //     await expectRevert(liquidityMigration.connect(user).deposit(0, mockNeuronCollateralVault.address), 'ZeroDepositAmount()');
+        // });
 
-        it('Deposit with not witdhrawn last round', async () => {
-            await liquidityMigrationVault.connect(user).approve(liquidityMigration.address, liquidityMigrationVaultTokensBalance);
-            await liquidityMigration.connect(user).deposit(liquidityMigrationVaultTokensBalance.div(2), mockNeuronCollateralVault.address);
-            await liquidityMigrationHelper.nextRound();
+        // it('Deposit with not witdhrawn last round', async () => {
+        //     await liquidityMigrationVault.connect(user).approve(liquidityMigration.address, liquidityMigrationVaultTokensBalance);
+        //     await liquidityMigration.connect(user).deposit(liquidityMigrationVaultTokensBalance.div(2), mockNeuronCollateralVault.address);
+        //     await liquidityMigrationVaultHelper.nextRound();
 
-            await expectRevert(
-                liquidityMigration.connect(user).deposit(liquidityMigrationVaultTokensBalance.div(2), mockNeuronCollateralVault.address),
-                'FundsLastRoundNotWithdrawn()',
-            );
+        //     await expectRevert(
+        //         liquidityMigration.connect(user).deposit(liquidityMigrationVaultTokensBalance.div(2), mockNeuronCollateralVault.address),
+        //         'FundsLastRoundNotWithdrawn()',
+        //     );
+        // });
+
+        // it('Multi deposits', async () => {
+        //     const count = 100;
+        //     const depositAmount = liquidityMigrationVaultTokensBalance.div(count);
+        //     for(let i = 0; i < count; i++) {
+        //         await liquidityMigrationVault.connect(user).approve(liquidityMigration.address, depositAmount);
+        //         await liquidityMigration.connect(user).deposit(depositAmount, mockNeuronCollateralVault.address);
+        //     }
+            
+        //     const lastDepositReceipt = await liquidityMigration.depositReceipts(currentRound, count - 1);
+
+        //     expect(lastDepositReceipt.amount).to.eq(
+        //         depositAmount,
+        //         'Last deposit not found',
+        //     );
+        // });
+
+        
+        // ----------------------------------------------------------
+        // ------------------  TESTS WITHDRAW  ----------------------
+        // ----------------------------------------------------------
+
+        // it('Single withdraw', async () => {
+        //     await liquidityMigrationVault.connect(user).approve(liquidityMigration.address, liquidityMigrationVaultTokensBalance);
+        //     await liquidityMigration.connect(user).deposit(liquidityMigrationVaultTokensBalance, mockNeuronCollateralVault.address);
+
+        //     await liquidityMigrationVaultHelper.nextRound();
+
+        //     const initialNeuronVaultBalance = await assetToken.balanceOf(mockNeuronCollateralVault.address);
+
+        //     await liquidityMigration.connect(user).withdraw();
+
+        //     console.log(`TYT ${await assetToken.balanceOf(liquidityMigration.address)}`);
+
+        //     const resultNeuronVaultBalance = await assetToken.balanceOf(mockNeuronCollateralVault.address);
+
+        //     console.log(`resultNeuronVaultBalance ${resultNeuronVaultBalance}`);
+
+        //     expect(resultNeuronVaultBalance).to.gt(initialNeuronVaultBalance, 'Funds not received in NeuronVault');
+        // });
+
+        it('Multi withdraw', async () => {
+            const count = 30;
+            const amount = liquidityMigrationVaultTokensBalance.div(count);
+            for(let i = 0; i < count; i++) {
+                await liquidityMigrationVault.connect(user).approve(liquidityMigration.address, amount);
+                await liquidityMigration.connect(user).deposit(amount, mockNeuronCollateralVault.address);
+            }
+            
+
+            await liquidityMigrationVaultHelper.nextRound();
+
+            const initialNeuronVaultBalance = await assetToken.balanceOf(mockNeuronCollateralVault.address);
+
+            console.log(`userBalanceBefore ${await user.getBalance()}`)
+            await liquidityMigration.connect(user).withdraw();
+
+            console.log(`userBalanceAfter ${await user.getBalance()}`)
+            console.log(`TYT ${await assetToken.balanceOf(liquidityMigration.address)}`);
+
+            const resultNeuronVaultBalance = await assetToken.balanceOf(mockNeuronCollateralVault.address);
+
+            console.log(`resultNeuronVaultBalance ${resultNeuronVaultBalance}`);
+            
+            expect(resultNeuronVaultBalance).to.gt(initialNeuronVaultBalance, 'Funds not received in NeuronVault');
         });
 
     });
@@ -206,7 +280,7 @@ async function _createTokens(token: string, recipient: Signer) {
         Date.now() + 30000,
         {
             gasLimit: 4000000,
-            value: ethers.utils.parseEther("5"),
+            value: ethers.utils.parseEther("5000"),
         },
     )
 }

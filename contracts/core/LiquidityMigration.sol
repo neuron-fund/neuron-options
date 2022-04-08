@@ -6,7 +6,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "hardhat/console.sol";
 
-import {NeuronCollateralVaultInterface} from "../interfaces/NeuronCollateralVaultInterface.sol";
+import {INeuronCollateralVault} from "../interfaces/INeuronCollateralVault.sol";
 import {ILiquidityMigrationVault} from "../interfaces/ILiquidityMigrationVault.sol";
 
 contract LiquidityMigration is UUPSUpgradeable, OwnableUpgradeable {
@@ -126,8 +126,9 @@ contract LiquidityMigration is UUPSUpgradeable, OwnableUpgradeable {
 
         // Validation
         if (_amount == 0) revert ZeroDepositAmount();
+        // Last round not updated
         if(currentRound > lastRound) {
-            // Last round is empty
+            // Last deposit round is empty
             if(pendingWithdrawsAmounts[lastRound] == 0) {
                 lastRound = currentRound;
             } 
@@ -165,7 +166,7 @@ contract LiquidityMigration is UUPSUpgradeable, OwnableUpgradeable {
             // Withdraw ribbon deposit (asset tokens)
             liquidityMigrationVault.completeWithdraw();
 
-            DepositReceipt[] memory deposits = depositReceipts[lastRound];
+            DepositReceipt[] storage deposits = depositReceipts[lastRound];
             uint256 depositsLength = deposits.length;
 
             // ETH
@@ -181,9 +182,13 @@ contract LiquidityMigration is UUPSUpgradeable, OwnableUpgradeable {
                 uint256 balance = assetToken.balanceOf(address(this));
 
                 for (uint256 i; i < depositsLength; i++) {
-                    NeuronCollateralVaultInterface(deposits[i].neuronCollateralVault).depositFor(
-                        (deposits[i].amount * balance) / amount,
-                        deposits[i].recipient
+                    DepositReceipt storage depositReceipt = deposits[i];
+                    uint256 userAssetTokensAmount = (depositReceipt.amount * balance) / amount;
+                    address neuronCollateralVaultAddress = depositReceipt.neuronCollateralVault;
+                    assetToken.approve(neuronCollateralVaultAddress, userAssetTokensAmount);
+                    INeuronCollateralVault(neuronCollateralVaultAddress).depositFor(
+                        userAssetTokensAmount,
+                        depositReceipt.recipient
                     );
                 }
             }

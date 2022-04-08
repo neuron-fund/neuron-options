@@ -35,7 +35,7 @@ interface Config {
     asset: string;
 }
 
-export default class LiquidityMigrationHelper {
+export default class LiquidityMigrationVaultHelper {
 
     constructor(public readonly config: Config) { }
 
