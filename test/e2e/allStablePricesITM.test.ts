@@ -8,6 +8,7 @@ const testsParams = [
   {
     oTokenParams: {
       collateralAssets: [USDC, DAI],
+      collateralConstraints: [0, 0],
       underlyingAsset: WETH,
       strikeAsset: USDC,
       strikePriceFormatted: 3800,
@@ -34,6 +35,7 @@ const testsParams = [
   {
     oTokenParams: {
       collateralAssets: [USDC, DAI],
+      collateralConstraints: [0, 0],
       underlyingAsset: WETH,
       strikeAsset: USDC,
       strikePriceFormatted: 3800,
@@ -60,6 +62,7 @@ const testsParams = [
   {
     oTokenParams: {
       collateralAssets: [USDC, DAI],
+      collateralConstraints: [0, 0],
       underlyingAsset: WETH,
       strikeAsset: USDC,
       strikePriceFormatted: 3800,
@@ -86,6 +89,7 @@ const testsParams = [
   {
     oTokenParams: {
       collateralAssets: [USDC, DAI],
+      collateralConstraints: [0, 0],
       underlyingAsset: WETH,
       strikeAsset: USDC,
       strikePriceFormatted: 3800,
@@ -112,36 +116,7 @@ const testsParams = [
   {
     oTokenParams: {
       collateralAssets: [USDC, DAI],
-      underlyingAsset: WETH,
-      strikeAsset: USDC,
-      strikePriceFormatted: 3800,
-      expiryDays: 7,
-      isPut: true,
-    },
-    initialPrices: {
-      [USDC]: 1,
-      [DAI]: 1,
-      [WETH]: 4200,
-    },
-    expiryPrices: {
-      [USDC]: 1,
-      [DAI]: 1,
-      [WETH]: 3500,
-    },
-    vaults: [
-      {
-        collateralAmountsFormatted: [2000, 4000],
-        oTokenAmountFormatted: 1,
-      },
-      {
-        collateralAmountsFormatted: [4000, 0],
-        oTokenAmountFormatted: 1,
-      },
-    ],
-  },
-  {
-    oTokenParams: {
-      collateralAssets: [USDC, DAI],
+      collateralConstraints: [0, 0],
       underlyingAsset: WETH,
       strikeAsset: USDC,
       strikePriceFormatted: 3800,
@@ -172,6 +147,38 @@ const testsParams = [
   {
     oTokenParams: {
       collateralAssets: [USDC, DAI],
+      collateralConstraints: [0, 0],
+      underlyingAsset: WETH,
+      strikeAsset: USDC,
+      strikePriceFormatted: 3800,
+      expiryDays: 7,
+      isPut: true,
+    },
+    initialPrices: {
+      [USDC]: 1,
+      [DAI]: 1,
+      [WETH]: 4200,
+    },
+    expiryPrices: {
+      [USDC]: 1,
+      [DAI]: 1,
+      [WETH]: 3500,
+    },
+    vaults: [
+      {
+        collateralAmountsFormatted: [2000, 4000],
+        oTokenAmountFormatted: 1,
+      },
+      {
+        collateralAmountsFormatted: [4000, 0],
+        oTokenAmountFormatted: 1,
+      },
+    ],
+  },
+  {
+    oTokenParams: {
+      collateralAssets: [USDC, DAI],
+      collateralConstraints: [0, 0],
       underlyingAsset: WETH,
       strikeAsset: USDC,
       strikePriceFormatted: 3800,

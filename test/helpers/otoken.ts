@@ -13,8 +13,8 @@ export type CreateOtokenParamsObject = {
   collateralAssets: Readonly<CreateOtokenParams[2]>
   collateralConstraints: Readonly<CreateOtokenParams[3]>
   strikePriceFormatted: number
-  expiry: CreateOtokenParams[4]
-  isPut: CreateOtokenParams[5]
+  expiry: CreateOtokenParams[5]
+  isPut: CreateOtokenParams[6]
 }
 
 export type CreateOtokenAssetsParams = Pick<
@@ -59,10 +59,11 @@ export const findOToken = async (
   oTokenFactory: OtokenFactory,
   params: CreateOtokenParamsObject
 ) => {
-  const { underlyingAsset, strikeAsset, collateralAssets, strikePriceFormatted, expiry, isPut } = params
+  const { underlyingAsset, strikeAsset, collateralAssets, collateralConstraints, strikePriceFormatted, expiry, isPut } = params
   const strikePrice = parseUnits(strikePriceFormatted.toString(), chainlinkUsdPriceFeedDecimals)
   const collateralAssetsMutable = [...collateralAssets]
-  const oTokenParams = [underlyingAsset, strikeAsset, collateralAssetsMutable, strikePrice, expiry, isPut] as const
+  const collateralConstraintsMutable = [...collateralConstraints]
+  const oTokenParams = [underlyingAsset, strikeAsset, collateralAssetsMutable, collateralConstraintsMutable, strikePrice, expiry, isPut] as const
   const oTokenAddress = await oTokenFactory.connect(signer).getOtoken(...oTokenParams)
   const oToken = (await ethers.getContractAt('Otoken', oTokenAddress)) as Otoken
   return oToken
