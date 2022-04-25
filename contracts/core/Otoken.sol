@@ -199,6 +199,7 @@ contract Otoken is ERC20PermitUpgradeable {
         collateralsAmounts = _collateralsAmounts;
         collaterizedTotalAmount = collaterizedTotalAmount.add(amount);
         _mint(account, amount);
+        console.log("mintOtoken", amount);
     }
 
     /**

@@ -862,6 +862,8 @@ contract MarginCalculator is Ownable {
         view
         returns (FPI.FixedPointInt memory, uint256)
     {
+        console.log("_getAfterBurnCollateralRatio._vaultDetails.shortAmount", _vaultDetails.shortAmount);
+        console.log("_getAfterBurnCollateralRatio._shortBurnAmount", _shortBurnAmount);
         uint256 newShortAmount = _vaultDetails.shortAmount.sub(_shortBurnAmount);
 
         (FPI.FixedPointInt memory prevValueRequired, ) = _getValueRequired(
