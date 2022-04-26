@@ -314,9 +314,12 @@ export async function openVaultAndMint<T extends OTokenParams, C extends TestMin
 ) {
   const { collateralAmountsFormatted, owner } = vault
   const oTokenAmount = parseUnits(oTokenAmountFormatted.toString(), oTokenDecimals)
-  const vaultId = (await controller.accountVaultCounter(owner.address)).toNumber() + 1
+  //const vaultId = (await controller.accountVaultCounter(owner.address)).toNumber() + 1
 
-  const openVaultAction = getAction(ActionType.OpenVault, {
+  const currentVault = (await controller.accountVaultCounter(owner.address)).toNumber()
+  const vaultId = 1
+
+  const openVaultAction = !currentVault && getAction(ActionType.OpenVault, {
     owner: owner.address,
     shortOtoken: oToken.address,
     vaultId,

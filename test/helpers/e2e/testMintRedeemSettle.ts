@@ -300,12 +300,17 @@ async function mintOnCheckpoints<T extends OTokenParams, C extends TestMintRedee
   mockERC20Owners: { [key: string]: SignerWithAddress }
 ) {
   const checkpoints = Object.keys(params.checkpointsDays || [])
-  for (const checkpoint of checkpoints) {
+  let last_checkpont = 0;
+  for (const cumul_checkpoint of checkpoints) {    
+    let checkpoint = Number(cumul_checkpoint) - last_checkpont;
+    console.log(cumul_checkpoint, checkpoint);
+    last_checkpont = Number(cumul_checkpoint);
     await waitNDays(Number(checkpoint), network.provider)
-    await setStablePrices(oracle, deployer, params.checkpointsDays[checkpoint].prices)
-    const vaultsToMintOnCheckpoint = vaults.filter(x => x.mintOnCheckoints?.[checkpoint])
+    await setStablePrices(oracle, deployer, params.checkpointsDays[cumul_checkpoint].prices)
+    const vaultsToMintOnCheckpoint = vaults.filter(x => x.mintOnCheckoints?.[cumul_checkpoint])
+
     for (const vault of vaultsToMintOnCheckpoint) {
-      const amountToMint = vault.mintOnCheckoints[checkpoint].oTokenAmountFormatted
+      const amountToMint = vault.mintOnCheckoints[cumul_checkpoint].oTokenAmountFormatted
       const mintedAmount = await openVaultAndMint(
         controller,
         marginPool,
