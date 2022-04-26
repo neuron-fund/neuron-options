@@ -438,8 +438,8 @@ contract MarginCalculator is Ownable {
         uint256[] memory oTokenCollateralsValues,
         uint256 oTokenCollaterizedTotalAmount
     ) internal view returns (uint256[] memory) {
-        uint256[] memory longPayouts = vaultDetails.hasLong && vaultDetails.usedLongAmount != 0
-            ? getPayout(vaultDetails.longOtoken, vaultDetails.usedLongAmount)
+        uint256[] memory longPayouts = vaultDetails.hasLong && vaultDetails.longAmount != 0
+            ? getPayout(vaultDetails.longOtoken, vaultDetails.longAmount)
             : new uint256[](vaultDetails.collateralAssets.length);
 
         FPI.FixedPointInt memory _oTokenCollaterizedTotalAmount = FPI.fromScaledUint(
@@ -747,7 +747,6 @@ contract MarginCalculator is Ownable {
         console.log("long.expiry == short.expiry", long.expiry == short.expiry);
         console.log("long.strikePrice != short.strikePrice", long.strikePrice != short.strikePrice);
         console.log("long.isPut == short.isPut", long.isPut == short.isPut);
-
 
         return
             _vault.longOtoken != _vault.shortOtoken &&
