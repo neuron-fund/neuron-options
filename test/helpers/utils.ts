@@ -59,7 +59,7 @@ export const createVault = (
     collateralAmounts: collateralAmounts ? collateralAmounts : [],
     reservedCollateralAmounts: [],
     usedCollateralValues: [],
-    availableCollateralAmounts: []    
+    availableCollateralAmounts: [],
   }
 }
 
@@ -82,7 +82,6 @@ export const createTokenAmount = (_num: number, _decimals = 8) => {
  * @param num
  */
 export const createScaledNumber = (num: number, decimals = 8): string => {
-  console.log('createScaledNumber', num.toString(), decimals.toString())
   return BigNumber.from(num).mul(BigNumber.from(10).pow(decimals)).toString()
 }
 

@@ -5,7 +5,6 @@ pragma experimental ABIEncoderV2;
 
 import {MarginVault} from "../libs/MarginVault.sol";
 import {FPI} from "../libs/FixedPointInt256.sol";
-import "hardhat/console.sol";
 
 contract MarginVaultTester {
     using MarginVault for MarginVault.Vault;
@@ -70,11 +69,7 @@ contract MarginVaultTester {
         vault[msg.sender][_vaultIndex].addCollaterals(_collateralAssets, _amounts);
     }
 
-    
-    function testRemoveCollateral(
-        uint256 _vaultIndex,
-        uint256[] calldata _amounts
-    ) external {
+    function testRemoveCollateral(uint256 _vaultIndex, uint256[] calldata _amounts) external {
         vault[msg.sender][_vaultIndex].removeCollateral(_amounts);
     }
 }

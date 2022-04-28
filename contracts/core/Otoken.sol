@@ -10,8 +10,6 @@ import {BokkyPooBahsDateTimeLibrary} from "../packages/BokkyPooBahsDateTimeLibra
 import {AddressBookInterface} from "../interfaces/AddressBookInterface.sol";
 import {Constants} from "./Constants.sol";
 
-import "hardhat/console.sol";
-
 /**
  * @title Otoken
  * @notice Otoken is the ERC20 token for an option
@@ -40,7 +38,7 @@ contract Otoken is ERC20PermitUpgradeable {
     /// updated upon every mint
     uint256[] public collateralsAmounts;
 
-    /// @notice value of collateral assets denominated in strike asset used for mint total supply of this oToken
+    /// @notice value of collateral assets denominated in strike asset, used for mint total supply of this oToken
     /// updated upon every mint
     uint256[] public collateralsValues;
 
@@ -85,7 +83,10 @@ contract Otoken is ERC20PermitUpgradeable {
             _collateralAssets.length <= Constants.MAX_COLLATERAL_ASSETS,
             "collateralAssets must be less than or equal to MAX_COLLATERAL_ASSETS"
         );
-        require(_collateralAssets.length == _collateralConstraints.length, "_collateralConstraints and _collateralAssets must have same length");
+        require(
+            _collateralAssets.length == _collateralConstraints.length,
+            "_collateralConstraints and _collateralAssets must have same length"
+        );
         controller = AddressBookInterface(_addressBook).getController();
         underlyingAsset = _underlyingAsset;
         strikeAsset = _strikeAsset;
@@ -187,9 +188,8 @@ contract Otoken is ERC20PermitUpgradeable {
         for (uint256 i = 0; i < collateralAssetsLength; i++) {
             _collateralsValues[i] = collateralsValuesForMint[i].add(_collateralsValues[i]);
             _collateralsAmounts[i] = _collateralsAmounts[i].add(collateralsAmountsForMint[i]);
-            if(_collateralConstraints[i] > 0) {
-                require
-                (
+            if (_collateralConstraints[i] > 0) {
+                require(
                     _collateralConstraints[i] >= _collateralsAmounts[i],
                     "Otoken: collateral token constraint exceeded"
                 );
@@ -199,7 +199,6 @@ contract Otoken is ERC20PermitUpgradeable {
         collateralsAmounts = _collateralsAmounts;
         collaterizedTotalAmount = collaterizedTotalAmount.add(amount);
         _mint(account, amount);
-        console.log("mintOtoken", amount);
     }
 
     /**

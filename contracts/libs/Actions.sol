@@ -14,7 +14,7 @@ pragma solidity 0.8.9;
  * A5 cannot mint from an invalid account
  * A6 can only parse arguments for burn actions
  * A7 cannot burn from an invalid account
- * A8 can only parse arguments for deposit actions
+ * A8 can only parse arguments for deposit collateral action
  * A9 cannot deposit to an invalid account
  * A10 can only parse arguments for withdraw actions
  * A11 cannot withdraw from an invalid account
@@ -41,6 +41,7 @@ pragma solidity 0.8.9;
  * A33 param "amounts" should have 1 element for withdrawLong action
  * A34 param "amounts" should have 1 element for burnShort action
  * A35 param "assets" should have 1 element for burnShort action
+ * A36 can only parse arguments for deposit long action
  */
 library Actions {
     // possible actions that can be performed
@@ -224,10 +225,7 @@ library Actions {
      * @return arguments for a deposit action
      */
     function _parseDepositCollateralArgs(ActionArgs memory _args) internal pure returns (DepositCollateralArgs memory) {
-        require(
-            (_args.actionType == ActionType.DepositLongOption) || (_args.actionType == ActionType.DepositCollateral),
-            "A8"
-        );
+        require(_args.actionType == ActionType.DepositCollateral, "A8");
         require(_args.owner != address(0), "A9");
 
         return
@@ -245,10 +243,7 @@ library Actions {
      * @return arguments for a deposit action
      */
     function _parseDepositLongArgs(ActionArgs memory _args) internal pure returns (DepositLongArgs memory) {
-        require(
-            (_args.actionType == ActionType.DepositLongOption) || (_args.actionType == ActionType.DepositCollateral),
-            "A8"
-        );
+        require(_args.actionType == ActionType.DepositLongOption, "A36");
         require(_args.owner != address(0), "A9");
         require(_args.assets.length == 1, "A31");
         require(_args.amounts.length == 1, "A32");

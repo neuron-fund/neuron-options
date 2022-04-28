@@ -1,6 +1,10 @@
 import { assert } from 'chai'
 import { prettyObjectStringify } from '../../../utils/log'
-import { addTokenDecimalsToAmount, approveERC20, getEthOrERC20BalanceFormatted } from '../erc20'
+import {
+  addTokenDecimalsToAmount,
+  approveERC20,
+  getEthOrERC20BalanceFormatted as getTokenBalanceFormatted,
+} from '../erc20'
 import { findOToken, oTokenDecimals, OTokenPrices } from '../otoken'
 import { calculateMarginRequired } from './margin'
 import { OtokenInfo, calculateRedeemForOtokenAmount } from './otoken'
@@ -224,7 +228,7 @@ export async function assertSettleVault<T extends OTokenParams, C extends TestMi
   )
 
   const collateralsLeftFormatted = await Promise.all(
-    shortOTokenParams.collateralAssets.map(c => getEthOrERC20BalanceFormatted(vault.owner, c))
+    shortOTokenParams.collateralAssets.map(c => getTokenBalanceFormatted(vault.owner, c))
   )
   const collateralsLeftValuesFormatted = collateralsLeftFormatted.map(
     (c, i) => c * params.expiryPrices[shortOTokenParams.collateralAssets[i]]
@@ -232,14 +236,24 @@ export async function assertSettleVault<T extends OTokenParams, C extends TestMi
   for (const [i, collateralAsset] of shortOTokenParams.collateralAssets.entries()) {
     const deviationValue = Math.abs(collateralsLeftValuesFormatted[i] - expectedCollateralsLeftValuesFormatted[i])
     assert(
-      deviationValue < EXPECTED_DEVIATIONS.settleCollateralUsd,
+      deviationValue < EXPECTED_DEVIATIONS.settleCollateralUsdValue,
       `
         Collateral ${i}, ${collateralAsset} settled with wrong usd value.
         Expected: ${expectedCollateralsLeftValuesFormatted[i]}, got: ${collateralsLeftValuesFormatted[i]}
-        Expected usd deviation: ${EXPECTED_DEVIATIONS.settleCollateralUsd}, got:  ${deviationValue}
-      `
+        Expected usd deviation: ${EXPECTED_DEVIATIONS.settleCollateralUsdValue}, got:  ${deviationValue}
+        `
     )
   }
+  const totalExpectedValue = expectedCollateralsLeftValuesFormatted.reduce((a, b) => a + b, 0)
+  const totalValueRecieved = collateralsLeftValuesFormatted.reduce((a, b) => a + b, 0)
+  const totalDeviation = Math.abs(totalValueRecieved - totalExpectedValue)
+  assert(
+    totalDeviation < EXPECTED_DEVIATIONS.redeemTotalUsdValue,
+    `
+      Collaterals settled with wrong usd value.
+      Expected: ${totalExpectedValue}, got: ${totalValueRecieved}
+      `
+  )
 }
 
 export async function prepareDepositCollateralAction<T extends OTokenParams>(
@@ -314,16 +328,17 @@ export async function openVaultAndMint<T extends OTokenParams, C extends TestMin
 ) {
   const { collateralAmountsFormatted, owner } = vault
   const oTokenAmount = parseUnits(oTokenAmountFormatted.toString(), oTokenDecimals)
-  //const vaultId = (await controller.accountVaultCounter(owner.address)).toNumber() + 1
-
   const currentVault = (await controller.accountVaultCounter(owner.address)).toNumber()
   const vaultId = 1
 
-  const openVaultAction = !currentVault && getAction(ActionType.OpenVault, {
-    owner: owner.address,
-    shortOtoken: oToken.address,
-    vaultId,
-  })
+  const openVaultAction =
+    !currentVault &&
+    getAction(ActionType.OpenVault, {
+      owner: owner.address,
+      shortOtoken: oToken.address,
+      // TODO no need of vaultID if we open vault
+      vaultId,
+    })
 
   const depositCollateralAction = await prepareDepositCollateralAction(
     vaultId,
@@ -337,7 +352,14 @@ export async function openVaultAndMint<T extends OTokenParams, C extends TestMin
 
   const depositLongAction =
     vault.longToDeposit &&
-    await prepareDepositLongAction(vaultId, owner, marginPool.address, oTokenFactory, longOtoken, longDepositAmountFormatted)
+    (await prepareDepositLongAction(
+      vaultId,
+      owner,
+      marginPool.address,
+      oTokenFactory,
+      longOtoken,
+      longDepositAmountFormatted
+    ))
 
   const openAndDepositActions = [openVaultAction, depositCollateralAction, depositLongAction].filter(Boolean)
 

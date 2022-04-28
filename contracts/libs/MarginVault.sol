@@ -9,8 +9,6 @@ import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import {FPI} from "../libs/FixedPointInt256.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
-import "hardhat/console.sol";
-
 /**
  * MarginVault Error Codes
  * V1: invalid short otoken amount
@@ -238,7 +236,7 @@ library MarginVault {
         Vault storage _vault,
         uint256[] memory _amounts,
         uint256 _usedLongAmount,
-        uint256[] memory _reservedCollateralValues
+        uint256[] memory _usedCollateralValues
     ) external {
         require(
             _amounts.length == _vault.collateralAssets.length,
@@ -254,7 +252,7 @@ library MarginVault {
                 "Trying to use collateral which exceeds vault's balance"
             );
             _vault.availableCollateralAmounts[i] = _vault.collateralAmounts[i].sub(newReservedCollateralAmount);
-            _vault.usedCollateralValues[i] = _vault.usedCollateralValues[i].add(_reservedCollateralValues[i]);
+            _vault.usedCollateralValues[i] = _vault.usedCollateralValues[i].add(_usedCollateralValues[i]);
         }
 
         _vault.usedLongAmount = _vault.usedLongAmount.add(_usedLongAmount);

@@ -1,11 +1,10 @@
-import { 
+import {
   MockERC20 as MockERC20Instance,
   MockAddressBook as MockAddressBookInstance,
- // WETH9 as WETH9Instance,
+  // WETH9 as WETH9Instance,
   MarginPool as MarginPoolInstance,
-  MockDumbERC20 as MockDumbERC20Instance
-} from '../../typechain-types' 
-
+  MockDumbERC20 as MockDumbERC20Instance,
+} from '../../typechain-types'
 
 import { expectRevert, ether } from '@openzeppelin/test-helpers'
 import { artifacts, contract, web3 } from 'hardhat'
@@ -74,7 +73,7 @@ contract('MarginPool', ([owner, controllerAddress, farmer, user1, random]) => {
 
       await expectRevert(
         marginPool.transferToPool(usdc.address, user1, usdcToTransfer, { from: random }),
-        'MarginPool: Sender is not Controller',
+        'MarginPool: Sender is not Controller'
       )
     })
 
@@ -84,7 +83,7 @@ contract('MarginPool', ([owner, controllerAddress, farmer, user1, random]) => {
 
       await expectRevert(
         marginPool.transferToPool(usdc.address, user1, ether('0'), { from: controllerAddress }),
-        'MarginPool: transferToPool amount is equal to 0',
+        'MarginPool: transferToPool amount is equal to 0'
       )
     })
 
@@ -94,7 +93,7 @@ contract('MarginPool', ([owner, controllerAddress, farmer, user1, random]) => {
 
       await expectRevert(
         marginPool.transferToPool(usdc.address, marginPool.address, ether('1'), { from: controllerAddress }),
-        'ERC20: transfer amount exceeds balance',
+        'ERC20: transfer amount exceeds balance'
       )
     })
 
@@ -113,13 +112,13 @@ contract('MarginPool', ([owner, controllerAddress, farmer, user1, random]) => {
       assert.equal(
         BigNumber.from(usdcToTransfer.toString()).toString(),
         userBalanceBefore.sub(userBalanceAfter).toString(),
-        'USDC value transfered from user mismatch',
+        'USDC value transfered from user mismatch'
       )
 
       assert.equal(
         BigNumber.from(usdcToTransfer.toString()).toString(),
         poolBalanceAfter.sub(poolBalanceBefore).toString(),
-        'USDC value transfered into pool mismatch',
+        'USDC value transfered into pool mismatch'
       )
     })
 
@@ -135,20 +134,20 @@ contract('MarginPool', ([owner, controllerAddress, farmer, user1, random]) => {
       assert.equal(
         wethToTransfer.toString(),
         controllerBalanceBefore.sub(controllerBalanceAfter).toString(),
-        'WETH value transfered from controller mismatch',
+        'WETH value transfered from controller mismatch'
       )
 
       assert.equal(
         wethToTransfer.toString(),
         poolBalanceAfter.sub(poolBalanceBefore).toString(),
-        'WETH value transfered into pool mismatch',
+        'WETH value transfered into pool mismatch'
       )
     })
 
     it('should revert when transferFrom return false on dumbERC20', async () => {
       await expectRevert(
         marginPool.transferToPool(dumbToken.address, user1, ether('1'), { from: controllerAddress }),
-        'SafeERC20: ERC20 operation did not succeed',
+        'SafeERC20: ERC20 operation did not succeed'
       )
     })
   })
@@ -160,14 +159,14 @@ contract('MarginPool', ([owner, controllerAddress, farmer, user1, random]) => {
     it('should revert transfering to user from caller other than controller address', async () => {
       await expectRevert(
         marginPool.transferToUser(usdc.address, user1, usdcToTransfer, { from: random }),
-        'MarginPool: Sender is not Controller',
+        'MarginPool: Sender is not Controller'
       )
     })
 
     it('should revert transfering to user if the user address is the margin pool addres', async () => {
       await expectRevert(
         marginPool.transferToUser(usdc.address, marginPool.address, usdcToTransfer, { from: controllerAddress }),
-        'MarginPool: cannot transfer assets to oneself',
+        'MarginPool: cannot transfer assets to oneself'
       )
     })
 
@@ -183,13 +182,13 @@ contract('MarginPool', ([owner, controllerAddress, farmer, user1, random]) => {
       assert.equal(
         usdcToTransfer.toString(),
         userBalanceAfter.sub(userBalanceBefore).toString(),
-        'USDC value transfered to user mismatch',
+        'USDC value transfered to user mismatch'
       )
 
       assert.equal(
         usdcToTransfer.toString(),
         poolBalanceBefore.sub(poolBalanceAfter).toString(),
-        'USDC value transfered from pool mismatch',
+        'USDC value transfered from pool mismatch'
       )
     })
 
@@ -210,13 +209,13 @@ contract('MarginPool', ([owner, controllerAddress, farmer, user1, random]) => {
       assert.equal(
         wethToTransfer.toString(),
         poolBalanceBefore.sub(poolBalanceAfter).toString(),
-        'WETH value un-wrapped from pool mismatch',
+        'WETH value un-wrapped from pool mismatch'
       )
 
       assert.equal(
         wethToTransfer.toString(),
         BigNumber.from(userBalanceAfter).sub(BigNumber.from(userBalanceBefore)).toString(),
-        'ETH value transfered to user mismatch',
+        'ETH value transfered to user mismatch'
       )
     })
 
@@ -228,7 +227,7 @@ contract('MarginPool', ([owner, controllerAddress, farmer, user1, random]) => {
       await dumbToken.setLocked(true)
       await expectRevert(
         marginPool.transferToUser(dumbToken.address, user1, ether('1'), { from: controllerAddress }),
-        'SafeERC20: ERC20 operation did not succeed',
+        'SafeERC20: ERC20 operation did not succeed'
       )
       await dumbToken.setLocked(false)
     })
@@ -247,7 +246,7 @@ contract('MarginPool', ([owner, controllerAddress, farmer, user1, random]) => {
         marginPool.batchTransferToPool([usdc.address, weth.address], [user1, user1], [usdcToTransfer, wethToTransfer], {
           from: random,
         }),
-        'MarginPool: Sender is not Controller',
+        'MarginPool: Sender is not Controller'
       )
     })
     it('should revert transfering to pool an array with an amount equal to zero', async () => {
@@ -259,7 +258,7 @@ contract('MarginPool', ([owner, controllerAddress, farmer, user1, random]) => {
         marginPool.batchTransferToPool([usdc.address, weth.address], [user1, user1], [ether('0'), wethToTransfer], {
           from: controllerAddress,
         }),
-        'MarginPool: transferToPool amount is equal to 0',
+        'MarginPool: transferToPool amount is equal to 0'
       )
     })
 
@@ -269,9 +268,9 @@ contract('MarginPool', ([owner, controllerAddress, farmer, user1, random]) => {
           [usdc.address, weth.address],
           [user1, user1],
           [usdcToTransfer, usdcToTransfer, usdcToTransfer],
-          { from: controllerAddress },
+          { from: controllerAddress }
         ),
-        'MarginPool: batchTransferToPool array lengths are not equal',
+        'MarginPool: batchTransferToPool array lengths are not equal'
       )
     })
 
@@ -289,7 +288,7 @@ contract('MarginPool', ([owner, controllerAddress, farmer, user1, random]) => {
         [usdc.address, weth.address],
         [user1, controllerAddress],
         [usdcToTransfer, wethToTransfer],
-        { from: controllerAddress },
+        { from: controllerAddress }
       )
 
       const userUsdcBalanceAfter = await usdc.balanceOf(user1)
@@ -300,25 +299,25 @@ contract('MarginPool', ([owner, controllerAddress, farmer, user1, random]) => {
       assert.equal(
         usdcToTransfer.toString(),
         userUsdcBalanceBefore.sub(userUsdcBalanceAfter).toString(),
-        'USDC value transfered from user mismatch',
+        'USDC value transfered from user mismatch'
       )
 
       assert.equal(
         usdcToTransfer.toString(),
         poolUsdcBalanceAfter.sub(poolUsdcBalanceBefore).toString(),
-        'USDC value transfered into pool mismatch',
+        'USDC value transfered into pool mismatch'
       )
 
       assert.equal(
         wethToTransfer.toString(),
         controllerWethBalanceBefore.sub(controllerWethBalanceAfter).toString(),
-        'WETH value transfered from controller mismatch',
+        'WETH value transfered from controller mismatch'
       )
 
       assert.equal(
         wethToTransfer.toString(),
         poolWethBalanceAfter.sub(poolWethBalanceBefore).toString(),
-        'WETH value transfered into pool mismatch',
+        'WETH value transfered into pool mismatch'
       )
     })
   })
@@ -332,7 +331,7 @@ contract('MarginPool', ([owner, controllerAddress, farmer, user1, random]) => {
         marginPool.batchTransferToUser([usdc.address, weth.address], [user1, user1], [usdcToTransfer, wethToTransfer], {
           from: random,
         }),
-        'MarginPool: Sender is not Controller',
+        'MarginPool: Sender is not Controller'
       )
     })
 
@@ -342,9 +341,9 @@ contract('MarginPool', ([owner, controllerAddress, farmer, user1, random]) => {
           [usdc.address, weth.address],
           [user1, user1],
           [usdcToTransfer, usdcToTransfer, usdcToTransfer],
-          { from: controllerAddress },
+          { from: controllerAddress }
         ),
-        'MarginPool: batchTransferToUser array lengths are not equal',
+        'MarginPool: batchTransferToUser array lengths are not equal'
       )
     })
 
@@ -358,7 +357,7 @@ contract('MarginPool', ([owner, controllerAddress, farmer, user1, random]) => {
         [usdc.address, weth.address],
         [user1, controllerAddress],
         [poolUsdcBalanceBefore, poolWethBalanceBefore],
-        { from: controllerAddress },
+        { from: controllerAddress }
       )
 
       const userUsdcBalanceAfter = await usdc.balanceOf(user1)
@@ -369,113 +368,25 @@ contract('MarginPool', ([owner, controllerAddress, farmer, user1, random]) => {
       assert.equal(
         poolUsdcBalanceBefore.toString(),
         userUsdcBalanceAfter.sub(userUsdcBalanceBefore).toString(),
-        'USDC value transfered to user mismatch',
+        'USDC value transfered to user mismatch'
       )
 
       assert.equal(
         poolUsdcBalanceBefore.toString(),
         poolUsdcBalanceBefore.sub(poolUsdcBalanceAfter).toString(),
-        'USDC value transfered from pool mismatch',
+        'USDC value transfered from pool mismatch'
       )
 
       assert.equal(
         poolWethBalanceBefore.toString(),
         controllerWethBalanceAfter.sub(controllerWethBalanceBefore).toString(),
-        'WETH value transfered to controller mismatch',
+        'WETH value transfered to controller mismatch'
       )
 
       assert.equal(
         poolWethBalanceBefore.toString(),
         poolWethBalanceBefore.sub(poolWethBalanceAfter).toString(),
-        'WETH value transfered from pool mismatch',
-      )
-    })
-  })
-
-  describe('Farming', () => {
-    before(async () => {
-      // send more usdc to pool
-      await usdc.mint(marginPool.address, BigNumber.from('100'))
-    })
-
-    it('should revert setting farmer address from non-owner', async () => {
-      await expectRevert(marginPool.setFarmer(farmer, { from: random }), 'Ownable: caller is not the owner')
-    })
-
-    it('should set farmer address when called from owner', async () => {
-      await marginPool.setFarmer(farmer, { from: owner })
-
-      assert.equal(await marginPool.farmer(), farmer, 'farmer address mismatch')
-    })
-
-    it('should revert farming when receiver address is equal to zero', async () => {
-      const poolStoredBalanceBefore = await marginPool.getStoredBalance(usdc.address)
-      const poolBlanaceBefore = await usdc.balanceOf(marginPool.address)
-      const amountToFarm = poolBlanaceBefore.sub(poolStoredBalanceBefore)
-
-      await expectRevert(
-        marginPool.farm(usdc.address, ZERO_ADDR, amountToFarm, { from: farmer }),
-        'MarginPool: invalid receiver address',
-      )
-    })
-
-    it('should revert farming when sender is not farmer address', async () => {
-      const poolStoredBalanceBefore = await marginPool.getStoredBalance(usdc.address)
-      const poolBlanaceBefore = await usdc.balanceOf(marginPool.address)
-      const amountToFarm = poolBlanaceBefore.sub(poolStoredBalanceBefore)
-
-      await expectRevert(
-        marginPool.farm(usdc.address, random, amountToFarm, { from: random }),
-        'MarginPool: Sender is not farmer',
-      )
-    })
-
-    it('should farm additional USDC', async () => {
-      const poolStoredBalanceBefore = await marginPool.getStoredBalance(usdc.address)
-      const poolBlanaceBefore = await usdc.balanceOf(marginPool.address)
-      const farmerBalanceBefore = await usdc.balanceOf(farmer)
-      const amountToFarm = poolBlanaceBefore.sub(poolStoredBalanceBefore)
-
-      await marginPool.farm(usdc.address, farmer, amountToFarm, { from: farmer })
-
-      const poolStoredBalanceAfter = await marginPool.getStoredBalance(usdc.address)
-      const poolBlanaceAfter = await usdc.balanceOf(marginPool.address)
-      const farmerBalanceAfter = await usdc.balanceOf(farmer)
-
-      assert.equal(
-        poolStoredBalanceBefore.toString(),
-        poolStoredBalanceAfter.toString(),
-        'Pool stored balance mismatch',
-      )
-      assert.equal(
-        poolBlanaceBefore.sub(poolBlanaceAfter).toString(),
-        amountToFarm.toString(),
-        'Pool balance mismatch',
-      )
-      assert.equal(
-        farmerBalanceAfter.sub(farmerBalanceBefore).toString(),
-        amountToFarm.toString(),
-        'Farmer balance mismatch',
-      )
-    })
-
-    it('should revert farming when amount is greater than available balance to farm', async () => {
-      const amountToFarm = BigNumber.from('100000000000')
-
-      await expectRevert(
-        marginPool.farm(usdc.address, farmer, amountToFarm, { from: farmer }),
-        'MarginPool: amount to farm exceeds limit',
-      )
-    })
-
-    it('should revert farming when transfer return false for dumbERC20', async () => {
-      const amountExcess = ether('1')
-      await dumbToken.mint(marginPool.address, amountExcess)
-      await dumbToken.setLocked(true)
-
-      await expectRevert(
-        marginPool.farm(dumbToken.address, farmer, amountExcess, { from: farmer }),
-        'SafeERC20: ERC20 operation did not succeed',
+        'WETH value transfered from pool mismatch'
       )
     })
   })
