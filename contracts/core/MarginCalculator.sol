@@ -574,7 +574,6 @@ contract MarginCalculator is Ownable {
         return otoken.getOtokenDetails();
     }
 
-    // TODO can this be simplified?
     function _getOtokenDetailsFull(address _otoken) internal view returns (OTokenDetails memory) {
         OTokenDetails memory oTokenDetails;
         (

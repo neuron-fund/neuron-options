@@ -1,7 +1,7 @@
 import path from 'path'
-import { testDeploy } from '../helpers/fixtures'
-import { generateFuzzyTestParams, getSeed, Seed } from '../helpers/fuzzy'
-import { testMintRedeemSettleFactory } from '../helpers/e2e/testMintRedeemSettle'
+import { testDeploy } from './helpers/fixtures'
+import { generateFuzzyTestParams, getSeed, Seed } from './helpers/fuzzy'
+import { testMintRedeemSettleFactory } from './helpers/e2e/testMintRedeemSettle'
 
 //let testFuzzyNumbers
 let numberOfTests = 50

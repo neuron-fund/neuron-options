@@ -7,7 +7,6 @@ import { USDC, CHAINLINK_FEED } from '../constants/externalAddresses'
 import { ethers } from 'hardhat'
 
 const deploy: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  // TODO move to external function chainlinkPricerDeployer and remove duplications
   const { deployments, getNamedAccounts } = hre
   const { deploy, get } = deployments
   const { deployer, pricerBot } = await namedAccountsSigners(getNamedAccounts)
@@ -23,7 +22,6 @@ const deploy: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     args: [pricerBot.address, asset, feed, Oracle.address],
   })
 
-  // TODO figure out best period values for oracle
   const lockingPeriod = 0
   const disputePeriod = 60 * 20
   // await oracle.setAssetPricer(asset, pricerDeployResult.address)

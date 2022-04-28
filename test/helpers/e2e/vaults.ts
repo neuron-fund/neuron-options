@@ -336,7 +336,6 @@ export async function openVaultAndMint<T extends OTokenParams, C extends TestMin
     getAction(ActionType.OpenVault, {
       owner: owner.address,
       shortOtoken: oToken.address,
-      // TODO no need of vaultID if we open vault
       vaultId,
     })
 

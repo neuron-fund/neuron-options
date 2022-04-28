@@ -754,8 +754,8 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     {
         // check that vault id is valid for this vault owner
         require(_checkVaultId(_args.owner, _args.vaultId), "C35");
-
-        OtokenInterface otoken = OtokenInterface(_args.otoken);
+        address oTokenAddress = vaults[_args.owner][_args.vaultId].shortOtoken;
+        OtokenInterface otoken = OtokenInterface(oTokenAddress);
 
         // do not allow burning expired otoken
         require(block.timestamp < otoken.expiryTimestamp(), "C26");
@@ -772,11 +772,11 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         );
         (uint256[] memory freedCollateralAmounts, uint256[] memory freedCollateralValues) = vaults[_args.owner][
             _args.vaultId
-        ].removeShort(_args.otoken, _args.amount, collateralRatio, newUsedLongAmount);
+        ].removeShort(oTokenAddress, _args.amount, collateralRatio, newUsedLongAmount);
 
         otoken.reduceCollaterization(freedCollateralAmounts, freedCollateralValues, _args.amount);
 
-        emit ShortOtokenBurned(_args.otoken, _args.owner, msg.sender, _args.vaultId, _args.amount);
+        emit ShortOtokenBurned(oTokenAddress, _args.owner, msg.sender, _args.vaultId, _args.amount);
     }
 
     /**

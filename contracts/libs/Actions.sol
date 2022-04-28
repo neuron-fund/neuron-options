@@ -41,7 +41,6 @@ pragma solidity 0.8.9;
  * A33 param "amounts" should have 1 element for withdrawLong action
  * A34 param "amounts" should have 1 element for burnShort action
  * A35 param "assets" should have 1 element for burnShort action
- * A36 can only parse arguments for deposit long action
  */
 library Actions {
     // possible actions that can be performed
@@ -91,9 +90,6 @@ library Actions {
         address owner;
         // index of the vault from which the oToken will be burned
         uint256 vaultId;
-        // TODO otoken param is not required
-        // oToken that is to be burned
-        address otoken;
         // amount of oTokens that is to be burned
         uint256 amount;
     }
@@ -213,10 +209,8 @@ library Actions {
         require(_args.actionType == ActionType.BurnShortOption, "A6");
         require(_args.owner != address(0), "A7");
         require(_args.amounts.length == 1, "A34");
-        require(_args.assets.length == 1, "A35");
 
-        return
-            BurnArgs({owner: _args.owner, vaultId: _args.vaultId, otoken: _args.assets[0], amount: _args.amounts[0]});
+        return BurnArgs({owner: _args.owner, vaultId: _args.vaultId, amount: _args.amounts[0]});
     }
 
     /**
@@ -243,7 +237,7 @@ library Actions {
      * @return arguments for a deposit action
      */
     function _parseDepositLongArgs(ActionArgs memory _args) internal pure returns (DepositLongArgs memory) {
-        require(_args.actionType == ActionType.DepositLongOption, "A36");
+        require(_args.actionType == ActionType.DepositLongOption, "A35");
         require(_args.owner != address(0), "A9");
         require(_args.assets.length == 1, "A31");
         require(_args.amounts.length == 1, "A32");
@@ -330,7 +324,6 @@ library Actions {
         return SettleVaultArgs({owner: _args.owner, vaultId: _args.vaultId, to: _args.secondAddress});
     }
 
-    // TODO wahts call action do?
     /**
      * @notice parses the passed in action arguments to get the arguments for a call action
      * @param _args general action arguments structure

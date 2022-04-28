@@ -459,7 +459,6 @@ contract(
           getAction(ActionType.BurnShortOption, {
             owner: user,
             vaultId: vaultId,
-            otoken: [shortCall.address],
             amount: [shortsToBurn],
           })
         ]
@@ -555,7 +554,6 @@ contract(
             getAction(ActionType.BurnShortOption, {
               owner: user,
               vaultId: vaultId,
-              otoken: [shortCall.address],
               amount: [shortsToBurn1],
             })
           ],
@@ -574,7 +572,6 @@ contract(
             getAction(ActionType.BurnShortOption, {
               owner: user,
               vaultId: vaultId,
-              otoken: [shortCall.address],
               amount: [shortsToBurn2],
             })
           ],
@@ -661,7 +658,6 @@ contract(
             getAction(ActionType.BurnShortOption, {
               owner: user,
               vaultId: vaultId,
-              otoken: [shortCall.address],
               amount: [shortsToBurn1],
             })
           ],
@@ -682,7 +678,6 @@ contract(
             getAction(ActionType.BurnShortOption, {
               owner: user,
               vaultId: vaultId,
-              otoken: [shortCall.address],
               amount: [shortsToBurn2],
             })
           ],

@@ -15,7 +15,6 @@ export async function burnVault<T extends OTokenParams, C extends TestMintRedeem
   const burnAction: ActionArgsStruct[] = [
     getAction(ActionType.BurnShortOption, {
       amount: [parseUnits(vault.burnAmountFormatted.toString(), oTokenDecimals)],
-      otoken: [oToken.address],
       owner: vault.owner.address,
       vaultId: 1,
     }),
