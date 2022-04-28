@@ -1,6 +1,4 @@
-# Solidity API
-
-## ZeroXExchangeInterface
+# ZeroXExchangeInterface
 
 _ZeroX Exchange contract interface._
 

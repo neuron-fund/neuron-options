@@ -1,6 +1,4 @@
-# Solidity API
-
-## OwnedUpgradeabilityProxy
+# OwnedUpgradeabilityProxy
 
 _This contract combines an upgradeability proxy with basic authorization control functionalities_
 

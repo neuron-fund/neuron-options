@@ -1,6 +1,4 @@
-# Solidity API
-
-## ERC20Upgradeable
+# ERC20Upgradeable
 
 _Implementation of the {IERC20} interface.
 

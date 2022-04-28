@@ -1,6 +1,4 @@
-# Solidity API
-
-## YearnVaultInterface
+# YearnVaultInterface
 
 ### name
 

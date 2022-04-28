@@ -1,6 +1,4 @@
-# Solidity API
-
-## AddressBookInterface
+# AddressBookInterface
 
 ### getOtokenImpl
 

@@ -1,6 +1,4 @@
-# Solidity API
-
-## YearnPricer
+# YearnPricer
 
 A Pricer contract for a Yearn yToken
 

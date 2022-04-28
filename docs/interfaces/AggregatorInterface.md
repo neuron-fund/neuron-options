@@ -1,6 +1,4 @@
-# Solidity API
-
-## AggregatorInterface
+# AggregatorInterface
 
 _Interface of the Chainlink aggregator_
 

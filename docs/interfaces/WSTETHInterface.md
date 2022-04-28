@@ -1,6 +1,4 @@
-# Solidity API
-
-## WSTETHInterface
+# WSTETHInterface
 
 ### name
 

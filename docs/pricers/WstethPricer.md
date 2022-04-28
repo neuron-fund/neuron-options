@@ -1,6 +1,4 @@
-# Solidity API
-
-## WstethPricer
+# WstethPricer
 
 A Pricer contract for a wstETH token
 

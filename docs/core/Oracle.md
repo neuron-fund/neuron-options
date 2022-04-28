@@ -1,6 +1,4 @@
-# Solidity API
-
-## Oracle
+# Oracle
 
 The Oracle module sets, retrieves, and stores USD prices (USD per asset) for underlying, collateral, and strike assets
 manages pricers that are used for different assets

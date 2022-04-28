@@ -1,6 +1,4 @@
-# Solidity API
-
-## MarginPool
+# MarginPool
 
 Contract that holds all protocol funds
 

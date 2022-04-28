@@ -1,6 +1,4 @@
-# Solidity API
-
-## Initializable
+# Initializable
 
 _Helper contract to support initializer functions. To use it, replace
 the constructor with a function that has the &#x60;initializer&#x60; modifier.

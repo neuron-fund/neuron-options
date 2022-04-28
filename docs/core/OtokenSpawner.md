@@ -1,6 +1,4 @@
-# Solidity API
-
-## OtokenSpawner
+# OtokenSpawner
 
 This contract spawns and initializes eip-1167 minimal proxies that
 point to existing logic contracts.

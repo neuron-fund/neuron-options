@@ -1,6 +1,4 @@
-# Solidity API
-
-## UpgradeabilityProxy
+# UpgradeabilityProxy
 
 _This contract represents a proxy where the implementation address to which it will delegate can be upgraded_
 

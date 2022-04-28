@@ -1,6 +1,4 @@
-# Solidity API
-
-## Constants
+# Constants
 
 Library for sharing constants between contracts
 

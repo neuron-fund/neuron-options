@@ -1,6 +1,4 @@
-# Solidity API
-
-## CalleeInterface
+# CalleeInterface
 
 _Contract interface that can be called from Controller as a call action._
 

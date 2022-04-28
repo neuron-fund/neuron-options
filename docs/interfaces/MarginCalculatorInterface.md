@@ -1,6 +1,4 @@
-# Solidity API
-
-## MarginCalculatorInterface
+# MarginCalculatorInterface
 
 ### CollateralDustUpdated
 

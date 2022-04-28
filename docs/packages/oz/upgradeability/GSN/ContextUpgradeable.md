@@ -1,6 +1,4 @@
-# Solidity API
-
-## ContextUpgradeable
+# ContextUpgradeable
 
 ### __Context_init
 

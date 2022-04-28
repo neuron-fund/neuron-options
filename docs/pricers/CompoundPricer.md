@@ -1,6 +1,4 @@
-# Solidity API
-
-## CompoundPricer
+# CompoundPricer
 
 A Pricer contract for a Compound cToken
 

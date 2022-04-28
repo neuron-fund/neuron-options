@@ -1,6 +1,4 @@
-# Solidity API
-
-## OracleInterface
+# OracleInterface
 
 ### isLockingPeriodOver
 

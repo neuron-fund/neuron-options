@@ -1,6 +1,4 @@
-# Solidity API
-
-## BokkyPooBahsDateTimeLibrary
+# BokkyPooBahsDateTimeLibrary
 
 ### SECONDS_PER_DAY
 

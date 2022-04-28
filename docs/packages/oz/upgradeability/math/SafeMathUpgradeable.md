@@ -1,6 +1,4 @@
-# Solidity API
-
-## SafeMathUpgradeable
+# SafeMathUpgradeable
 
 _Wrappers over Solidity&#x27;s arithmetic operations with added overflow
 checks.

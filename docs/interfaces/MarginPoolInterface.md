@@ -1,6 +1,4 @@
-# Solidity API
-
-## MarginPoolInterface
+# MarginPoolInterface
 
 ### addressBook
 
