@@ -136,7 +136,6 @@ export const testMintRedeemSettleFactory = (getDeployResults: () => TestDeployRe
       `Redeemer balance of oToken is not correct\n Expected: ${totalOtokenRedeemable}\n Got: ${redeemerBalanceAfterMint}`
     )
 
-    // TODO it waits more days then needed when checkpoinDays provided in params
     await waitNDays(expiryDays + 1, network.provider)
     await setStablePrices(oracle, deployer, expiryPrices)
 

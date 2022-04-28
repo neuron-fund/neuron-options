@@ -104,7 +104,6 @@ export const SettleVaultsArgsMappings = {
 export const BurnShortOptionArgsMappings = {
   owner: 'owner',
   vaultId: 'vaultId',
-  otoken: 'assets',
   amount: 'amounts',
 } as const
 
