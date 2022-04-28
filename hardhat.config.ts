@@ -27,7 +27,6 @@ const config: HardhatUserConfig = {
         settings: {
           optimizer: {
             enabled: true,
-            // TODO figure out best value
             // If the smart contract is only of one-time use as a smart contract for vesting or locking of tokens,
             // you can set the runs value to 1 so that the compiler will produce the smallest possible bytecode
             // but it may cost slightly more gas to call the function(s).
@@ -80,9 +79,8 @@ const config: HardhatUserConfig = {
   },
   mocha: {
     reporter: 'eth-gas-reporter',
-    timeout: 300000,
+    timeout: 30000000,
   },
-  // TODO typed named accounts
   namedAccounts: {
     deployer: {
       default: 10,

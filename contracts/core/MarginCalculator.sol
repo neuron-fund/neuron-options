@@ -552,35 +552,6 @@ contract MarginCalculator is Ownable {
     }
 
     /**
-     * @dev ensure that:
-     * a) at most 1 asset type used as collateral
-     * b) at most 1 series of option used as the long option
-     * c) at most 1 series of option used as the short option
-     * d) asset array lengths match for long, short and collateral
-     * e) long option and collateral asset is acceptable for margin with short asset
-     * @param _vault the vault to check
-     * @param _vaultDetails vault details struct
-     */
-    function _checkIsValidVault(MarginVault.Vault memory _vault, VaultDetails memory _vaultDetails) internal pure {
-        // ensure all the arrays in the vault are valid
-        require(
-            _vault.collateralAssets.length <= Constants.MAX_COLLATERAL_ASSETS,
-            "MarginCalculator: Too many collateral assets in the vault"
-        );
-
-        require(
-            _vault.collateralAssets.length == _vault.collateralAmounts.length,
-            "MarginCalculator: Collateral asset and amount mismatch"
-        );
-
-        // ensure the long asset is valid for the short asset
-        // require(
-        //     _isMarginableLong(_vault, _vaultDetails),
-        //     "MarginCalculator: long asset not marginable for short asset"
-        // );
-    }
-
-    /**
      * @dev if there is a short option and a long option in the vault, ensure that the long option is able to be used as collateral for the short option
      * @param _vault the vault to check
      * @return true if long is marginable or false if not
@@ -592,12 +563,12 @@ contract MarginCalculator is Ownable {
         // check if longCollateralAssets is same as shortCollateralAssets
         OTokenDetails memory long = _getOtokenDetailsFull(longOtokenAddress);
         OTokenDetails memory short = _getOtokenDetailsFull(_vault.shortOtoken);
-        //_getOtokenDetailsFull(address)
 
         bool isSameLongCollaterals = keccak256(abi.encode(long.collaterals)) ==
             keccak256(abi.encode(short.collaterals));
 
         return
+            block.timestamp < long.expiry &&
             _vault.longOtoken != _vault.shortOtoken &&
             isSameLongCollaterals &&
             long.underlying == short.underlying &&
