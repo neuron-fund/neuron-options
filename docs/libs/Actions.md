@@ -2,12 +2,12 @@
 
 A library that provides a ActionArgs struct, sub types of Action structs, and functions to parse ActionArgs into specific Actions.
 errorCode
-A1 can only parse arguments for open vault actions
-A2 cannot open vault for an invalid account
-A3 cannot open vault with an invalid type
-A4 can only parse arguments for mint actions
-A5 cannot mint from an invalid account
-A6 can only parse arguments for burn actions
+* A1 can only parse arguments for open vault actions
+* A2 cannot open vault for an invalid account
+* A3 cannot open vault with an invalid type
+* A4 can only parse arguments for mint actions
+* A5 cannot mint from an invalid account
+* A6 can only parse arguments for burn actions
 A7 cannot burn from an invalid account
 A8 can only parse arguments for deposit actions
 A9 cannot deposit to an invalid account

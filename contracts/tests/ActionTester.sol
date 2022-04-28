@@ -45,6 +45,11 @@ contract ActionTester {
         return withdrawCollateralArgs;
     }
 
+    function getWithdrawLong() external view returns (Actions.WithdrawLongArgs memory) {
+        return withdrawLongArgs;
+    }
+
+
     function testParseOpenVaultAction(Actions.ActionArgs memory _args) external {
         openVaultArgs = Actions._parseOpenVaultArgs(_args);
     }

@@ -400,7 +400,7 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
 
       await expect(actionTester.testParseWithdrawAction(data)).to.be.revertedWith('A11')
     })
-    xit('should be able to parse arguments for a withdraw long action', async () => {
+    it('should be able to parse arguments for a withdraw long action', async () => {
       // const {deployer: owner, random_user: random} = await getNamedAccounts();
       const actionType = ActionType.WithdrawLongOption
       const assets = [ZERO_ADDR]
@@ -422,9 +422,8 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
 
       await actionTester.testParseWithdrawLong(data)
 
-      const depositArgs = await actionTester.getWithdrawArgs()
+      const depositArgs = await actionTester.getWithdrawLong()
       assert.equal(depositArgs.owner, owner)
-      assert.equal(depositArgs.amounts[0].toString(), amounts[0])
       assert.equal(depositArgs.to, random)
       assert.equal(depositArgs.vaultId.toString(), vaultId)
     })
@@ -604,12 +603,12 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
 
       await expect(actionTester.testParseBurnAction(data)).to.be.revertedWith('A7')
     })
-    xit('should be able to parse arguments for a burn short action', async () => {
+    it('should be able to parse arguments for a burn short action', async () => {
       // const {deployer: owner, random_user: random} = await getNamedAccounts();
       const actionType = ActionType.BurnShortOption
-      const assets = [ZERO_ADDR, ZERO_ADDR]
+      const assets = [ZERO_ADDR]
       const vaultId = '1'
-      const amounts = ['10', '10']
+      const amounts = ['10']
       const index = '0'
       const bytesArgs = ZERO_ADDR
 
@@ -632,34 +631,6 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
       assert.equal(burnArgs.otoken, assets[0])
       assert.equal(burnArgs.vaultId.toString(), vaultId)
       //assert.equal(burnArgs.index.toString(), index)
-    })
-    xit('should be able to parse arguments for a burn short action', async () => {
-      // const {deployer: owner, random_user: random} = await getNamedAccounts();
-      const actionType = ActionType.BurnShortOption
-      const assets = [ZERO_ADDR, ZERO_ADDR]
-      const vaultId = '3'
-      const amounts = ['10', '10']
-      const index = '0'
-      const bytesArgs = ZERO_ADDR
-
-      const data = {
-        actionType: actionType,
-        owner: random,
-        secondAddress: owner,
-        assets: assets,
-        vaultId: vaultId,
-        amounts: amounts,
-        index: index,
-        data: bytesArgs,
-      }
-
-      await actionTester.testParseBurnAction(data)
-
-      const burnArgs = await actionTester.getBurnArgs()
-      assert.equal(burnArgs.owner, random)
-      assert.equal(burnArgs.amount.toString(), amounts[0])
-      assert.equal(burnArgs.otoken, assets[0])
-      assert.equal(burnArgs.vaultId.toString(), vaultId)
     })
   })
   describe('Parse Call Arguments', () => {
