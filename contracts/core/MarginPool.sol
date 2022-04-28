@@ -9,8 +9,6 @@ import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-import "hardhat/console.sol";
-
 /**
  * @title MarginPool
  * @notice Contract that holds all protocol funds
@@ -21,8 +19,6 @@ contract MarginPool is Ownable {
 
     /// @notice AddressBook module
     address public addressBook;
-    /// @dev the address that has the ability to withdraw excess assets in the pool
-    address public farmer;
     /// @dev mapping between an asset and the amount of the asset in the pool
     mapping(address => uint256) internal assetBalance;
 
@@ -40,10 +36,6 @@ contract MarginPool is Ownable {
     event TransferToPool(address indexed asset, address indexed user, uint256 amount);
     /// @notice emits an event when marginpool transfer funds to controller
     event TransferToUser(address indexed asset, address indexed user, uint256 amount);
-    /// @notice emit event after updating the farmer address
-    event FarmerUpdated(address indexed oldAddress, address indexed newAddress);
-    /// @notice emit event when an asset gets harvested from the pool
-    event AssetFarmed(address indexed asset, address indexed receiver, uint256 amount);
 
     /**
      * @notice check if the sender is the Controller module
@@ -53,15 +45,6 @@ contract MarginPool is Ownable {
             msg.sender == AddressBookInterface(addressBook).getController(),
             "MarginPool: Sender is not Controller"
         );
-
-        _;
-    }
-
-    /**
-     * @notice check if the sender is the farmer address
-     */
-    modifier onlyFarmer() {
-        require(msg.sender == farmer, "MarginPool: Sender is not farmer");
 
         _;
     }
@@ -96,8 +79,6 @@ contract MarginPool is Ownable {
         address _user,
         uint256 _amount
     ) public onlyController {
-        console.log("MarginPool: transferToUser: required", _amount);
-        console.log("MarginPool: transferToUser: balance", assetBalance[_asset]);
         require(_user != address(this), "MarginPool: cannot transfer assets to oneself");
         assetBalance[_asset] = assetBalance[_asset].sub(_amount);
 
@@ -113,84 +94,5 @@ contract MarginPool is Ownable {
      */
     function getStoredBalance(address _asset) external view returns (uint256) {
         return assetBalance[_asset];
-    }
-
-    /**
-     * @notice transfers multiple assets from users to the pool
-     * @param _asset addresses of the assets to transfer
-     * @param _user addresses of the users to transfer assets to
-     * @param _amount amount of each token to transfer to pool
-     */
-    function batchTransferToPool(
-        address[] memory _asset,
-        address[] memory _user,
-        uint256[] memory _amount
-    ) external onlyController {
-        require(
-            _asset.length == _user.length && _user.length == _amount.length,
-            "MarginPool: batchTransferToPool array lengths are not equal"
-        );
-
-        for (uint256 i = 0; i < _asset.length; i++) {
-            // transfer _asset _amount from _user to pool
-            transferToPool(_asset[i], _user[i], _amount[i]);
-        }
-    }
-
-    /**
-     * @notice transfers multiple assets from the pool to users
-     * @param _asset addresses of the assets to transfer
-     * @param _user addresses of the users to transfer assets to
-     * @param _amount amount of each token to transfer to _user
-     */
-    function batchTransferToUser(
-        address[] memory _asset,
-        address[] memory _user,
-        uint256[] memory _amount
-    ) external onlyController {
-        require(
-            _asset.length == _user.length && _user.length == _amount.length,
-            "MarginPool: batchTransferToUser array lengths are not equal"
-        );
-
-        for (uint256 i = 0; i < _asset.length; i++) {
-            // transfer _asset _amount from pool to _user
-            transferToUser(_asset[i], _user[i], _amount[i]);
-        }
-    }
-
-    /**
-     * @notice function to collect the excess balance of a particular asset
-     * @dev can only be called by the farmer address. Do not farm otokens.
-     * @param _asset asset address
-     * @param _receiver receiver address
-     * @param _amount amount to remove from pool
-     */
-    function farm(
-        address _asset,
-        address _receiver,
-        uint256 _amount
-    ) external onlyFarmer {
-        require(_receiver != address(0), "MarginPool: invalid receiver address");
-
-        uint256 externalBalance = IERC20(_asset).balanceOf(address(this));
-        uint256 storedBalance = assetBalance[_asset];
-
-        require(_amount <= externalBalance.sub(storedBalance), "MarginPool: amount to farm exceeds limit");
-
-        IERC20(_asset).safeTransfer(_receiver, _amount);
-
-        emit AssetFarmed(_asset, _receiver, _amount);
-    }
-
-    /**
-     * @notice function to set farmer address
-     * @dev can only be called by MarginPool owner
-     * @param _farmer farmer address
-     */
-    function setFarmer(address _farmer) external onlyOwner {
-        emit FarmerUpdated(farmer, _farmer);
-
-        farmer = _farmer;
     }
 }

@@ -19,7 +19,6 @@ import {
   TestMintRedeemSettleParamsCheckpoints,
   TestMintRedeemSettleParams,
   TestMintRedeemSettleParamsVaultOwned,
-  LongOwner,
   TestMintRedeemSettleParamsVault,
   LongOwnerWithSigner,
 } from './types'
@@ -31,8 +30,9 @@ import { assertSettleVault, openVaultAndMint } from './vaults'
 export const EXPECTED_DEVIATIONS = {
   redeemOneCollateralUsdValue: 2.5,
   redeemTotalUsdValue: 1,
-  settleCollateralUsd: 3,
-  redeemOneCollateralUsdPercentage: 0.7,
+  settleTotalUsdValue: 1,
+  settleCollateralUsdValue: 2,
+  redeemOneCollateralUsdPercentage: 1,
 } as const
 
 export const testMintRedeemSettleFactory = (getDeployResults: () => TestDeployResult) => {
@@ -139,9 +139,6 @@ export const testMintRedeemSettleFactory = (getDeployResults: () => TestDeployRe
     // TODO it waits more days then needed when checkpoinDays provided in params
     await waitNDays(expiryDays + 1, network.provider)
     await setStablePrices(oracle, deployer, expiryPrices)
-    
-
-
 
     await redeem(oToken, controller, redeemer, addDecimalsToAmount(totalOtokenRedeemableFormatted, oTokenDecimals))
     await assertRedeem(params, vaults, redeemer, longsInfo, totalOtokenRedeemableFormatted)
@@ -303,11 +300,10 @@ async function mintOnCheckpoints<T extends OTokenParams, C extends TestMintRedee
   mockERC20Owners: { [key: string]: SignerWithAddress }
 ) {
   const checkpoints = Object.keys(params.checkpointsDays || [])
-  let last_checkpont = 0;
-  for (const cumul_checkpoint of checkpoints) {    
-    let checkpoint = Number(cumul_checkpoint) - last_checkpont;
-    console.log(cumul_checkpoint, checkpoint);
-    last_checkpont = Number(cumul_checkpoint);
+  let last_checkpont = 0
+  for (const cumul_checkpoint of checkpoints) {
+    let checkpoint = Number(cumul_checkpoint) - last_checkpont
+    last_checkpont = Number(cumul_checkpoint)
     await waitNDays(Number(checkpoint), network.provider)
     await setStablePrices(oracle, deployer, params.checkpointsDays[cumul_checkpoint].prices)
     const vaultsToMintOnCheckpoint = vaults.filter(x => x.mintOnCheckoints?.[cumul_checkpoint])

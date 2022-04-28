@@ -4,7 +4,6 @@ pragma solidity 0.8.9;
 pragma experimental ABIEncoderV2;
 
 import {Actions} from "../libs/Actions.sol";
-import "hardhat/console.sol";
 
 contract ActionTester {
     Actions.OpenVaultArgs private openVaultArgs;

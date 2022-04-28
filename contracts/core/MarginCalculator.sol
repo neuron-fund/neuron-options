@@ -15,8 +15,6 @@ import {MarginVault} from "../libs/MarginVault.sol";
 import {ArrayAddressUtils} from "../libs/ArrayAddressUtils.sol";
 import {Constants} from "./Constants.sol";
 
-import "hardhat/console.sol";
-
 /**
  * @title MarginCalculator
  * @notice Calculator module that checks if a given vault is valid, calculates margin requirements, and settlement proceeds
@@ -79,26 +77,11 @@ contract MarginCalculator is Ownable {
     /// @dev mapping to store dust amount per option collateral asset (scaled by collateral asset decimals)
     mapping(address => uint256) internal dust;
 
-    /// @dev mapping to store array of time to expiry for a given product
-    mapping(bytes32 => uint256[]) internal timesToExpiryForProduct;
-
-    /// @dev mapping to store option upper bound value at specific time to expiry for a given product (1e27)
-    mapping(bytes32 => mapping(uint256 => uint256)) internal maxPriceAtTimeToExpiry;
-
-    /// @dev mapping to store shock value for spot price of a given product (1e27)
-    //mapping(bytes32 => uint256) internal spotShock;
-
     /// @dev oracle module
     OracleInterface public oracle;
 
     /// @notice emits an event when collateral dust is updated
     event CollateralDustUpdated(address indexed collateral, uint256 dust);
-    /// @notice emits an event when new time to expiry is added for a specific product
-    event TimeToExpiryAdded(bytes32 indexed productHash, uint256 timeToExpiry);
-    /// @notice emits an event when new upper bound value is added for a specific time to expiry timestamp
-    event MaxPriceAdded(bytes32 indexed productHash, uint256 timeToExpiry, uint256 value);
-    /// @notice emits an event when updating upper bound value at specific expiry timestamp
-    event MaxPriceUpdated(bytes32 indexed productHash, uint256 timeToExpiry, uint256 oldValue, uint256 newValue);
 
     /// @notice emits an event when spot shock value is updated for a specific product
     // event SpotShockUpdated(bytes32 indexed product, uint256 spotShock);
@@ -130,89 +113,6 @@ contract MarginCalculator is Ownable {
     }
 
     /**
-     * @notice set product upper bound values
-     * @dev can only be called by owner
-     * @param _underlying otoken underlying asset
-     * @param _strike otoken strike asset
-     * @param _collaterals otoken collateral asset
-     * @param _isPut otoken type
-     * @param _timesToExpiry array of times to expiry timestamp
-     * @param _values upper bound values array
-     */
-    function setUpperBoundValues(
-        address _underlying,
-        address _strike,
-        address[] calldata _collaterals,
-        bool _isPut,
-        uint256[] calldata _timesToExpiry,
-        uint256[] calldata _values
-    ) external onlyOwner {
-        require(_timesToExpiry.length > 0, "MarginCalculator: invalid times to expiry array");
-        require(_timesToExpiry.length == _values.length, "MarginCalculator: invalid values array");
-
-        // get product hash
-        bytes32 productHash = _getProductHash(_underlying, _strike, _collaterals, _isPut);
-
-        uint256[] storage expiryArray = timesToExpiryForProduct[productHash];
-
-        // check that this is the first expiry to set
-        // if not, the last expiry should be less than the new one to insert (to make sure the array stay in order)
-        require(
-            (expiryArray.length == 0) || (_timesToExpiry[0] > expiryArray[expiryArray.length.sub(1)]),
-            "MarginCalculator: expiry array is not in order"
-        );
-
-        for (uint256 i = 0; i < _timesToExpiry.length; i++) {
-            // check that new times array is in order
-            if (i.add(1) < _timesToExpiry.length) {
-                require(_timesToExpiry[i] < _timesToExpiry[i.add(1)], "MarginCalculator: time should be in order");
-            }
-
-            require(_values[i] > 0, "MarginCalculator: no expiry upper bound value found");
-
-            // add new upper bound value for this product at specific time to expiry
-            maxPriceAtTimeToExpiry[productHash][_timesToExpiry[i]] = _values[i];
-
-            // add new time to expiry to array
-            expiryArray.push(_timesToExpiry[i]);
-
-            emit TimeToExpiryAdded(productHash, _timesToExpiry[i]);
-            emit MaxPriceAdded(productHash, _timesToExpiry[i], _values[i]);
-        }
-    }
-
-    /**
-     * @notice set option upper bound value for specific time to expiry (1e27)
-     * @dev can only be called by owner
-     * @param _underlying otoken underlying asset
-     * @param _strike otoken strike asset
-     * @param _collaterals otoken collateral asset
-     * @param _isPut otoken type
-     * @param _timeToExpiry option time to expiry timestamp
-     * @param _value upper bound value
-     */
-    function updateUpperBoundValue(
-        address _underlying,
-        address _strike,
-        address[] calldata _collaterals,
-        bool _isPut,
-        uint256 _timeToExpiry,
-        uint256 _value
-    ) external onlyOwner {
-        require(_value > 0, "MarginCalculator: invalid option upper bound value");
-
-        bytes32 productHash = _getProductHash(_underlying, _strike, _collaterals, _isPut);
-        uint256 oldMaxPrice = maxPriceAtTimeToExpiry[productHash][_timeToExpiry];
-
-        require(oldMaxPrice != 0, "MarginCalculator: upper bound value not found");
-
-        // update upper bound value for the time to expiry
-        maxPriceAtTimeToExpiry[productHash][_timeToExpiry] = _value;
-
-        emit MaxPriceUpdated(productHash, _timeToExpiry, oldMaxPrice, _value);
-    }
-
-    /**
      * @notice set oracle deviation (1e27)
      * @dev can only be called by owner
      * @param _deviation deviation value
@@ -228,48 +128,9 @@ contract MarginCalculator is Ownable {
      * @param _collateral collateral asset address
      * @return dust amount
      */
+    // TODO should remove?
     function getCollateralDust(address _collateral) external view returns (uint256) {
         return dust[_collateral];
-    }
-
-    /**
-     * @notice get times to expiry for a specific product
-     * @param _underlying otoken underlying asset
-     * @param _strike otoken strike asset
-     * @param _collaterals otoken collateral asset
-     * @param _isPut otoken type
-     * @return array of times to expiry
-     */
-    function getTimesToExpiry(
-        address _underlying,
-        address _strike,
-        address[] calldata _collaterals,
-        bool _isPut
-    ) external view returns (uint256[] memory) {
-        bytes32 productHash = _getProductHash(_underlying, _strike, _collaterals, _isPut);
-        return timesToExpiryForProduct[productHash];
-    }
-
-    /**
-     * @notice get option upper bound value for specific time to expiry
-     * @param _underlying otoken underlying asset
-     * @param _strike otoken strike asset
-     * @param _collaterals otoken collateral asset
-     * @param _isPut otoken type
-     * @param _timeToExpiry option time to expiry timestamp
-     * @return option upper bound value (1e27)
-     */
-
-    function getMaxPrice(
-        address _underlying,
-        address _strike,
-        address[] calldata _collaterals,
-        bool _isPut,
-        uint256 _timeToExpiry
-    ) external view returns (uint256) {
-        bytes32 productHash = _getProductHash(_underlying, _strike, _collaterals, _isPut);
-
-        return maxPriceAtTimeToExpiry[productHash][_timeToExpiry];
     }
 
     /**
@@ -348,10 +209,6 @@ contract MarginCalculator is Ownable {
             );
 
             // Compute maximal collateral payout rate as oToken.collateralsAmounts[i] / collaterizedTotalAmount
-            console.log(
-                "getExpiredPayoutRate ~ oTokenDetails.collateralsAmounts[i]",
-                oTokenDetails.collateralsAmounts[i]
-            );
             FPI.FixedPointInt memory maxCollateralPayoutRate = FPI
                 .fromScaledUint(oTokenDetails.collateralsAmounts[i], collateralDecimals)
                 .div(collateraizedTotalAmount);
@@ -740,14 +597,6 @@ contract MarginCalculator is Ownable {
         bool isSameLongCollaterals = keccak256(abi.encode(long.collaterals)) ==
             keccak256(abi.encode(short.collaterals));
 
-        console.log("_vault.longOtoken != _vault.shortOtoken", _vault.longOtoken != _vault.shortOtoken);
-        console.log("isSameLongCollaterals", isSameLongCollaterals);
-        console.log("long.underlying == short.underlying", long.underlying == short.underlying);
-        console.log("long.strikeAsset == short.strikeAsset", long.strikeAsset == short.strikeAsset);
-        console.log("long.expiry == short.expiry", long.expiry == short.expiry);
-        console.log("long.strikePrice != short.strikePrice", long.strikePrice != short.strikePrice);
-        console.log("long.isPut == short.isPut", long.isPut == short.isPut);
-
         return
             _vault.longOtoken != _vault.shortOtoken &&
             isSameLongCollaterals &&
@@ -919,7 +768,8 @@ contract MarginCalculator is Ownable {
         uint256 _shortAmount,
         uint256 _longAmount
     ) internal view returns (FPI.FixedPointInt memory, FPI.FixedPointInt memory) {
-        (FPI.FixedPointInt memory valueRequired, FPI.FixedPointInt memory toUseLongAmount) = _vaultDetails.isPut
+        bool isPut = _vaultDetails.isPut;
+        (FPI.FixedPointInt memory valueRequired, FPI.FixedPointInt memory toUseLongAmount) = isPut
             ? _getPutSpreadMarginRequired(
                 _shortAmount,
                 _longAmount,
@@ -932,6 +782,11 @@ contract MarginCalculator is Ownable {
                 _vaultDetails.shortStrikePrice,
                 _vaultDetails.longStrikePrice
             );
+
+        // Convert value to Strike asset for calls
+        valueRequired = isPut
+            ? valueRequired
+            : _convertAmountOnLivePrice(valueRequired, _vaultDetails.underlyingAsset, _vaultDetails.strikeAsset);
         return (valueRequired, toUseLongAmount);
     }
 
@@ -990,7 +845,7 @@ contract MarginCalculator is Ownable {
         FPI.FixedPointInt memory valueRequired = _valueRequired;
 
         uint256[] memory collateralsDecimals = _vaultDetails.collateralsDecimals;
-        // availableCollateralsValues is how much worth available collateral in strike asset for put and underlying asset for call
+        // availableCollateralsValues is how much worth available collateral in strike asset
         // availableCollateralTotalValue - how much value totally available in vault in valueAsset
         (
             FPI.FixedPointInt[] memory availableCollateralsAmounts,
@@ -1053,7 +908,7 @@ contract MarginCalculator is Ownable {
             FPI.FixedPointInt memory
         )
     {
-        address _valueAsset = _vaultDetails.isPut ? _vaultDetails.strikeAsset : _vaultDetails.underlyingAsset;
+        address _valueAsset = _vaultDetails.strikeAsset;
         address[] memory _collateralAssets = _vaultDetails.collateralAssets;
         uint256[] memory _unusedCollateralAmounts = _vaultDetails.availableCollateralAmounts;
         uint256[] memory _collateralsDecimals = _vaultDetails.collateralsDecimals;
@@ -1063,7 +918,7 @@ contract MarginCalculator is Ownable {
         OtokenInterface short = OtokenInterface(_vaultDetails.shortOtoken);
         uint256[] memory _shortCollateralConstraints = short.getCollateralConstraints();
         uint256[] memory _shortCollateralsAmounts = short.getCollateralsAmounts();
-        // availableCollateralsValues is how much worth available collateral in strike asset for put and underlying asset for call
+        // availableCollateralsValues is how much worth available collateral in strike asset
         FPI.FixedPointInt[] memory availableCollateralsValues = new FPI.FixedPointInt[](collateralsLength);
         // availableCollateralTotalValue - how much value totally available in vault in valueAsset
         FPI.FixedPointInt memory availableCollateralTotalValue;
@@ -1076,10 +931,13 @@ contract MarginCalculator is Ownable {
                 continue;
             }
             availableCollateralsAmounts[i] = FPI.fromScaledUint(_unusedCollateralAmounts[i], _collateralsDecimals[i]);
-                        
-            if(_shortCollateralConstraints[i] > 0){ //if this collateral token has constraint
-                FPI.FixedPointInt memory maxAmount = 
-                FPI.fromScaledUint(_shortCollateralConstraints[i].sub(_shortCollateralsAmounts[i]), _collateralsDecimals[i]);
+
+            if (_shortCollateralConstraints[i] > 0) {
+                //if this collateral token has constraint
+                FPI.FixedPointInt memory maxAmount = FPI.fromScaledUint(
+                    _shortCollateralConstraints[i].sub(_shortCollateralsAmounts[i]),
+                    _collateralsDecimals[i]
+                );
                 availableCollateralsAmounts[i] = FPI.min(maxAmount, availableCollateralsAmounts[i]);
             }
 
