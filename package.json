@@ -8,6 +8,7 @@
     "test": "FORK_BLOCK_NUMBER=13719189 npx hardhat test",
     "docgen": "npx hardhat docgen && rm -r ./docs/@* ./docs/mocks ./docs/tests ./docs/hardhat ./docs/Migr*",
     "unit-tests": "npx hardhat test ./test/unit_tests/* --config ./hardhat_test.config.ts",
+    "e2e-tests": "npx hardhat test ./test/e2e/*",
     "start-local-fork": "FORK_BLOCK_NUMBER=13719189 npx hardhat node --no-deploy",
     "start-local": "npx hardhat node --config ./hardhat_test.config.ts",
     "size-contracts": "OPTIMIZER=200 npx hardhat compile --quiet --no-typechain && npx hardhat size-contracts",
