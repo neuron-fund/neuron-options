@@ -109,16 +109,8 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     /// @dev mapping between an account owner and their approved or unapproved account operators
     mapping(address => mapping(address => bool)) internal operators;
 
-    /******************************************************************** V2.0.0 storage upgrade ******************************************************/
-
     /// @dev mapping to store the timestamp at which the vault was last updated, will be updated in every action that changes the vault state or when calling sync()
     mapping(address => mapping(uint256 => uint256)) internal vaultLatestUpdate;
-
-    /// @dev mapping to store cap amount for naked margin vault per options collateral asset (scaled by collateral asset decimals)
-    // mapping(address => uint256) internal nakedCap;
-
-    /// @dev mapping to store amount of naked margin vaults in pool
-    // mapping(address => uint256) internal nakedPoolBalance;
 
     /// @notice emits an event when an account operator is updated for a specific account owner
     event AccountOperatorUpdated(address indexed accountOwner, address indexed operator, bool isSet);
@@ -187,17 +179,6 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         address indexed shortOtoken,
         address to,
         uint256[] payouts,
-        uint256 vaultId
-    );
-    /// @notice emits an event when a vault is liquidated
-    event VaultLiquidated(
-        address indexed liquidator,
-        address indexed receiver,
-        address indexed vaultOwner,
-        uint256 auctionPrice,
-        uint256 auctionStartingRound,
-        uint256 collateralPayout,
-        uint256 debtAmount,
         uint256 vaultId
     );
     /// @notice emits an event when a call action is executed
@@ -325,11 +306,11 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
      * @param _asset asset address
      * @param _amount amount to donate to pool
      */
-    // function donate(address _asset, uint256 _amount) external {
-    //     pool.transferToPool(_asset, msg.sender, _amount);
+    function donate(address _asset, uint256 _amount) external {
+        pool.transferToPool(_asset, msg.sender, _amount);
 
-    //     emit Donated(msg.sender, _asset, _amount);
-    // }
+        emit Donated(msg.sender, _asset, _amount);
+    }
 
     /**
      * @notice allows the partialPauser to toggle the systemPartiallyPaused variable and partially pause or partially unpause the system
@@ -362,24 +343,24 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
      * @dev can only be called by the owner
      * @param _fullPauser new fullPauser address
      */
-    // function setFullPauser(address _fullPauser) external onlyOwner {
-    //     require(_fullPauser != address(0), "C10");
-    //     require(fullPauser != _fullPauser, "C9");
-    //     emit FullPauserUpdated(fullPauser, _fullPauser);
-    //     fullPauser = _fullPauser;
-    // }
+    function setFullPauser(address _fullPauser) external onlyOwner {
+        require(_fullPauser != address(0), "C10");
+        require(fullPauser != _fullPauser, "C9");
+        emit FullPauserUpdated(fullPauser, _fullPauser);
+        fullPauser = _fullPauser;
+    }
 
     /**
      * @notice allows the owner to set the partialPauser address
      * @dev can only be called by the owner
      * @param _partialPauser new partialPauser address
      */
-    // function setPartialPauser(address _partialPauser) external onlyOwner {
-    //     require(_partialPauser != address(0), "C11");
-    //     require(partialPauser != _partialPauser, "C9");
-    //     emit PartialPauserUpdated(partialPauser, _partialPauser);
-    //     partialPauser = _partialPauser;
-    // }
+    function setPartialPauser(address _partialPauser) external onlyOwner {
+        require(_partialPauser != address(0), "C11");
+        require(partialPauser != _partialPauser, "C9");
+        emit PartialPauserUpdated(partialPauser, _partialPauser);
+        partialPauser = _partialPauser;
+    }
 
     /**
      * @notice allows the owner to toggle the restriction on whitelisted call actions and only allow whitelisted
@@ -387,13 +368,13 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
      * @dev can only be called by the owner
      * @param _isRestricted new call restriction state
      */
-    // function setCallRestriction(bool _isRestricted) external onlyOwner {
-    //     require(callRestricted != _isRestricted, "C9");
+    function setCallRestriction(bool _isRestricted) external onlyOwner {
+        require(callRestricted != _isRestricted, "C9");
 
-    //     callRestricted = _isRestricted;
+        callRestricted = _isRestricted;
 
-    //     emit CallRestricted(callRestricted);
-    // }
+        emit CallRestricted(callRestricted);
+    }
 
     /**
      * @notice allows a user to give or revoke privileges to an operator which can act on their behalf on their vaults
@@ -415,20 +396,6 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     function refreshConfiguration() external onlyOwner {
         _refreshConfigInternal();
     }
-
-    /**
-     * @notice set cap amount for collateral asset used in naked margin
-     * @dev can only be called by owner
-     * @param _collateral collateral asset address
-     * @param _cap cap amount, should be scaled by collateral asset decimals
-     */
-    // function setNakedCap(address _collateral, uint256 _cap) external onlyOwner {
-    //     require(_cap > 0, "C36");
-
-    //     nakedCap[_collateral] = _cap;
-
-    //     emit NakedCapUpdated(_collateral, _cap);
-    // }
 
     /**
      * @notice execute a number of actions on specific vaults
@@ -475,50 +442,13 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @notice get an oToken's payout/cash value after expiry, in the collateral asset
-     * @param _otoken oToken address
-     * @param _amount amount of the oToken to calculate the payout for, always represented in 1e8
-     * @return amount of collateral to pay out
-     */
-    // function getPayout(address _otoken, uint256 _amount) public view returns (uint256[] memory) {
-    //     // payoutsRaw continats amounts of each of collateral asset in collateral asset decimals to be paid out for 1e8 of the oToken
-    //     return calculator.getPayout(_otoken, _amount);
-    // }
-
-    /**
      * @dev return if an expired oToken is ready to be settled, only true when price for underlying,
      * strike and collateral assets at this specific expiry is available in our Oracle module
      * @param _otoken oToken
      */
-    // function isSettlementAllowed(address _otoken) external view returns (bool) {
-    //     (address[] memory collaterals, address underlying, address strike, uint256 expiry) = _getOtokenDetails(_otoken);
-    //     return _canSettleAssets(underlying, strike, collaterals, expiry);
-    // }
-
-    /**
-     * @dev return if underlying, strike, collateral are all allowed to be settled
-     * @param _underlying oToken underlying asset
-     * @param _strike oToken strike asset
-     * @param _collaterals oToken collateral assets
-     * @param _expiry otoken expiry timestamp
-     * @return True if the oToken has expired AND all oracle prices at the expiry timestamp have been finalized, False if not
-     */
-    function canSettleAssets(
-        address _underlying,
-        address _strike,
-        address[] memory _collaterals,
-        uint256 _expiry
-    ) external view returns (bool) {
-        return _canSettleAssets(_underlying, _strike, _collaterals, _expiry);
-    }
-
-    /**
-     * @notice get the number of vaults for a specified account owner
-     * @param _accountOwner account owner address
-     * @return number of vaults
-     */
-    function getAccountVaultCounter(address _accountOwner) external view returns (uint256) {
-        return accountVaultCounter[_accountOwner];
+    function isSettlementAllowed(address _otoken) external view returns (bool) {
+        (address[] memory collaterals, address underlying, address strike, uint256 expiry) = _getOtokenDetails(_otoken);
+        return canSettleAssets(underlying, strike, collaterals, expiry);
     }
 
     /**
@@ -526,18 +456,8 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
      * @param _otoken oToken address
      * @return True if the otoken has expired, False if not
      */
-    // function hasExpired(address _otoken) external view returns (bool) {
-    //     return block.timestamp >= OtokenInterface(_otoken).expiryTimestamp();
-    // }
-
-    /**
-     * @notice return a specific vault
-     * @param _owner account owner
-     * @param _vaultId vault id of vault to return
-     * @return Vault struct that corresponds to the _vaultId of _owner
-     */
-    function getVault(address _owner, uint256 _vaultId) external view returns (MarginVault.Vault memory) {
-        return (vaults[_owner][_vaultId]);
+    function hasExpired(address _otoken) external view returns (bool) {
+        return block.timestamp >= OtokenInterface(_otoken).expiryTimestamp();
     }
 
     /**
@@ -553,24 +473,6 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     {
         return (vaults[_owner][_vaultId], vaultLatestUpdate[_owner][_vaultId]);
     }
-
-    /**
-     * @notice get cap amount for collateral asset
-     * @param _asset collateral asset address
-     * @return cap amount
-     */
-    // function getNakedCap(address _asset) external view returns (uint256) {
-    //     return nakedCap[_asset];
-    // }
-
-    /**
-     * @notice get amount of collateral deposited in all naked margin vaults
-     * @param _asset collateral asset address
-     * @return naked pool balance
-     */
-    // function getNakedPoolBalance(address _asset) external view returns (uint256) {
-    //     return nakedPoolBalance[_asset];
-    // }
 
     /**
      * @notice execute a variety of actions
@@ -792,9 +694,9 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     /**
      * @notice calculates maximal short amount can be minted for collateral in a given user and vault
      */
-    // function getMaxCollateratedShortAmount(address user, uint256 vault_id) external view returns (uint256) {
-    //     return calculator.getMaxShortAmount(vaults[user][vault_id]);
-    // }
+    function getMaxCollateratedShortAmount(address user, uint256 vault_id) external view returns (uint256) {
+        return calculator.getMaxShortAmount(vaults[user][vault_id]);
+    }
 
     /**
      * @notice mint short oTokens from a vault which creates an obligation that is recorded in the vault
@@ -895,7 +797,7 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         // only allow redeeming expired otoken
         require(block.timestamp >= expiry, "C28");
 
-        require(_canSettleAssets(underlying, strike, collaterals, expiry), "C29");
+        require(canSettleAssets(underlying, strike, collaterals, expiry), "C29");
 
         // which is not desired behaviour. It can take some elses collateral or unused collateral
         uint256[] memory payout = calculator.getPayout(_args.otoken, _args.amount);
@@ -947,7 +849,7 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
         // do not allow settling vault with un-expired otoken
         require(block.timestamp >= expiry, "C31");
-        require(_canSettleAssets(underlying, strike, collaterals, expiry), "C29");
+        require(canSettleAssets(underlying, strike, collaterals, expiry), "C29");
 
         uint256[] memory payouts = calculator.getExcessCollateral(vault);
 
@@ -991,9 +893,9 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
      * @param _callee callee address
      * @return True if callee address is whitelisted, False if not
      */
-    // function _isCalleeWhitelisted(address _callee) internal view returns (bool) {
-    //     return whitelist.isWhitelistedCallee(_callee);
-    // }
+    function _isCalleeWhitelisted(address _callee) internal view returns (bool) {
+        return whitelist.isWhitelistedCallee(_callee);
+    }
 
     /**
      * @dev get otoken detail, from both otoken versions
@@ -1015,16 +917,19 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @dev return if an expired oToken is ready to be settled, only true when price for underlying,
-     * strike and collateral assets at this specific expiry is available in our Oracle module
+     * @dev return if underlying, strike, collateral are all allowed to be settled
+     * @param _underlying oToken underlying asset
+     * @param _strike oToken strike asset
+     * @param _collaterals oToken collateral assets
+     * @param _expiry otoken expiry timestamp
      * @return True if the oToken has expired AND all oracle prices at the expiry timestamp have been finalized, False if not
      */
-    function _canSettleAssets(
+    function canSettleAssets(
         address _underlying,
         address _strike,
         address[] memory _collaterals,
         uint256 _expiry
-    ) internal view returns (bool) {
+    ) public view returns (bool) {
         bool canSettle = true;
         for (uint256 i = 0; i < _collaterals.length; i++) {
             canSettle = canSettle && oracle.isDisputePeriodOver(_collaterals[i], _expiry);

@@ -30,9 +30,6 @@ contract MarginCalculator is Ownable {
     /// @dev decimals used by strike price and oracle price
     uint256 internal constant BASE = 8;
 
-    /// @notice auction length
-    uint256 public constant AUCTION_TIME = 3600;
-
     /// @dev struct to store all needed vault details
     struct VaultDetails {
         uint256 shortAmount;
@@ -68,25 +65,11 @@ contract MarginCalculator is Ownable {
         uint256 collaterizedTotalAmount;
     }
 
-    /// @dev oracle deviation value (1e27)
-    //uint256 internal oracleDeviation;
-
     /// @dev FixedPoint 0
     FPI.FixedPointInt internal ZERO = FPI.fromScaledUint(0, BASE);
 
-    /// @dev mapping to store dust amount per option collateral asset (scaled by collateral asset decimals)
-    mapping(address => uint256) internal dust;
-
     /// @dev oracle module
     OracleInterface public oracle;
-
-    /// @notice emits an event when collateral dust is updated
-    event CollateralDustUpdated(address indexed collateral, uint256 dust);
-
-    /// @notice emits an event when spot shock value is updated for a specific product
-    // event SpotShockUpdated(bytes32 indexed product, uint256 spotShock);
-    /// @notice emits an event when oracle deviation value is updated
-    //event OracleDeviationUpdated(uint256 oracleDeviation);
 
     /**
      * @notice constructor
@@ -97,51 +80,6 @@ contract MarginCalculator is Ownable {
 
         oracle = OracleInterface(_oracle);
     }
-
-    /**
-     * @notice set dust amount for collateral asset
-     * @dev can only be called by owner
-     * @param _collateral collateral asset address
-     * @param _dust dust amount, should be scaled by collateral asset decimals
-     */
-    function setCollateralDust(address _collateral, uint256 _dust) external onlyOwner {
-        require(_dust > 0, "MarginCalculator: dust amount should be greater than zero");
-
-        dust[_collateral] = _dust;
-
-        emit CollateralDustUpdated(_collateral, _dust);
-    }
-
-    /**
-     * @notice set oracle deviation (1e27)
-     * @dev can only be called by owner
-     * @param _deviation deviation value
-     */
-    /*function setOracleDeviation(uint256 _deviation) external onlyOwner {
-        oracleDeviation = _deviation;
-
-        emit OracleDeviationUpdated(_deviation);
-    }
-    */
-    /**
-     * @notice get dust amount for collateral asset
-     * @param _collateral collateral asset address
-     * @return dust amount
-     */
-    // TODO should remove?
-    function getCollateralDust(address _collateral) external view returns (uint256) {
-        return dust[_collateral];
-    }
-
-    /**
-     * @notice get oracle deviation
-     * @return oracle deviation value (1e27)
-     */
-    /*
-    function getOracleDeviation() external view returns (uint256) {
-        return oracleDeviation;
-    }
-    */
 
     /**
      * @notice get an oToken's payout/cash value after expiry, in the collateral asset

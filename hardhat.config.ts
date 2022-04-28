@@ -45,9 +45,9 @@ const config: HardhatUserConfig = {
   },
   networks: {
     hardhat: {
-      chainId: process.env.POLYGON ? 1339 : 1337,
-      forking: {
-        url: process.env.POLYGON ? process.env.ALCHEMY_POLYGON : process.env.ALCHEMY,
+      chainId: 1337,
+      forking: process.env.ALCHEMY && {
+        url: process.env.ALCHEMY,
         // Hardhat advices to set block number for testing
         // "You're running a network fork starting from the latest block.
         // Performance may degrade due to fetching data from the network with each run.
@@ -59,20 +59,6 @@ const config: HardhatUserConfig = {
       blockGasLimit: 0x1fffffffffffff,
       gas: 120e9,
       accounts: getHardhatAccounts(),
-    },
-    prodMainnet: {
-      url: process.env.PROD_MAINNET_RPC,
-      gasPrice: 40e9,
-      blockGasLimit: 5e6,
-    },
-    prodPolygon: {
-      url: process.env.PROD_POLYGON_RPC,
-    },
-    localPolygon: {
-      url: 'http://127.0.0.1:8546/',
-    },
-    testnet: {
-      url: 'https://neurontestnet.xyz/',
     },
   },
   etherscan: {

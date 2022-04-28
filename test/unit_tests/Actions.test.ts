@@ -1,23 +1,22 @@
 import { expect, assert } from 'chai'
 
-import {  ethers, contract } from 'hardhat'
+import { ethers, contract } from 'hardhat'
 import { ActionTester as ActionTesterType } from '../../typechain-types'
 import { ActionType, getAction } from '../helpers/actions'
 
-
-let actionTester: ActionTesterType;
+let actionTester: ActionTesterType
 
 const ZERO_ADDR = '0x0000000000000000000000000000000000000000'
 
-const arr2str = (arr: Array<any>) => JSON.stringify (arr.map((item,) => item.toString()))
+const arr2str = (arr: Array<any>) => JSON.stringify(arr.map(item => item.toString()))
 contract('Actions', ([owner, random, random_user, random_user2, random_user3]) => {
   before(async () => {
-    const ActionTester = await ethers.getContractFactory("ActionTester")
-    actionTester = await ActionTester.deploy() as ActionTesterType
+    const ActionTester = await ethers.getContractFactory('ActionTester')
+    actionTester = (await ActionTester.deploy()) as ActionTesterType
     await actionTester.deployed()
   })
   describe('Parse Deposit Arguments', function () {
-    it('should not be able to parse a non Deposit action', async () => {    
+    it('should not be able to parse a non Deposit action', async () => {
       //const {deployer: owner} = await getNamedAccounts();
       const data = {
         actionType: ActionType.OpenVault,
@@ -29,7 +28,7 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
         index: '0',
         data: ZERO_ADDR,
       }
-      await expect(actionTester.testParseDespositAction(data)).to.be.revertedWith("A8");
+      await expect(actionTester.testParseDespositCollateralAction(data)).to.be.revertedWith('A8')
     })
     it('should not be able to parse an invalid sender address', async () => {
       // const {deployer: owner} = await getNamedAccounts();
@@ -43,14 +42,14 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
         index: '0',
         data: ZERO_ADDR,
       }
-      await expect(actionTester.testParseDespositAction(data)).to.be.revertedWith('A9');
+      await expect(actionTester.testParseDespositCollateralAction(data)).to.be.revertedWith('A9')
     })
     it('should be able to parse arguments for a deposit long action', async () => {
       // const {deployer: owner, random_user: random} = await getNamedAccounts();
       const actionType = ActionType.DepositLongOption
-      const assets = [ZERO_ADDR, ZERO_ADDR]
+      const assets = [ZERO_ADDR]
       const vaultId = '1'
-      const amounts = ['10', '0']
+      const amounts = ['10']
       const index = '0'
       const bytesArgs = ZERO_ADDR
 
@@ -65,11 +64,11 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
         data: bytesArgs,
       }
 
-      await actionTester.testParseDespositAction(data)
-      const depositArgs = await actionTester.getDepositArgs()
+      await actionTester.testParseDespositLongAction(data)
+      const depositArgs = await actionTester.getDepositLongArgs()
 
       assert.equal(depositArgs.owner, owner, 'owner error')
-      assert.equal(arr2str(depositArgs.amounts), arr2str(amounts), `amounts err`)
+      assert.equal(depositArgs.amount.toString(), amounts[0], `amounts err`)
       // assert.equal(arr2str(depositArgs.assets), arr2str(assets), 'assets error')
       assert.equal(depositArgs.from, random)
       assert.equal(depositArgs.vaultId.toString(), vaultId)
@@ -95,9 +94,9 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
         data: bytesArgs,
       }
 
-      await actionTester.testParseDespositAction(data)
+      await actionTester.testParseDespositCollateralAction(data)
 
-      const depositArgs = await actionTester.getDepositArgs()
+      const depositArgs = await actionTester.getDepositCollateralArgs()
       assert.equal(depositArgs.owner, random)
       assert.equal(arr2str(depositArgs.amounts), arr2str(amounts), `amounts err`)
       // assert.equal(arr2str(depositArgs.assets), arr2str(assets), 'assets error')
@@ -107,18 +106,18 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
   })
   describe('Parse Open Vault Arguments', () => {
     it('should not be able to parse a non Open Vault action', async () => {
-        // const {deployer: owner} = await getNamedAccounts();
-        const data = {
-          actionType: ActionType.DepositCollateral,
-          owner: owner,
-          secondAddress: owner,
-          assets: [ZERO_ADDR, ZERO_ADDR],
-          vaultId: '0',
-          amounts: ['10', '10'],
-          index: '0',
-          data: ZERO_ADDR,
-        }
-        await expect(actionTester.testParseOpenVaultAction(data)).to.be.revertedWith("A1");
+      // const {deployer: owner} = await getNamedAccounts();
+      const data = {
+        actionType: ActionType.DepositCollateral,
+        owner: owner,
+        secondAddress: owner,
+        assets: [ZERO_ADDR, ZERO_ADDR],
+        vaultId: '0',
+        amounts: ['10', '10'],
+        index: '0',
+        data: ZERO_ADDR,
+      }
+      await expect(actionTester.testParseOpenVaultAction(data)).to.be.revertedWith('A1')
     })
     it('should not be able to parse an invalid owner address', async () => {
       // const {deployer: owner} = await getNamedAccounts();
@@ -130,21 +129,21 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
       const bytesArgs = ZERO_ADDR
 
       const data = {
-          actionType: actionType,
-          owner: ZERO_ADDR,
-          secondAddress: owner,
-          assets: assets,
-          vaultId: vaultId,
-          amounts: amounts,
-          index: index,
-          data: bytesArgs,
+        actionType: actionType,
+        owner: ZERO_ADDR,
+        secondAddress: owner,
+        assets: assets,
+        vaultId: vaultId,
+        amounts: amounts,
+        index: index,
+        data: bytesArgs,
       }
-      await expect(actionTester.testParseOpenVaultAction(data)).to.be.revertedWith("A2");
+      await expect(actionTester.testParseOpenVaultAction(data)).to.be.revertedWith('A2')
     })
     it('should be able to parse arguments for an open vault action', async () => {
       // const {deployer: owner, random_user: random} = await getNamedAccounts();
       const actionType = ActionType.OpenVault
-      const assets = [ZERO_ADDR, ZERO_ADDR] 
+      const assets = [ZERO_ADDR, ZERO_ADDR]
       const vaultId = '1'
       const amounts = ['10', '10']
       const index = '0'
@@ -152,20 +151,20 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
       const bytesArgs = ZERO_ADDR
 
       const data = {
-          actionType: actionType,
-          owner: owner,
-          secondAddress: random,
-          assets: assets,
-          vaultId: vaultId,
-          amounts: amounts,
-          index: index,
-          data: bytesArgs,
+        actionType: actionType,
+        owner: owner,
+        secondAddress: random,
+        assets: assets,
+        vaultId: vaultId,
+        amounts: amounts,
+        index: index,
+        data: bytesArgs,
       }
 
       await actionTester.testParseOpenVaultAction(data)
 
       const depositArgs = await actionTester.getOpenVaultArgs()
-      
+
       assert.equal(depositArgs.owner, owner)
       // assert.equal(depositArgs.vaultTypes, new BigNumber(0))
       assert.equal(depositArgs.shortOtoken, random)
@@ -178,13 +177,13 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
         actionType: ActionType.OpenVault,
         owner: owner,
         secondAddress: owner,
-        assets: [ZERO_ADDR], 
+        assets: [ZERO_ADDR],
         vaultId: '0',
         amounts: ['10'],
         index: '0',
         data: ZERO_ADDR,
       }
-      
+
       await expect(actionTester.testParseRedeemAction(data)).to.be.revertedWith('A13')
     })
     it('should not be able to redeem more than one token', async () => {
@@ -193,12 +192,12 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
         actionType: ActionType.Redeem,
         owner: owner,
         secondAddress: owner,
-        assets: [random, random], 
+        assets: [random, random],
         vaultId: '0',
         amounts: ['10'],
         index: '0',
         data: ZERO_ADDR,
-      }      
+      }
       await expect(actionTester.testParseRedeemAction(data)).to.be.revertedWith('A26')
 
       data['assets'] = [ZERO_ADDR]
@@ -210,12 +209,11 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
 
       data['amounts'] = ['0']
       await expect(actionTester.testParseRedeemAction(data)).to.be.revertedWith('A29')
-
     })
     it('should be able to parse arguments for an redeem action', async () => {
       // const {deployer: owner, random_user: random} = await getNamedAccounts();
       const actionType = ActionType.Redeem
-      const assets = [random]  // A26 err on ZERO_ADDR
+      const assets = [random] // A26 err on ZERO_ADDR
       const vaultId = '1'
       const amounts = ['10']
       const index = '0'
@@ -244,7 +242,7 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
     it('should not be able to parse a non Settle Vault action', async () => {
       // const {deployer: owner, random_user: random} = await getNamedAccounts();
       const actionType = ActionType.OpenVault
-      const assets = [ZERO_ADDR, ZERO_ADDR] 
+      const assets = [ZERO_ADDR, ZERO_ADDR]
       const vaultId = '0'
       const amounts = ['10', '10']
       const index = '0'
@@ -266,7 +264,7 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
     it('should not be able to parse an invalid owner address', async () => {
       // const {deployer: owner, random_user: random} = await getNamedAccounts();
       const actionType = ActionType.SettleVault
-      const assets = [ZERO_ADDR, ZERO_ADDR] 
+      const assets = [ZERO_ADDR, ZERO_ADDR]
       const vaultId = '0'
       const amounts = ['10', '10']
       const index = '0'
@@ -288,7 +286,7 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
     it('should be able to parse arguments for a settle vault action', async () => {
       // const {deployer: owner, random_user: random} = await getNamedAccounts();
       const actionType = ActionType.SettleVault
-      const assets = [ZERO_ADDR, ZERO_ADDR] 
+      const assets = [ZERO_ADDR, ZERO_ADDR]
       const vaultId = '1'
       const amounts = ['10', '10']
       const index = '0'
@@ -315,7 +313,7 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
     it('should not be able to parse an invalid sender address', async () => {
       // const {deployer: owner, random_user: random} = await getNamedAccounts();
       const actionType = ActionType.SettleVault
-      const assets = [ZERO_ADDR, ZERO_ADDR] 
+      const assets = [ZERO_ADDR, ZERO_ADDR]
       const vaultId = '0'
       const amounts = ['10', '10']
       const index = '0'
@@ -339,7 +337,7 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
     it('should not be able to parse a non withdraw action', async () => {
       // const {deployer: owner, random_user: random} = await getNamedAccounts();
       const actionType = ActionType.OpenVault
-      const assets = [ZERO_ADDR, ZERO_ADDR] 
+      const assets = [ZERO_ADDR, ZERO_ADDR]
       const vaultId = '0'
       const amounts = ['10', '10']
       const index = '0'
@@ -361,7 +359,7 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
     it('should not be able to parse an invalid sender address', async () => {
       // const {deployer: owner, random_user: random} = await getNamedAccounts();
       const actionType = ActionType.WithdrawCollateral
-      const assets = [ZERO_ADDR, ZERO_ADDR] 
+      const assets = [ZERO_ADDR, ZERO_ADDR]
       const vaultId = '0'
       const amounts = ['10', '10']
       const index = '0'
@@ -383,7 +381,7 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
     it('should not be able to parse an invalid owner address', async () => {
       // const {deployer: owner, random_user: random} = await getNamedAccounts();
       const actionType = ActionType.WithdrawCollateral
-      const assets = [ZERO_ADDR, ZERO_ADDR] 
+      const assets = [ZERO_ADDR, ZERO_ADDR]
       const vaultId = '0'
       const amounts = ['10', '10']
       const index = '0'
@@ -405,7 +403,7 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
     xit('should be able to parse arguments for a withdraw long action', async () => {
       // const {deployer: owner, random_user: random} = await getNamedAccounts();
       const actionType = ActionType.WithdrawLongOption
-      const assets = [ZERO_ADDR] 
+      const assets = [ZERO_ADDR]
       const vaultId = '1'
       const amounts = ['10']
       const index = '0'
@@ -419,9 +417,8 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
         vaultId: vaultId,
         amounts: amounts,
         index: index,
-        data: bytesArgs
+        data: bytesArgs,
       }
-
 
       await actionTester.testParseWithdrawLong(data)
 
@@ -434,7 +431,7 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
     it('should be able to parse arguments for a withdraw collateral action', async () => {
       // const {deployer: owner, random_user: random} = await getNamedAccounts();
       const actionType = ActionType.WithdrawCollateral
-      const assets = [ZERO_ADDR, ZERO_ADDR] 
+      const assets = [ZERO_ADDR, ZERO_ADDR]
       const vaultId = '3'
       const amounts = ['10', '10']
       const index = '0'
@@ -469,7 +466,7 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
         actionType: ActionType.OpenVault,
         owner: ZERO_ADDR,
         secondAddress: owner,
-        assets: [ZERO_ADDR, ZERO_ADDR], 
+        assets: [ZERO_ADDR, ZERO_ADDR],
         vaultId: '0',
         amounts: ['10', '10'],
         index: '0',
@@ -481,7 +478,7 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
     it('should not be able to parse an invalid sender address', async () => {
       // const {deployer: owner, random_user: random} = await getNamedAccounts();
       const actionType = ActionType.MintShortOption
-      const assets = [ZERO_ADDR, ZERO_ADDR] 
+      const assets = [ZERO_ADDR, ZERO_ADDR]
       const vaultId = '0'
       const amounts = ['10', '10']
       const index = '0'
@@ -504,7 +501,7 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
     it('should be able to parse arguments for a mint short action', async () => {
       // const {deployer: owner, random_user: random} = await getNamedAccounts();
       const actionType = ActionType.MintShortOption
-      const assets = [ZERO_ADDR] 
+      const assets = [ZERO_ADDR]
       const vaultId = '1'
       const amounts = ['10']
       const index = '0'
@@ -534,7 +531,7 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
     it('should be able to parse arguments for a mint short action', async () => {
       // const {deployer: owner, random_user: random} = await getNamedAccounts();
       const actionType = ActionType.MintShortOption
-      const assets = [ZERO_ADDR] 
+      const assets = [ZERO_ADDR]
       const vaultId = '3'
       const amounts = ['10']
       const index = '0'
@@ -566,7 +563,7 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
     it('should not be able to parse a non Burn action', async () => {
       // const {deployer: owner, random_user: random} = await getNamedAccounts();
       const actionType = ActionType.OpenVault
-      const assets = [ZERO_ADDR, ZERO_ADDR] 
+      const assets = [ZERO_ADDR, ZERO_ADDR]
       const vaultId = '0'
       const amounts = ['10', '10']
       const index = '0'
@@ -588,7 +585,7 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
     it('should not be able to parse an invalid sender address', async () => {
       // const {deployer: owner, random_user: random} = await getNamedAccounts();
       const actionType = ActionType.BurnShortOption
-      const assets = [ZERO_ADDR, ZERO_ADDR] 
+      const assets = [ZERO_ADDR, ZERO_ADDR]
       const vaultId = '0'
       const amounts = ['10', '10']
       const index = '0'
@@ -610,7 +607,7 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
     xit('should be able to parse arguments for a burn short action', async () => {
       // const {deployer: owner, random_user: random} = await getNamedAccounts();
       const actionType = ActionType.BurnShortOption
-      const assets = [ZERO_ADDR, ZERO_ADDR] 
+      const assets = [ZERO_ADDR, ZERO_ADDR]
       const vaultId = '1'
       const amounts = ['10', '10']
       const index = '0'
@@ -639,7 +636,7 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
     xit('should be able to parse arguments for a burn short action', async () => {
       // const {deployer: owner, random_user: random} = await getNamedAccounts();
       const actionType = ActionType.BurnShortOption
-      const assets = [ZERO_ADDR, ZERO_ADDR] 
+      const assets = [ZERO_ADDR, ZERO_ADDR]
       const vaultId = '3'
       const amounts = ['10', '10']
       const index = '0'
@@ -673,7 +670,7 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
         owner: owner,
         secondAddress: owner,
         data: random,
-        assets: [ZERO_ADDR, ZERO_ADDR], 
+        assets: [ZERO_ADDR, ZERO_ADDR],
         vaultId: 0,
         amounts: [0, 0],
         index: 0,
@@ -688,7 +685,7 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
         owner: ZERO_ADDR,
         secondAddress: ZERO_ADDR,
         data: ZERO_ADDR,
-        assets: [ZERO_ADDR, ZERO_ADDR], 
+        assets: [ZERO_ADDR, ZERO_ADDR],
         vaultId: 0,
         amounts: [0, 0],
         index: 0,
@@ -716,5 +713,4 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
       assert.equal(callArgs.data.toLowerCase(), random_user3.toLowerCase())
     })
   })
-
 })

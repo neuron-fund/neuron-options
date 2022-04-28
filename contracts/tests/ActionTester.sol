@@ -8,6 +8,7 @@ import {Actions} from "../libs/Actions.sol";
 contract ActionTester {
     Actions.OpenVaultArgs private openVaultArgs;
     Actions.DepositCollateralArgs private depositCollateralArgs;
+    Actions.DepositLongArgs private depositLongArgs;
     Actions.WithdrawCollateralArgs private withdrawCollateralArgs;
     Actions.WithdrawLongArgs private withdrawLongArgs;
     Actions.MintArgs private mintArgs;
@@ -16,12 +17,20 @@ contract ActionTester {
     Actions.SettleVaultArgs private settleVaultArgs;
     Actions.CallArgs private callArgs;
 
-    function testParseDespositAction(Actions.ActionArgs memory _args) external {
+    function testParseDespositCollateralAction(Actions.ActionArgs memory _args) external {
         depositCollateralArgs = Actions._parseDepositCollateralArgs(_args);
     }
 
-    function getDepositArgs() external view returns (Actions.DepositCollateralArgs memory) {
+    function testParseDespositLongAction(Actions.ActionArgs memory _args) external {
+        depositLongArgs = Actions._parseDepositLongArgs(_args);
+    }
+
+    function getDepositCollateralArgs() external view returns (Actions.DepositCollateralArgs memory) {
         return depositCollateralArgs;
+    }
+
+    function getDepositLongArgs() external view returns (Actions.DepositLongArgs memory) {
+        return depositLongArgs;
     }
 
     function testParseWithdrawAction(Actions.ActionArgs memory _args) external {
