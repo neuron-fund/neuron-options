@@ -1,5 +1,5 @@
 import { expect, assert } from 'chai'
-import { ethers, contract, web3 } from 'hardhat'
+import { ethers, artifacts, contract, web3 } from 'hardhat'
 
 import {
   MockERC20 as MockERC20Instance,
@@ -14,6 +14,10 @@ import {
   Oracle as OracleInstance,
 } from '../../typechain-types'
 
+const { expectRevert } = require('@openzeppelin/test-helpers')
+
+const AddressBook = artifacts.require('AddressBook.sol')
+const MarginCalculator = artifacts.require('MarginCalculator.sol')
 
 contract('AddressBook', ([owner, otokenImplAdd, marginPoolAdd, random]) => {
   // ERC20 mocks
@@ -28,22 +32,16 @@ contract('AddressBook', ([owner, otokenImplAdd, marginPoolAdd, random]) => {
     const MockERC20 = await ethers.getContractFactory('MockERC20')
     weth = (await MockERC20.deploy('WETH', 'WETH', 18)) as MockERC20Instance
     await weth.deployed()
-
-    const AddressBook = await ethers.getContractFactory('AddressBook')
-    addressBook = (await AddressBook.deploy()) as AddressBookInstance
-    await addressBook.deployed()
+    addressBook = await AddressBook.new()
   })
 
   describe('Set otoken implementation address', () => {
-    xit('should revert adding otoken implementation address from non-owner address', async () => {
-      await expect(addressBook.connect(random).setOtokenImpl(otokenImplAdd)).to.be.revertedWith(
-        'Ownable: caller is not the owner'
-      )
+    it('should revert adding otoken implementation address from non-owner address', async () => {
+      await expectRevert(addressBook.setOtokenImpl(otokenImplAdd, { from: random }), 'Ownable: caller is not the owner')
     })
 
-    xit('should set otoken implementation address', async () => {
-      await addressBook.setOtokenImpl(otokenImplAdd, { from: owner })
-
+    it('should set otoken implementation address', async () => {
+      await addressBook.setOtokenImpl(otokenImplAdd)
       assert.equal(await addressBook.getOtokenImpl(), otokenImplAdd, 'Otoken implementation address mismatch')
     })
   })
@@ -67,13 +65,13 @@ contract('AddressBook', ([owner, otokenImplAdd, marginPoolAdd, random]) => {
       await controller.deployed()
     })
 
-    xit('should revert adding controller from non-owner address', async () => {
-      await expect(addressBook.connect(random).setController(controller.address)).to.be.revertedWith(
+    it('should revert adding controller from non-owner address', async () => {
+      await expect(addressBook.setController(controller.address, { from: random })).to.be.revertedWith(
         'Ownable: caller is not the owner'
       )
     })
 
-    xit('should set controller address', async () => {
+    it('should set controller address', async () => {
       await addressBook.setController(controller.address, { from: owner })
 
       const OwnedUpgradeabilityProxy = await ethers.getContractFactory('OwnedUpgradeabilityProxy')
@@ -96,13 +94,13 @@ contract('AddressBook', ([owner, otokenImplAdd, marginPoolAdd, random]) => {
       await otokenFactory.deployed()
     })
 
-    xit('should revert adding otoken factory address from non-owner address', async () => {
-      await expect(addressBook.connect(random).setOtokenFactory(otokenFactory.address)).to.be.revertedWith(
+    it('should revert adding otoken factory address from non-owner address', async () => {
+      await expect(addressBook.setOtokenFactory(otokenFactory.address, { from: random })).to.be.revertedWith(
         'Ownable: caller is not the owner'
       )
     })
 
-    xit('should set otoken factory address', async () => {
+    it('should set otoken factory address', async () => {
       await addressBook.setOtokenFactory(otokenFactory.address, { from: owner })
 
       assert.equal(await addressBook.getOtokenFactory(), otokenFactory.address, 'Otoken factory address mismatch')
@@ -119,13 +117,13 @@ contract('AddressBook', ([owner, otokenImplAdd, marginPoolAdd, random]) => {
       await whitelist.deployed()
     })
 
-    xit('should revert adding whitelist address from non-owner address', async () => {
-      await expect(addressBook.connect(random).setWhitelist(whitelist.address)).to.be.revertedWith(
+    it('should revert adding whitelist address from non-owner address', async () => {
+      await expect(addressBook.setWhitelist(whitelist.address, { from: random })).to.be.revertedWith(
         'Ownable: caller is not the owner'
       )
     })
 
-    xit('should set whitelist address', async () => {
+    it('should set whitelist address', async () => {
       await addressBook.setWhitelist(whitelist.address, { from: owner })
 
       assert.equal(await addressBook.getWhitelist(), whitelist.address, 'Whitelist address mismatch')
@@ -133,13 +131,13 @@ contract('AddressBook', ([owner, otokenImplAdd, marginPoolAdd, random]) => {
   })
 
   describe('Set margin pool', () => {
-    xit('should revert adding pool address from non-owner address', async () => {
-      await expect(addressBook.connect(random).setMarginPool(marginPoolAdd)).to.be.revertedWith(
+    it('should revert adding pool address from non-owner address', async () => {
+      await expect(addressBook.setMarginPool(marginPoolAdd, { from: random })).to.be.revertedWith(
         'Ownable: caller is not the owner'
       )
     })
 
-    xit('should set pool address', async () => {
+    it('should set pool address', async () => {
       await addressBook.setMarginPool(marginPoolAdd, { from: owner })
 
       assert.equal(await addressBook.getMarginPool(), marginPoolAdd, 'Pool address mismatch')
@@ -154,13 +152,13 @@ contract('AddressBook', ([owner, otokenImplAdd, marginPoolAdd, random]) => {
       await oracle.deployed()
     })
 
-    xit('should revert adding oracle address from non-owner address', async () => {
-      await expect(addressBook.connect(random).setLiquidationManager(oracle.address)).to.be.revertedWith(
+    it('should revert adding oracle address from non-owner address', async () => {
+      await expect(addressBook.setLiquidationManager(oracle.address, { from: random })).to.be.revertedWith(
         'Ownable: caller is not the owner'
       )
     })
 
-    xit('should set oracle address', async () => {
+    it('should set oracle address', async () => {
       await addressBook.setOracle(oracle.address, { from: owner })
 
       assert.equal(oracle.address, await addressBook.getOracle(), 'Oracle module implementation address mismatch')
@@ -172,31 +170,16 @@ contract('AddressBook', ([owner, otokenImplAdd, marginPoolAdd, random]) => {
 
     before(async () => {
       const oracleAddress = await addressBook.getOracle()
-      // const MarginCalculator =  await ethers.getContractFactory("MarginCalculator")
-      // marginCalculator = await MarginCalculator.deploy(oracleAddress) as MarginCalculatorInstance
-
-
-
-      /*
-
-      const arrayAddressUtils = await (await ethers.getContractFactory('ArrayAddressUtils')).deploy()
-      await arrayAddressUtils.deployed()
-
-      marginCalculator = (await (
-        await ethers.getContractFactory('MarginCalculator')
-      ).deploy(oracleAddress)) as MarginCalculatorInstance
-      await marginCalculator.deployed()
-
-      */
+      marginCalculator = await MarginCalculator.new(oracleAddress)
     })
 
-    xit('should revert adding margin calculator address from non-owner address', async () => {
-      await expect(addressBook.connect(random).setMarginCalculator(marginCalculator.address)).to.be.revertedWith(
+    it('should revert adding margin calculator address from non-owner address', async () => {
+      await expect(addressBook.setMarginCalculator(marginCalculator.address, { from: random })).to.be.revertedWith(
         'Ownable: caller is not the owner'
       )
     })
 
-    xit('should set margin calculator address', async () => {
+    it('should set margin calculator address', async () => {
       await addressBook.setMarginCalculator(marginCalculator.address, { from: owner })
 
       assert.equal(
@@ -218,13 +201,13 @@ contract('AddressBook', ([owner, otokenImplAdd, marginPoolAdd, random]) => {
       await module.deployed()
     })
 
-    xit('should revert adding arbitrary key:address from non-owner address', async () => {
-      await expect(addressBook.connect(random).updateImpl(modulekey, module.address)).to.be.revertedWith(
+    it('should revert adding arbitrary key:address from non-owner address', async () => {
+      await expect(addressBook.updateImpl(modulekey, module.address, { from: random })).to.be.revertedWith(
         'Ownable: caller is not the owner'
       )
     })
 
-    xit('should set new module key and address', async () => {
+    it('should set new module key and address', async () => {
       console.log(`going to make addressBook.updateImpl(%{modulekey}, %{module.address}}`)
 
       await addressBook.updateImpl(modulekey, module.address, { from: owner })
