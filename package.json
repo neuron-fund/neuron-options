@@ -1,11 +1,12 @@
 {
-  "name": "hardhat_test",
+  "name": "neuron-options",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
     "start": "npx hardhat node --hostname 0.0.0.0",
     "test": "FORK_BLOCK_NUMBER=13719189 npx hardhat test",
+    "docgen": "npx hardhat docgen && rm -r ./docs/@* ./docs/mocks ./docs/tests ./docs/hardhat ./docs/Migr*",
     "unit-tests": "npx hardhat test ./test/unit_tests/* --config ./hardhat_test.config.ts",
     "start-local-fork": "FORK_BLOCK_NUMBER=13719189 npx hardhat node --no-deploy",
     "start-local": "npx hardhat node --config ./hardhat_test.config.ts",
@@ -61,6 +62,7 @@
     "lodash": "^4.17.21",
     "nanoid": "^3.2.0",
     "prettier-plugin-solidity": "*",
+    "solidity-docgen": "^0.6.0-beta.10",
     "watch": "^1.0.2"
   }
 }
