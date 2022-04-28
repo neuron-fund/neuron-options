@@ -1,6 +1,4 @@
-# Solidity API
-
-## OtokenFactory
+# OtokenFactory
 
 SPDX-License-Identifier: UNLICENSED
 Create new oTokens and keep track of all created tokens

@@ -1,6 +1,4 @@
-# Solidity API
-
-## WhitelistInterface
+# WhitelistInterface
 
 ### addressBook
 

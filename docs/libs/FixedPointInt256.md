@@ -1,6 +1,4 @@
-# Solidity API
-
-## FPI
+# FPI
 
 FixedPoint library
 

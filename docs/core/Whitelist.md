@@ -1,6 +1,4 @@
-# Solidity API
-
-## Whitelist
+# Whitelist
 
 The whitelist module keeps track of all valid oToken addresses, product hashes, collateral addresses, and callee addresses.
 

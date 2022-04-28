@@ -1,6 +1,4 @@
-# Solidity API
-
-## PricerInterface
+# PricerInterface
 
 ### getPrice
 

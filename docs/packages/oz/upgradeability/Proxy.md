@@ -1,6 +1,4 @@
-# Solidity API
-
-## Proxy
+# Proxy
 
 _Gives the possibility to delegate any call to a foreign implementation._
 

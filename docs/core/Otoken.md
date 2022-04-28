@@ -1,6 +1,4 @@
-# Solidity API
-
-## Otoken
+# Otoken
 
 Otoken is the ERC20 token for an option
 

@@ -1,6 +1,4 @@
-# Solidity API
-
-## CTokenInterface
+# CTokenInterface
 
 _Interface of Compound cToken_
 

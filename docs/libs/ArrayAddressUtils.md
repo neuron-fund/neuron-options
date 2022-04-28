@@ -1,6 +1,4 @@
-# Solidity API
-
-## ArrayAddressUtils
+# ArrayAddressUtils
 
 Utils library for comparing arrays of addresses
 

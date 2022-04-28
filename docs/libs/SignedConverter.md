@@ -1,6 +1,4 @@
-# Solidity API
-
-## SignedConverter
+# SignedConverter
 
 A library to convert an unsigned integer to signed integer or signed integer to unsigned integer.
 

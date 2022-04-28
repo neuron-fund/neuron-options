@@ -1,6 +1,4 @@
-# Solidity API
-
-## ReentrancyGuardUpgradeSafe
+# ReentrancyGuardUpgradeSafe
 
 _Contract module that helps prevent reentrant calls to a function.
 

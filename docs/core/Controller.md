@@ -1,6 +1,4 @@
-# Solidity API
-
-## Controller
+# Controller
 
 Contract that controls the Gamma Protocol and the interaction of all sub contracts
 

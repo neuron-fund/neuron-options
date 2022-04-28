@@ -1,6 +1,4 @@
-# Solidity API
-
-## ChainLinkPricer
+# ChainLinkPricer
 
 A Pricer contract for one asset as reported by Chainlink
 

@@ -1,6 +1,4 @@
-# Solidity API
-
-## OtokenInterface
+# OtokenInterface
 
 ### Approval
 
