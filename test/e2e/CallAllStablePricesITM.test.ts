@@ -8,6 +8,7 @@ const testsParams = [
   {
     oTokenParams: {
       collateralAssets: [CRV_CVX_ETH, LIDO_ST_ETH],
+      collateralConstraints: [0, 0],
       underlyingAsset: WETH,
       strikeAsset: USDC,
       strikePriceFormatted: 3800,
@@ -36,6 +37,7 @@ const testsParams = [
   {
     oTokenParams: {
       collateralAssets: [CRV_CVX_ETH, LIDO_ST_ETH],
+      collateralConstraints: [0, 0],
       underlyingAsset: WETH,
       strikeAsset: USDC,
       strikePriceFormatted: 3800,
@@ -68,6 +70,7 @@ const testsParams = [
   {
     oTokenParams: {
       collateralAssets: [CRV_CVX_ETH, LIDO_ST_ETH],
+      collateralConstraints: [0, 0],
       underlyingAsset: WETH,
       strikeAsset: USDC,
       strikePriceFormatted: 3800,

@@ -1059,7 +1059,10 @@ contract MarginCalculator is Ownable {
         uint256[] memory _collateralsDecimals = _vaultDetails.collateralsDecimals;
 
         uint256 collateralsLength = _collateralAssets.length;
-
+        // then we need arrays to use short otoken collateral constraints
+        OtokenInterface short = OtokenInterface(_vaultDetails.shortOtoken);
+        uint256[] memory _shortCollateralConstraints = short.getCollateralConstraints();
+        uint256[] memory _shortCollateralsAmounts = short.getCollateralsAmounts();
         // availableCollateralsValues is how much worth available collateral in strike asset for put and underlying asset for call
         FPI.FixedPointInt[] memory availableCollateralsValues = new FPI.FixedPointInt[](collateralsLength);
         // availableCollateralTotalValue - how much value totally available in vault in valueAsset
@@ -1073,6 +1076,13 @@ contract MarginCalculator is Ownable {
                 continue;
             }
             availableCollateralsAmounts[i] = FPI.fromScaledUint(_unusedCollateralAmounts[i], _collateralsDecimals[i]);
+                        
+            if(_shortCollateralConstraints[i] > 0){ //if this collateral token has constraint
+                FPI.FixedPointInt memory maxAmount = 
+                FPI.fromScaledUint(_shortCollateralConstraints[i].sub(_shortCollateralsAmounts[i]), _collateralsDecimals[i]);
+                availableCollateralsAmounts[i] = FPI.min(maxAmount, availableCollateralsAmounts[i]);
+            }
+
             availableCollateralsValues[i] = _convertAmountOnLivePrice(
                 availableCollateralsAmounts[i],
                 _collateralAssets[i],

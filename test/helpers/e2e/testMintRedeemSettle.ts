@@ -139,6 +139,9 @@ export const testMintRedeemSettleFactory = (getDeployResults: () => TestDeployRe
     // TODO it waits more days then needed when checkpoinDays provided in params
     await waitNDays(expiryDays + 1, network.provider)
     await setStablePrices(oracle, deployer, expiryPrices)
+    
+
+
 
     await redeem(oToken, controller, redeemer, addDecimalsToAmount(totalOtokenRedeemableFormatted, oTokenDecimals))
     await assertRedeem(params, vaults, redeemer, longsInfo, totalOtokenRedeemableFormatted)

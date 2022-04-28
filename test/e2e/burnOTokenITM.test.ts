@@ -6,6 +6,7 @@ import { testMintRedeemSettleFactory } from '../helpers/e2e/testMintRedeemSettle
 
 const oTokenParams = {
   collateralAssets: [USDT, DAI],
+  collateralConstraints: [0, 0],
   underlyingAsset: WETH,
   strikeAsset: USDC,
   strikePriceFormatted: 3800,
@@ -130,6 +131,7 @@ const testsParams = [
     ],
   },
 ] as const
+
 
 describe(path.basename(__filename), function () {
   let deployResult: Awaited<ReturnType<typeof testDeploy>>

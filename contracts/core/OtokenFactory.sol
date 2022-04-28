@@ -6,6 +6,7 @@ import {AddressBookInterface} from "../interfaces/AddressBookInterface.sol";
 import {OtokenInterface} from "../interfaces/OtokenInterface.sol";
 import {WhitelistInterface} from "../interfaces/WhitelistInterface.sol";
 
+
 /**
  * SPDX-License-Identifier: UNLICENSED
  * @title A factory to create oTokens
@@ -43,12 +44,20 @@ contract OtokenFactory is OtokenSpawner {
         bool isPut
     );
 
+    struct OtokenParams { // "Stack too deep, try removing local variables" workaround 
+        bytes32 id;
+        address whitelist;
+        address otokenImpl;
+        address newOtoken;
+    }
+
     /**
      * @notice create new oTokens
      * @dev deploy an eip-1167 minimal proxy with CREATE2 and register it to the whitelist module
      * @param _underlyingAsset asset that the option references
      * @param _strikeAsset asset that the strike price is denominated in
      * @param _collateralAssets assets that is held as collateral against short/written options
+     * @param _collateralConstraints limits the maximum number of untrusted collateral tokens (0 - no limit)
      * @param _strikePrice strike price with decimals = 18
      * @param _expiry expiration timestamp as a unix timestamp
      * @param _isPut True if a put option, False if a call option
@@ -58,20 +67,23 @@ contract OtokenFactory is OtokenSpawner {
         address _underlyingAsset,
         address _strikeAsset,
         address[] calldata _collateralAssets,
+        uint256[] calldata _collateralConstraints,
         uint256 _strikePrice,
         uint256 _expiry,
         bool _isPut
     ) external returns (address) {
+        OtokenParams memory p;
         require(_expiry > block.timestamp, "OtokenFactory: Can't create expired option");
         require(_expiry < MAX_EXPIRY, "OtokenFactory: Can't create option with expiry > 2345/12/31");
         // 8 hours = 3600 * 8 = 28800 seconds
         require(_expiry.sub(28800).mod(86400) == 0, "OtokenFactory: Option has to expire 08:00 UTC");
-        bytes32 id = _getOptionId(_underlyingAsset, _strikeAsset, _collateralAssets, _strikePrice, _expiry, _isPut);
-        require(idToAddress[id] == address(0), "OtokenFactory: Option already created");
+        p.id = _getOptionId(_underlyingAsset, _strikeAsset, _collateralAssets, _collateralConstraints, _strikePrice, _expiry, _isPut);
 
-        address whitelist = AddressBookInterface(addressBook).getWhitelist();
+        require(idToAddress[p.id] == address(0), "OtokenFactory: Option already created");
+
+        p.whitelist = AddressBookInterface(addressBook).getWhitelist();
         require(
-            WhitelistInterface(whitelist).isWhitelistedProduct(
+            WhitelistInterface(p.whitelist).isWhitelistedProduct(
                 _underlyingAsset,
                 _strikeAsset,
                 _collateralAssets,
@@ -82,27 +94,29 @@ contract OtokenFactory is OtokenSpawner {
 
         require(_strikePrice > 0, "OtokenFactory: Can't create a $0 strike option");
 
-        address otokenImpl = AddressBookInterface(addressBook).getOtokenImpl();
+        p.otokenImpl = AddressBookInterface(addressBook).getOtokenImpl();
+        bytes memory initializationCalldata;       
 
-        bytes memory initializationCalldata = abi.encodeWithSelector(
-            OtokenInterface(otokenImpl).init.selector,
-            addressBook,
-            _underlyingAsset,
-            _strikeAsset,
-            _collateralAssets,
-            _strikePrice,
-            _expiry,
-            _isPut
+        initializationCalldata = abi.encodeWithSelector(
+                OtokenInterface(p.otokenImpl).init.selector,
+                addressBook,
+                _underlyingAsset,
+                _strikeAsset,
+                _collateralAssets,
+                _collateralConstraints,
+                _strikePrice,
+                _expiry,
+                _isPut
         );
-
-        address newOtoken = _spawn(otokenImpl, initializationCalldata);
-
-        idToAddress[id] = newOtoken;
-        otokens.push(newOtoken);
-        WhitelistInterface(whitelist).whitelistOtoken(newOtoken);
+ 
+     
+        p.newOtoken = _spawn(p.otokenImpl, initializationCalldata);
+        idToAddress[p.id] = p.newOtoken;
+        otokens.push(p.newOtoken);
+        WhitelistInterface(p.whitelist).whitelistOtoken(p.newOtoken);
 
         emit OtokenCreated(
-            newOtoken,
+            p.newOtoken,
             msg.sender,
             _underlyingAsset,
             _strikeAsset,
@@ -110,10 +124,10 @@ contract OtokenFactory is OtokenSpawner {
             _strikePrice,
             _expiry,
             _isPut
-        );
-
-        return newOtoken;
+        ); 
+        return p.newOtoken;
     }
+
 
     /**
      * @notice get the total oTokens created by the factory
@@ -137,11 +151,12 @@ contract OtokenFactory is OtokenSpawner {
         address _underlyingAsset,
         address _strikeAsset,
         address[] calldata _collateralAssets,
+        uint256[] calldata _collateralConstraints,
         uint256 _strikePrice,
         uint256 _expiry,
         bool _isPut
     ) external view returns (address) {
-        bytes32 id = _getOptionId(_underlyingAsset, _strikeAsset, _collateralAssets, _strikePrice, _expiry, _isPut);
+        bytes32 id = _getOptionId(_underlyingAsset, _strikeAsset, _collateralAssets, _collateralConstraints, _strikePrice, _expiry, _isPut);
         return idToAddress[id];
     }
 
@@ -151,6 +166,7 @@ contract OtokenFactory is OtokenSpawner {
      * @param _underlyingAsset asset that the option references
      * @param _strikeAsset asset that the strike price is denominated in
      * @param _collateralAssets asset that is held as collateral against short/written options
+     * @param _collateralConstraints limits the maximum number of untrusted collateral tokens (0 - no limit)     
      * @param _strikePrice strike price with decimals = 18
      * @param _expiry expiration timestamp as a unix timestamp
      * @param _isPut True if a put option, False if a call option
@@ -160,6 +176,7 @@ contract OtokenFactory is OtokenSpawner {
         address _underlyingAsset,
         address _strikeAsset,
         address[] calldata _collateralAssets,
+        uint256[] calldata _collateralConstraints,
         uint256 _strikePrice,
         uint256 _expiry,
         bool _isPut
@@ -172,6 +189,7 @@ contract OtokenFactory is OtokenSpawner {
             _underlyingAsset,
             _strikeAsset,
             _collateralAssets,
+            _collateralConstraints,
             _strikePrice,
             _expiry,
             _isPut
@@ -193,13 +211,14 @@ contract OtokenFactory is OtokenSpawner {
         address _underlyingAsset,
         address _strikeAsset,
         address[] calldata _collateralAssets,
+        uint256[] calldata _collateralConstraints,
         uint256 _strikePrice,
         uint256 _expiry,
         bool _isPut
     ) internal pure returns (bytes32) {
         return
             keccak256(
-                abi.encodePacked(_underlyingAsset, _strikeAsset, _collateralAssets, _strikePrice, _expiry, _isPut)
+                abi.encodePacked(_underlyingAsset, _strikeAsset, _collateralAssets, _collateralConstraints, _strikePrice, _expiry, _isPut)
             );
     }
 }

@@ -69,6 +69,7 @@ contract('OTokenFactory', ([user1, user2, controller]) => {
         weth.address,
         usdc.address,
         [usdc.address],
+        [0],
         strikePrice,
         expiry,
         isPut,
@@ -81,6 +82,7 @@ contract('OTokenFactory', ([user1, user2, controller]) => {
         weth.address,
         usdc.address,
         [usdc.address],
+        [0],
         strikePrice,
         expiry,
         isPut,
@@ -93,6 +95,7 @@ contract('OTokenFactory', ([user1, user2, controller]) => {
         weth.address,
         usdc.address,
         [usdc.address],
+        [0],
         strikePrice,
         expiry,
         false,
@@ -101,6 +104,7 @@ contract('OTokenFactory', ([user1, user2, controller]) => {
         weth.address,
         usdc.address,
         [usdc.address],
+        [0],
         strikePrice,
         expiry,
         false,
@@ -108,11 +112,12 @@ contract('OTokenFactory', ([user1, user2, controller]) => {
       assert.equal(targetAddress1, targetAddress2)
     })
 
-    it('should get different target address with different otoken paramters', async () => {
+    it('should get different target address with different otoken parameters', async () => {
       const targetAddress1 = await otokenFactory.getTargetOtokenAddress(
         weth.address,
         usdc.address,
         [usdc.address],
+        [0],
         strikePrice,
         expiry,
         isPut,
@@ -121,6 +126,7 @@ contract('OTokenFactory', ([user1, user2, controller]) => {
         ZERO_ADDR,
         ZERO_ADDR,
         [ZERO_ADDR],
+        [0],
         strikePrice,
         expiry,
         isPut,
@@ -132,15 +138,16 @@ contract('OTokenFactory', ([user1, user2, controller]) => {
   describe('Create new otoken', () => {
     it('Should revert when creating expired option', async () => {
       const lastTimeStamp = await time.latest()
+
       await expectRevert(
         otokenFactory.createOtoken(
           weth.address,
           usdc.address,
           [usdc.address],
+          [0],
           strikePrice,
           lastTimeStamp.toString(),
-          isPut,
-          { from: user1 },
+          isPut
         ),
         "OtokenFactory: Can't create expired option",
       )
@@ -153,6 +160,7 @@ contract('OTokenFactory', ([user1, user2, controller]) => {
           weth.address,
           usdc.address,
           [usdc.address],
+          [0],
           strikePrice,
           randomTime.toString(),
           isPut,
@@ -167,7 +175,7 @@ contract('OTokenFactory', ([user1, user2, controller]) => {
     it('Should revert when timestamp > 2345/12/31', async () => {
       const tooFar = 11865398400 // 01/01/2346 @ 12:00am (UTC)
       await expectRevert(
-        otokenFactory.createOtoken(weth.address, usdc.address, [usdc.address], strikePrice, tooFar, isPut, {
+        otokenFactory.createOtoken(weth.address, usdc.address, [usdc.address], [0], strikePrice, tooFar, isPut, {
           from: user1,
         }),
         "OtokenFactory: Can't create option with expiry > 2345/12/31",
@@ -176,7 +184,7 @@ contract('OTokenFactory', ([user1, user2, controller]) => {
 
     it('Should revert when creating a 0 strike put', async () => {
       await expectRevert(
-        otokenFactory.createOtoken(weth.address, usdc.address, [usdc.address], 0, expiry, isPut, {
+        otokenFactory.createOtoken(weth.address, usdc.address, [usdc.address], [0], 0, expiry, isPut, {
           from: user1,
         }),
         "OtokenFactory: Can't create a $0 strike option",
@@ -188,6 +196,7 @@ contract('OTokenFactory', ([user1, user2, controller]) => {
         weth.address,
         usdc.address,
         [usdc.address],
+        [0],
         strikePrice,
         expiry,
         isPut,
@@ -197,6 +206,7 @@ contract('OTokenFactory', ([user1, user2, controller]) => {
         weth.address,
         usdc.address,
         [usdc.address],
+        [0],
         strikePrice,
         expiry,
         isPut,
@@ -243,6 +253,7 @@ contract('OTokenFactory', ([user1, user2, controller]) => {
         weth.address,
         usdc.address,
         [usdc.address],
+        [0],
         _strikePrice,
         expiry,
         isPut,
@@ -252,6 +263,7 @@ contract('OTokenFactory', ([user1, user2, controller]) => {
         weth.address,
         usdc.address,
         [usdc.address],
+        ['0'],
         _strikePrice,
         expiry,
         isPut,
@@ -276,14 +288,14 @@ contract('OTokenFactory', ([user1, user2, controller]) => {
 
     it('Should revert when creating non-whitelisted options', async () => {
       await expectRevert(
-        otokenFactory.createOtoken(shitcoin.address, usdc.address, [usdc.address], strikePrice, expiry, isPut),
+        otokenFactory.createOtoken(shitcoin.address, usdc.address, [usdc.address], ['0'], strikePrice, expiry, isPut),
         'OtokenFactory: Unsupported Product',
       )
     })
 
     it('Should revert when creating duplicated option', async () => {
       await expectRevert(
-        otokenFactory.createOtoken(weth.address, usdc.address, [usdc.address], strikePrice, expiry, isPut),
+        otokenFactory.createOtoken(weth.address, usdc.address, [usdc.address], ['0'], strikePrice, expiry, isPut),
         'OtokenFactory: Option already created',
       )
     })
@@ -303,6 +315,7 @@ contract('OTokenFactory', ([user1, user2, controller]) => {
         weth.address,
         usdc.address,
         [usdc.address],
+        ['0'],
         strikePrice,
         expiry,
         isPut,
@@ -315,6 +328,7 @@ contract('OTokenFactory', ([user1, user2, controller]) => {
         weth.address,
         usdc.address,
         [usdc.address],
+        [0],
         strikePrice,
         expiry,
         isPut,
@@ -330,7 +344,7 @@ contract('OTokenFactory', ([user1, user2, controller]) => {
       // Try to create a 250 strike (use the 200 strike will throw "Option Created" error first.)
       const newStrikePrice = 250
       await expectRevert(
-        otokenFactory.createOtoken(weth.address, usdc.address, [usdc.address], newStrikePrice, expiry, isPut),
+        otokenFactory.createOtoken(weth.address, usdc.address, [usdc.address], ['0'], newStrikePrice, expiry, isPut),
         'Create2: Failed on deploy',
       )
     })

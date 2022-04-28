@@ -153,9 +153,12 @@ export const genShortOtokenParams = async (chance: Chance.Chance, isPut: boolean
 
   const expiryDays = 7
 
+  const collateralConstraints = new Array<number>(collateralAssets.length).fill(0);
+
   return {
     oTokenParams: {
       collateralAssets,
+      collateralConstraints,
       underlyingAsset,
       strikeAsset,
       strikePriceFormatted,
@@ -183,8 +186,11 @@ export const genLongOtokenParams = (chance: Chance.Chance, shortOTokenParams: OT
     ? chance.floating({ min: shortStrikePriceFormatted + 1, max: shortStrikePriceFormatted * 10 })
     : chance.floating({ min: 100, max: shortStrikePriceFormatted - 1 })
 
+  const collateralConstraints = new Array<number>(collateralAssets.length).fill(0);
+
   return {
     collateralAssets,
+    collateralConstraints,
     underlyingAsset,
     strikeAsset,
     strikePriceFormatted,

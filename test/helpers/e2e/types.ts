@@ -4,6 +4,7 @@ import { OTokenPrices } from '../otoken'
 
 export type OTokenParams = {
   collateralAssets: readonly string[]
+  collateralConstraints: readonly number[]
   underlyingAsset: string
   strikeAsset: string
   strikePriceFormatted: number

@@ -6,6 +6,7 @@ import { testMintRedeemSettleFactory } from '../helpers/e2e/testMintRedeemSettle
 
 const oTokenParams = {
   collateralAssets: [CRV_CVX_ETH, LIDO_ST_ETH],
+  collateralConstraints: [0, 0],
   underlyingAsset: WETH,
   strikeAsset: USDC,
   strikePriceFormatted: 3800,

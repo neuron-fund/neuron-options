@@ -8,6 +8,7 @@ const testsParams = [
   {
     oTokenParams: {
       collateralAssets: [USDT, DAI],
+      collateralConstraints: [0, 0],
       underlyingAsset: WETH,
       strikeAsset: USDC,
       strikePriceFormatted: 3800,
@@ -36,6 +37,7 @@ const testsParams = [
   {
     oTokenParams: {
       collateralAssets: [USDT, DAI],
+      collateralConstraints: [0, 0],
       underlyingAsset: WETH,
       strikeAsset: USDC,
       strikePriceFormatted: 3800,
@@ -64,6 +66,7 @@ const testsParams = [
   {
     oTokenParams: {
       collateralAssets: [USDT, DAI],
+      collateralConstraints: [0, 0],
       underlyingAsset: WETH,
       strikeAsset: USDC,
       strikePriceFormatted: 3800,
@@ -92,6 +95,7 @@ const testsParams = [
   {
     oTokenParams: {
       collateralAssets: [USDT, DAI],
+      collateralConstraints: [0, 0],
       underlyingAsset: WETH,
       strikeAsset: USDC,
       strikePriceFormatted: 3800,
@@ -120,6 +124,7 @@ const testsParams = [
   {
     oTokenParams: {
       collateralAssets: [USDT, DAI],
+      collateralConstraints: [0, 0],
       underlyingAsset: WETH,
       strikeAsset: USDC,
       strikePriceFormatted: 3800,
@@ -152,6 +157,7 @@ const testsParams = [
   {
     oTokenParams: {
       collateralAssets: [USDT, DAI],
+      collateralConstraints: [0, 0],
       underlyingAsset: WETH,
       strikeAsset: USDC,
       strikePriceFormatted: 3800,
@@ -184,6 +190,7 @@ const testsParams = [
   {
     oTokenParams: {
       collateralAssets: [USDT, DAI],
+      collateralConstraints: [0, 0],
       underlyingAsset: WETH,
       strikeAsset: USDC,
       strikePriceFormatted: 3800,
