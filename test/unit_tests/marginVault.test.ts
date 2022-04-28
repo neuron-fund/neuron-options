@@ -281,12 +281,12 @@ contract('MarginVault', ([deployer, controller]) => {
   })
 
   describe('Remove collateral', () => {
-    xit('should remove some of the collateral asset', async () => {
+    it('should remove some of the collateral asset', async () => {
       const toRemove = 5
       const vaultCounter = BigNumber.from(0)
       const vaultBefore = await marginVaultTester.getVault(vaultCounter)
 
-      await marginVaultTester.testRemoveCollateral(vaultCounter, [toRemove])
+      await marginVaultTester.testRemoveCollateral(vaultCounter, [toRemove, 0])
       const vaultAfter = await marginVaultTester.getVault(vaultCounter)
 
       const amountBefore = BigNumber.from(vaultBefore.collateralAmounts[0].toString())
@@ -299,12 +299,12 @@ contract('MarginVault', ([deployer, controller]) => {
       )
     })
 
-    xit('should be able to remove all of the remaining amount of first collateral asset', async () => {
+    it('should be able to remove all of the remaining amount of first collateral asset', async () => {
       const vaultCounter = BigNumber.from(0)
       const vaultBefore = await marginVaultTester.getVault(vaultCounter)
       const toRemove = vaultBefore.collateralAmounts[0]
 
-      await marginVaultTester.testRemoveCollateral(vaultCounter, [toRemove])
+      await marginVaultTester.testRemoveCollateral(vaultCounter, [toRemove, 0])
       const vaultAfter = await marginVaultTester.getVault(vaultCounter)
 
       const amountBefore = BigNumber.from(vaultBefore.collateralAmounts[0].toString())
@@ -318,17 +318,16 @@ contract('MarginVault', ([deployer, controller]) => {
       //assert.equal(vaultAfter.collateralAssets[0], ZERO_ADDR, 'collateral asset address mismatch')
     })
 
-    xit('should remove some of the second collateral asset', async () => {
+    it('should remove some of the second collateral asset', async () => {
       const toRemove = 5
-      const assetIndex = 1
       const vaultCounter = BigNumber.from(0)
       const vaultBefore = await marginVaultTester.getVault(vaultCounter)
 
-      await marginVaultTester.testRemoveCollateral(vaultCounter, [toRemove])
+      await marginVaultTester.testRemoveCollateral(vaultCounter, [0, toRemove])
       const vaultAfter = await marginVaultTester.getVault(vaultCounter)
 
-      const amountBefore = BigNumber.from(vaultBefore.collateralAmounts[assetIndex].toString())
-      const amountAfter = BigNumber.from(vaultAfter.collateralAmounts[assetIndex].toString())
+      const amountBefore = BigNumber.from(vaultBefore.collateralAmounts[1].toString())
+      const amountAfter = BigNumber.from(vaultAfter.collateralAmounts[1].toString())
 
       assert.equal(
         amountBefore.sub(amountAfter).toString(), 
@@ -337,10 +336,11 @@ contract('MarginVault', ([deployer, controller]) => {
       )
     })
 
-    xit('should revert when trying to remove wrong collateral asset from an index', async () => {
+    it('should revert when trying to remove wrong collateral amount from an index', async () => {
       const vaultCounter = BigNumber.from(0)
 
-      await expectRevert(marginVaultTester.testRemoveCollateral(vaultCounter, [1]), 'V9')
+      await expectRevert(marginVaultTester.testRemoveCollateral(vaultCounter, [100000, 100000]), 
+      'VM Exception while processing transaction: reverted with panic code 0x11 (Arithmetic operation underflowed or overflowed outside of an unchecked block)')
     })
   })
 })

@@ -189,11 +189,11 @@ contract(
         await controllerProxy.vaults(accountOwner1, vaultId) 
       })
 
-      xit('should get vault balance', async () => {
+     /* it('should get vault balance', async () => {
         const vaultId = BigNumber.from(0)
         const proceed = await controllerProxy.getProceed(accountOwner1, vaultId)
         assert.isTrue(proceed.length==0)
-      })
+      })*/
     })
 
     describe('Open vault', () => {
