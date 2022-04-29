@@ -1,115 +1,115 @@
 import path from 'path'
-import { USDC, WETH, CRV_CVX_ETH, LIDO_ST_ETH } from '../../constants/externalAddresses'
+import { USDT, DAI, WETH, USDC } from '../../constants/externalAddresses'
 import { prettyObjectStringify } from '../../utils/log'
 import { testDeploy } from '../helpers/fixtures'
 import { testMintRedeemSettleFactory } from '../helpers/e2e/testMintRedeemSettle'
 
+const onTokenParams = {
+  collateralAssets: [USDT, DAI],
+  collateralConstraints: [0, 0],
+  underlyingAsset: WETH,
+  strikeAsset: USDC,
+  strikePriceFormatted: 3800,
+  expiryDays: 7,
+  isPut: true,
+}
+
 const testsParams = [
   {
-    onTokenParams: {
-      collateralAssets: [CRV_CVX_ETH, LIDO_ST_ETH],
-      collateralConstraints: [0, 0],
-      underlyingAsset: WETH,
-      strikeAsset: USDC,
-      strikePriceFormatted: 3800,
-      expiryDays: 7,
-      isPut: false,
-    },
+    onTokenParams: onTokenParams,
     initialPrices: {
+      [USDT]: 1,
       [USDC]: 1,
-      [CRV_CVX_ETH]: 3500,
-      [LIDO_ST_ETH]: 3500,
-      [WETH]: 3500,
+      [DAI]: 1,
+      [WETH]: 4200,
     },
     expiryPrices: {
+      [USDT]: 0.8,
       [USDC]: 1,
-      [CRV_CVX_ETH]: 4000,
-      [LIDO_ST_ETH]: 4000,
-      [WETH]: 4000,
+      [DAI]: 0.8,
+      [WETH]: 3500,
     },
     vaults: [
       {
-        collateralAmountsFormatted: [1, 0],
+        collateralAmountsFormatted: [2000, 4000],
+        onTokenAmountFormatted: 1,
+        burnAmountFormatted: 1,
+      },
+      {
+        collateralAmountsFormatted: [4900, 0],
+        onTokenAmountFormatted: 1,
+      },
+      {
+        collateralAmountsFormatted: [2000, 2700],
         onTokenAmountFormatted: 1,
       },
     ],
   },
   {
-    onTokenParams: {
-      collateralAssets: [CRV_CVX_ETH, LIDO_ST_ETH],
-      collateralConstraints: [0, 0],
-      underlyingAsset: WETH,
-      strikeAsset: USDC,
-      strikePriceFormatted: 3800,
-      expiryDays: 7,
-      isPut: false,
-    },
+    onTokenParams: onTokenParams,
     initialPrices: {
+      [USDT]: 1,
       [USDC]: 1,
-      [CRV_CVX_ETH]: 3500,
-      [LIDO_ST_ETH]: 3500,
-      [WETH]: 3500,
+      [DAI]: 1,
+      [WETH]: 4200,
     },
     expiryPrices: {
+      [USDT]: 0.8,
       [USDC]: 1,
-      [CRV_CVX_ETH]: 4000,
-      [LIDO_ST_ETH]: 4000,
-      [WETH]: 4000,
+      [DAI]: 0.8,
+      [WETH]: 3500,
     },
     vaults: [
       {
-        collateralAmountsFormatted: [1, 0],
+        collateralAmountsFormatted: [2000, 4000],
         onTokenAmountFormatted: 1,
+        burnAmountFormatted: 0.5,
       },
       {
-        collateralAmountsFormatted: [0.7, 0],
-        onTokenAmountFormatted: 0.5,
+        collateralAmountsFormatted: [4900, 0],
+        onTokenAmountFormatted: 0.2,
+      },
+      {
+        collateralAmountsFormatted: [2000, 2700],
+        onTokenAmountFormatted: 1.2,
       },
     ],
   },
   {
-    onTokenParams: {
-      collateralAssets: [CRV_CVX_ETH, LIDO_ST_ETH],
-      collateralConstraints: [0, 0],
-      underlyingAsset: WETH,
-      strikeAsset: USDC,
-      strikePriceFormatted: 3800,
-      expiryDays: 7,
-      isPut: false,
-    },
+    onTokenParams: onTokenParams,
     initialPrices: {
+      [USDT]: 1,
       [USDC]: 1,
-      [CRV_CVX_ETH]: 3500,
-      [LIDO_ST_ETH]: 3500,
-      [WETH]: 3500,
+      [DAI]: 1,
+      [WETH]: 4200,
     },
     expiryPrices: {
+      [USDT]: 0.8,
       [USDC]: 1,
-      [CRV_CVX_ETH]: 4000,
-      [LIDO_ST_ETH]: 4000,
-      [WETH]: 4000,
+      [DAI]: 0.8,
+      [WETH]: 3500,
     },
     checkpointsDays: {
       2: {
         prices: {
+          [USDT]: 1.2,
           [USDC]: 1,
-          [CRV_CVX_ETH]: 3400,
-          [LIDO_ST_ETH]: 3400,
-          [WETH]: 3650,
+          [DAI]: 1.3,
+          [WETH]: 4200,
         },
       },
       4: {
         prices: {
+          [USDT]: 1.3,
           [USDC]: 1,
-          [CRV_CVX_ETH]: 3500,
-          [LIDO_ST_ETH]: 3500,
-          [WETH]: 3700,
+          [DAI]: 1.4,
+          [WETH]: 4200,
         },
       },
     },
     vaults: [
       {
-        collateralAmountsFormatted: [1.2, 2.3],
+        collateralAmountsFormatted: [2000, 4000],
         mintOnCheckoints: {
           2: {
             onTokenAmountFormatted: 0.3,
@@ -121,11 +121,11 @@ const testsParams = [
         burnAmountFormatted: 0.5,
       },
       {
-        collateralAmountsFormatted: [1, 0],
+        collateralAmountsFormatted: [4900, 0],
         onTokenAmountFormatted: 1,
       },
       {
-        collateralAmountsFormatted: [0.3, 0.7],
+        collateralAmountsFormatted: [2000, 2700],
         onTokenAmountFormatted: 1,
       },
     ],

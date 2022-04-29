@@ -2,12 +2,12 @@ import Chance from 'chance'
 import { ethers } from 'hardhat'
 import { mockErc2OwnersPrivateKeys } from '../../utils/accounts'
 import { calculateMarginRequired } from './e2e/margin'
-import { OtokenCollateralsAmounts, OTokenParams } from './e2e/types'
+import { ONtokenCollateralsAmounts, ONTokenParams } from './e2e/types'
 import { deployMockERC20 } from './erc20'
-import { OTokenPrices } from './otoken'
+import { ONTokenPrices } from './onToken'
 
 // {
-//   oTokenParams: {
+//   onTokenParams: {
 //     collateralAssets: [USDC, DAI],
 //     underlyingAsset: WETH,
 //     strikeAsset: USDC,
@@ -28,11 +28,11 @@ import { OTokenPrices } from './otoken'
 //   vaults: [
 //     {
 //       collateralAmountsFormatted: [2000, 4000],
-//       oTokenAmountFormatted: 1,
+//       onTokenAmountFormatted: 1,
 //     },
 //     {
 //       collateralAmountsFormatted: [4000, 0],
-//       oTokenAmountFormatted: 1,
+//       onTokenAmountFormatted: 1,
 //     },
 //   ],
 // },
@@ -54,34 +54,34 @@ export const generateFuzzyTestParams = async (testSeed: Seed, canHaveBurn?: bool
   const isPut = chance.bool()
 
   const {
-    oTokenParams: shortOtokenParams,
+    onTokenParams: shortONtokenParams,
     mockERC20Owners,
     underlyingInitialPriceFormatted,
     strikeInitialPriceFormatted,
-  } = await genShortOtokenParams(chance, isPut, isITM)
+  } = await genShortONtokenParams(chance, isPut, isITM)
 
-  const longOtokenParams = canHaveLong ? genLongOtokenParams(chance, shortOtokenParams) : undefined
+  const longONtokenParams = canHaveLong ? genLongONtokenParams(chance, shortONtokenParams) : undefined
 
   const vaultsNumber = chance.integer({ min: 1, max: 40 })
 
   const initialPrices = genInitialPrices(
     chance,
-    shortOtokenParams,
+    shortONtokenParams,
     underlyingInitialPriceFormatted,
     strikeInitialPriceFormatted
   )
-  const expiryPrices = genExpiryPrices(chance, shortOtokenParams, initialPrices, isPut, isITM)
+  const expiryPrices = genExpiryPrices(chance, shortONtokenParams, initialPrices, isPut, isITM)
 
   const vaults: {
-    collateralAmountsFormatted: OtokenCollateralsAmounts<OTokenParams>
-    oTokenAmountFormatted: number
+    collateralAmountsFormatted: ONtokenCollateralsAmounts<ONTokenParams>
+    onTokenAmountFormatted: number
     burnAmountFormatted?: number
-    longToDeposit: OTokenParams
+    longToDeposit: ONTokenParams
     longToDepositAmountFormatted: number
   }[] = []
 
   for (let l = 0; l < vaultsNumber; l++) {
-    vaults.push(genVaultParams(chance, shortOtokenParams, initialPrices, canHaveBurn, longOtokenParams))
+    vaults.push(genVaultParams(chance, shortONtokenParams, initialPrices, canHaveBurn, longONtokenParams))
   }
 
   const requiredLongAmount = vaults.reduce((acc, x) => (acc += x.longToDepositAmountFormatted || 0), 0)
@@ -89,20 +89,20 @@ export const generateFuzzyTestParams = async (testSeed: Seed, canHaveBurn?: bool
     requiredLongAmount !== 0
       ? [
           {
-            oTokenParams: longOtokenParams,
+            onTokenParams: longONtokenParams,
             collateralAmountsFormatted: genVaultCollateralAmounts(
               chance,
-              longOtokenParams,
+              longONtokenParams,
               requiredLongAmount,
               initialPrices
             ),
-            oTokenAmountFormatted: requiredLongAmount,
+            onTokenAmountFormatted: requiredLongAmount,
           },
         ]
       : undefined
 
   return {
-    oTokenParams: shortOtokenParams,
+    onTokenParams: shortONtokenParams,
     initialPrices,
     expiryPrices,
     longsOwners,
@@ -111,7 +111,7 @@ export const generateFuzzyTestParams = async (testSeed: Seed, canHaveBurn?: bool
   }
 }
 
-export const genShortOtokenParams = async (chance: Chance.Chance, isPut: boolean, isITM: boolean) => {
+export const genShortONtokenParams = async (chance: Chance.Chance, isPut: boolean, isITM: boolean) => {
   const collateralsNumber = chance.integer({ min: 1, max: 6 })
   const collateralsDecimals = [...new Array(collateralsNumber)].map(() => chance.integer({ min: 6, max: 18 }))
 
@@ -153,10 +153,10 @@ export const genShortOtokenParams = async (chance: Chance.Chance, isPut: boolean
 
   const expiryDays = 7
 
-  const collateralConstraints = new Array<number>(collateralAssets.length).fill(0);
+  const collateralConstraints = new Array<number>(collateralAssets.length).fill(0)
 
   return {
-    oTokenParams: {
+    onTokenParams: {
       collateralAssets,
       collateralConstraints,
       underlyingAsset,
@@ -171,7 +171,7 @@ export const genShortOtokenParams = async (chance: Chance.Chance, isPut: boolean
   }
 }
 
-export const genLongOtokenParams = (chance: Chance.Chance, shortOTokenParams: OTokenParams) => {
+export const genLongONtokenParams = (chance: Chance.Chance, shortONTokenParams: ONTokenParams) => {
   const {
     collateralAssets,
     expiryDays,
@@ -179,14 +179,14 @@ export const genLongOtokenParams = (chance: Chance.Chance, shortOTokenParams: OT
     strikePriceFormatted: shortStrikePriceFormatted,
     underlyingAsset,
     isPut,
-  } = shortOTokenParams
+  } = shortONTokenParams
 
   const isLongHigherStrike = chance.bool()
   const strikePriceFormatted = isLongHigherStrike
     ? chance.floating({ min: shortStrikePriceFormatted + 1, max: shortStrikePriceFormatted * 10 })
     : chance.floating({ min: 100, max: shortStrikePriceFormatted - 1 })
 
-  const collateralConstraints = new Array<number>(collateralAssets.length).fill(0);
+  const collateralConstraints = new Array<number>(collateralAssets.length).fill(0)
 
   return {
     collateralAssets,
@@ -201,26 +201,26 @@ export const genLongOtokenParams = (chance: Chance.Chance, shortOTokenParams: OT
 
 export const genVaultParams = (
   chance: Chance.Chance,
-  shortOtokenParams: OTokenParams,
-  prices: OTokenPrices,
+  shortONtokenParams: ONTokenParams,
+  prices: ONTokenPrices,
   canHaveBurn?: boolean,
-  longOtokenParams?: OTokenParams
+  longONtokenParams?: ONTokenParams
 ) => {
   const mintAmountFormatted = chance.floating({ min: 0.1, max: 500, fixed: 2 })
 
-  const collateralAmountsFormatted = genVaultCollateralAmounts(chance, shortOtokenParams, mintAmountFormatted, prices)
+  const collateralAmountsFormatted = genVaultCollateralAmounts(chance, shortONtokenParams, mintAmountFormatted, prices)
 
   const shouldHaveBurn = canHaveBurn && chance.bool()
   const burnAmountFormatted = shouldHaveBurn
     ? chance.floating({ min: 0.001, max: mintAmountFormatted, fixed: 4 })
     : undefined
-  const shouldDepositLong = longOtokenParams && chance.bool()
-  const longToDeposit = longOtokenParams && shouldDepositLong ? longOtokenParams : undefined
+  const shouldDepositLong = longONtokenParams && chance.bool()
+  const longToDeposit = longONtokenParams && shouldDepositLong ? longONtokenParams : undefined
   const longToDepositAmountFormatted = longToDeposit ? chance.floating({ min: 0.1, max: 500, fixed: 2 }) : undefined
 
   return {
     collateralAmountsFormatted,
-    oTokenAmountFormatted: mintAmountFormatted,
+    onTokenAmountFormatted: mintAmountFormatted,
     burnAmountFormatted,
     longToDeposit,
     longToDepositAmountFormatted,
@@ -229,29 +229,29 @@ export const genVaultParams = (
 
 export const genInitialPrices = (
   chance: Chance.Chance,
-  shortOtokenParams: OTokenParams,
+  shortONtokenParams: ONTokenParams,
   underlyingInitialPriceFormatted: number,
   strikeInitialPriceFormatted: number
 ) => {
   const initialPrices = {}
 
-  shortOtokenParams.collateralAssets.forEach(x => {
+  shortONtokenParams.collateralAssets.forEach(x => {
     initialPrices[x] = chance.floating({ min: 20, max: 20000, fixed: 2 })
   })
-  initialPrices[shortOtokenParams.strikeAsset] = strikeInitialPriceFormatted
-  initialPrices[shortOtokenParams.underlyingAsset] = underlyingInitialPriceFormatted
+  initialPrices[shortONtokenParams.strikeAsset] = strikeInitialPriceFormatted
+  initialPrices[shortONtokenParams.underlyingAsset] = underlyingInitialPriceFormatted
 
   return initialPrices
 }
 
 export const genExpiryPrices = (
   chance: Chance.Chance,
-  shortOtokenParams: OTokenParams,
-  initialPrices: OTokenPrices,
+  shortONtokenParams: ONTokenParams,
+  initialPrices: ONTokenPrices,
   isPut: boolean,
   isITM: boolean
 ) => {
-  const { strikePriceFormatted, strikeAsset, underlyingAsset, collateralAssets } = shortOtokenParams
+  const { strikePriceFormatted, strikeAsset, underlyingAsset, collateralAssets } = shortONtokenParams
 
   const expiryPrices = {}
 
@@ -280,16 +280,16 @@ export const genExpiryPrices = (
   return expiryPrices
 }
 
-export const genVaultCollateralAmounts = <T extends OTokenParams>(
+export const genVaultCollateralAmounts = <T extends ONTokenParams>(
   chance: Chance.Chance,
-  oTokenParams: T,
+  onTokenParams: T,
   mintAmountFormatted: number,
-  prices: OTokenPrices
+  prices: ONTokenPrices
 ): number[] & { length: T['collateralAssets']['length'] } => {
-  const { marginRequiredUsd } = calculateMarginRequired(mintAmountFormatted, oTokenParams, prices)
+  const { marginRequiredUsd } = calculateMarginRequired(mintAmountFormatted, onTokenParams, prices)
 
   const excessCollateralValueRatio = chance.floating({ min: 1, max: 5, fixed: 2 })
-  const collateralValuesRaw = oTokenParams.collateralAssets.map(x =>
+  const collateralValuesRaw = onTokenParams.collateralAssets.map(x =>
     chance.floating({ min: 0, max: marginRequiredUsd, fixed: 2 })
   )
   const collateralValuesSum = collateralValuesRaw.reduce((acc, curr) => acc + curr, 0)
@@ -297,7 +297,7 @@ export const genVaultCollateralAmounts = <T extends OTokenParams>(
     x => (x / collateralValuesSum) * marginRequiredUsd * excessCollateralValueRatio
   )
   const collateralAmountsFormatted = collateralValuesNormalized.map(
-    (x, i) => x / prices[oTokenParams.collateralAssets[i]]
+    (x, i) => x / prices[onTokenParams.collateralAssets[i]]
   )
 
   return collateralAmountsFormatted

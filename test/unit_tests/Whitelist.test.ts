@@ -1,9 +1,8 @@
-import { 
-  MockERC20 as MockERC20Instance, 
-  MockAddressBook as MockAddressBookInstance, 
-  Whitelist as WhitelistInstance 
-} from '../../typechain-types' 
-
+import {
+  MockERC20 as MockERC20Instance,
+  MockAddressBook as MockAddressBookInstance,
+  Whitelist as WhitelistInstance,
+} from '../../typechain-types'
 
 import { artifacts, contract, web3 } from 'hardhat'
 import { assert } from 'chai'
@@ -18,12 +17,12 @@ const Whitelist = artifacts.require('Whitelist.sol')
 // address(0)
 const ZERO_ADDR = '0x0000000000000000000000000000000000000000'
 
-contract('Whitelist', ([owner, otokenFactoryAddress, random, newOwner, callee]) => {
+contract('Whitelist', ([owner, onTokenFactoryAddress, random, newOwner, callee]) => {
   // ERC20 mocks
   let usdc: MockERC20Instance
   let dai: MockERC20Instance
   // option mock
-  let otoken: MockERC20Instance
+  let onToken: MockERC20Instance
   // address book mock
   let addressBook: MockAddressBookInstance
   // Whitelist module
@@ -39,12 +38,12 @@ contract('Whitelist', ([owner, otokenFactoryAddress, random, newOwner, callee]) 
     // deploy DAI token
     dai = await MockERC20.new('DAI', 'DAI', 18)
     // deploy option
-    otoken = await MockERC20.new('OETH', 'OETH', 8)
+    onToken = await MockERC20.new('OETH', 'OETH', 8)
 
     // deploy AddressBook mock
     addressBook = await MockAddressBook.new()
-    // set Otoken Factory address
-    await addressBook.setOtokenFactory(otokenFactoryAddress)
+    // set ONtoken Factory address
+    await addressBook.setONtokenFactory(onTokenFactoryAddress)
 
     // deploy Whitelist module
     whitelist = await Whitelist.new(addressBook.address, { from: owner })
@@ -54,7 +53,7 @@ contract('Whitelist', ([owner, otokenFactoryAddress, random, newOwner, callee]) 
     it('should revert whitelisting collateral from non-owner address', async () => {
       await expectRevert(
         whitelist.whitelistCollaterals([usdc.address], { from: random }),
-        'Ownable: caller is not the owner',
+        'Ownable: caller is not the owner'
       )
     })
 
@@ -72,7 +71,7 @@ contract('Whitelist', ([owner, otokenFactoryAddress, random, newOwner, callee]) 
     it('should revert blacklisting collateral from non-owner address', async () => {
       await expectRevert(
         whitelist.blacklistCollateral([usdc.address], { from: random }),
-        'Ownable: caller is not the owner',
+        'Ownable: caller is not the owner'
       )
     })
 
@@ -92,7 +91,7 @@ contract('Whitelist', ([owner, otokenFactoryAddress, random, newOwner, callee]) 
     it('should revert whitelisting a product from non-owner address', async () => {
       await expectRevert(
         whitelist.whitelistProduct(underlyingAsset, usdc.address, [usdc.address], isPut, { from: random }),
-        'Ownable: caller is not the owner',
+        'Ownable: caller is not the owner'
       )
     })
 
@@ -102,7 +101,7 @@ contract('Whitelist', ([owner, otokenFactoryAddress, random, newOwner, callee]) 
 
       await expectRevert(
         whitelist.whitelistProduct(underlyingAsset, usdc.address, [usdc.address], isPut, { from: owner }),
-        'Whitelist: Collateral is not whitelisted',
+        'Whitelist: Collateral is not whitelisted'
       )
     })
 
@@ -114,9 +113,15 @@ contract('Whitelist', ([owner, otokenFactoryAddress, random, newOwner, callee]) 
       const isWhitelistedCollateral = await whitelist.isWhitelistedCollaterals([usdc.address])
       assert.equal(isWhitelistedCollateral, true, 'fail: collateral not whitelisted')
 
-      const productWhitelistTx = await whitelist.whitelistProduct(underlyingAsset, usdc.address, [usdc.address], isPut, {
-        from: owner,
-      })
+      const productWhitelistTx = await whitelist.whitelistProduct(
+        underlyingAsset,
+        usdc.address,
+        [usdc.address],
+        isPut,
+        {
+          from: owner,
+        }
+      )
 
       //expectEvent(productWhitelistTx, 'ProductWhitelisted')
 
@@ -124,7 +129,7 @@ contract('Whitelist', ([owner, otokenFactoryAddress, random, newOwner, callee]) 
         underlyingAsset,
         usdc.address,
         [usdc.address],
-        isPut,
+        isPut
       )
       assert.equal(isWhitelistedProduct, true, 'fail: product not whitelisted')
     })
@@ -134,7 +139,7 @@ contract('Whitelist', ([owner, otokenFactoryAddress, random, newOwner, callee]) 
     it('should revert blacklisting a product from non-owner address', async () => {
       await expectRevert(
         whitelist.blacklistProduct(underlyingAsset, usdc.address, [usdc.address], isPut, { from: random }),
-        'Ownable: caller is not the owner',
+        'Ownable: caller is not the owner'
       )
     })
 
@@ -142,7 +147,7 @@ contract('Whitelist', ([owner, otokenFactoryAddress, random, newOwner, callee]) 
       assert.equal(
         await whitelist.isWhitelistedProduct(underlyingAsset, usdc.address, [usdc.address], isPut),
         true,
-        'fail: product not whitelisted',
+        'fail: product not whitelisted'
       )
 
       const blacklistTx = await whitelist.blacklistProduct(underlyingAsset, usdc.address, [usdc.address], isPut, {
@@ -155,47 +160,47 @@ contract('Whitelist', ([owner, otokenFactoryAddress, random, newOwner, callee]) 
         underlyingAsset,
         usdc.address,
         [usdc.address],
-        isPut,
+        isPut
       )
       assert.equal(isWhitelistedProduct, false, 'fail: product not blacklisted')
     })
   })
 
-  describe('Whitelist otoken', () => {
-    it('should revert whitelisting an otoken from sender other than Otoken Factory', async () => {
+  describe('Whitelist onToken', () => {
+    it('should revert whitelisting an onToken from sender other than ONtoken Factory', async () => {
       await expectRevert(
-        whitelist.whitelistOtoken(otoken.address, { from: owner }),
-        'Whitelist: Sender is not OtokenFactory',
+        whitelist.whitelistONtoken(onToken.address, { from: owner }),
+        'Whitelist: Sender is not ONtokenFactory'
       )
     })
 
-    it('should whitelist an otoken from Otoken Factory address', async () => {
-      const whitelistTx = await whitelist.whitelistOtoken(otoken.address, { from: otokenFactoryAddress })
+    it('should whitelist an onToken from ONtoken Factory address', async () => {
+      const whitelistTx = await whitelist.whitelistONtoken(onToken.address, { from: onTokenFactoryAddress })
 
-      expectEvent(whitelistTx, 'OtokenWhitelisted')
+      expectEvent(whitelistTx, 'ONtokenWhitelisted')
 
-      const isWhitelistedOtoken = await whitelist.isWhitelistedOtoken(otoken.address)
-      assert.equal(isWhitelistedOtoken, true, 'fail: otoken not whitelisted')
+      const isWhitelistedONtoken = await whitelist.isWhitelistedONtoken(onToken.address)
+      assert.equal(isWhitelistedONtoken, true, 'fail: onToken not whitelisted')
     })
   })
 
-  describe('Blacklist otoken', () => {
-    it('should revert blacklisting an otoken from sender other than owner', async () => {
+  describe('Blacklist onToken', () => {
+    it('should revert blacklisting an onToken from sender other than owner', async () => {
       await expectRevert(
-        whitelist.blacklistOtoken(otoken.address, { from: otokenFactoryAddress }),
-        'Ownable: caller is not the owner',
+        whitelist.blacklistONtoken(onToken.address, { from: onTokenFactoryAddress }),
+        'Ownable: caller is not the owner'
       )
     })
 
-    it('should blacklist an otoken from owner address', async () => {
-      assert.equal(await whitelist.isWhitelistedOtoken(otoken.address), true, 'fail: otoken not whitelisted')
+    it('should blacklist an onToken from owner address', async () => {
+      assert.equal(await whitelist.isWhitelistedONtoken(onToken.address), true, 'fail: onToken not whitelisted')
 
-      const blacklistTx = await whitelist.blacklistOtoken(otoken.address, { from: owner })
+      const blacklistTx = await whitelist.blacklistONtoken(onToken.address, { from: owner })
 
-      expectEvent(blacklistTx, 'OtokenBlacklisted')
+      expectEvent(blacklistTx, 'ONtokenBlacklisted')
 
-      const isWhitelistedOtoken = await whitelist.isWhitelistedOtoken(otoken.address)
-      assert.equal(isWhitelistedOtoken, false, 'fail: otoken not blacklisted')
+      const isWhitelistedONtoken = await whitelist.isWhitelistedONtoken(onToken.address)
+      assert.equal(isWhitelistedONtoken, false, 'fail: onToken not blacklisted')
     })
   })
 
@@ -248,7 +253,7 @@ contract('Whitelist', ([owner, otokenFactoryAddress, random, newOwner, callee]) 
 
       await expectRevert(
         whitelist.whitelistProduct(underlyingAsset, dai.address, [dai.address], isPut, { from: owner }),
-        'Ownable: caller is not the owner',
+        'Ownable: caller is not the owner'
       )
     })
 
@@ -259,7 +264,12 @@ contract('Whitelist', ([owner, otokenFactoryAddress, random, newOwner, callee]) 
 
       // expectEvent(whitelistTx, 'ProductWhitelisted')
 
-      const isSupportedProduct = await whitelist.isWhitelistedProduct(underlyingAsset, dai.address, [dai.address], isPut)
+      const isSupportedProduct = await whitelist.isWhitelistedProduct(
+        underlyingAsset,
+        dai.address,
+        [dai.address],
+        isPut
+      )
       assert.equal(isSupportedProduct, true, 'fail: product not supported')
     })
   })

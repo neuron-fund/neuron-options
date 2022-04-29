@@ -1,9 +1,9 @@
-import { 
+import {
   MockERC20 as MockERC20Instance,
   ChainLinkPricer as ChainLinkPricerInstance,
   MockChainlinkAggregator as MockChainlinkAggregatorInstance,
-  MockOracle as MockOracleInstance
-} from '../../typechain-types'  
+  MockOracle as MockOracleInstance,
+} from '../../typechain-types'
 
 import { expectRevert, time } from '@openzeppelin/test-helpers'
 import { artifacts, contract } from 'hardhat'
@@ -23,7 +23,7 @@ contract('ChainlinkPricer', ([owner, bot, random]) => {
   let wethAggregator: MockChainlinkAggregatorInstance
   let oracle: MockOracleInstance
   let weth: MockERC20Instance
-  // otoken
+  // onToken
   let pricer: ChainLinkPricerInstance
 
   before('Deployment', async () => {
@@ -49,19 +49,19 @@ contract('ChainlinkPricer', ([owner, bot, random]) => {
     it('should revert if initializing aggregator with 0 address', async () => {
       await expectRevert(
         ChainlinkPricer.new(bot, weth.address, ZERO_ADDR, wethAggregator.address),
-        'ChainLinkPricer: Cannot set 0 address as aggregator',
+        'ChainLinkPricer: Cannot set 0 address as aggregator'
       )
     })
     it('should revert if initializing oracle with 0 address', async () => {
       await expectRevert(
         ChainlinkPricer.new(bot, weth.address, oracle.address, ZERO_ADDR),
-        'ChainLinkPricer: Cannot set 0 address as oracle',
+        'ChainLinkPricer: Cannot set 0 address as oracle'
       )
     })
     it('should revert if initializing bot with 0 address', async () => {
       await expectRevert(
         ChainlinkPricer.new(ZERO_ADDR, weth.address, oracle.address, wethAggregator.address),
-        'ChainLinkPricer: Cannot set 0 address as bot',
+        'ChainLinkPricer: Cannot set 0 address as bot'
       )
     })
   })
@@ -136,7 +136,7 @@ contract('ChainlinkPricer', ([owner, bot, random]) => {
       const roundId = 1
       await expectRevert(
         pricer.setExpiryPriceInOracle(expiryTimestamp, roundId, { from: random }),
-        'ChainLinkPricer: unauthorized sender',
+        'ChainLinkPricer: unauthorized sender'
       )
     })
 
@@ -145,7 +145,7 @@ contract('ChainlinkPricer', ([owner, bot, random]) => {
       const roundId = 1
       await expectRevert(
         pricer.setExpiryPriceInOracle(expiryTimestamp, roundId, { from: bot }),
-        'ChainLinkPricer: invalid roundId',
+        'ChainLinkPricer: invalid roundId'
       )
     })
   })

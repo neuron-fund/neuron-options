@@ -36,6 +36,6 @@ deploy.dependencies = [
   'ArrayAddressUtils',
   'MarginCalculator',
   'Whitelist',
-  'OtokenFactory',
+  'ONtokenFactory',
 ]
 export default deploy

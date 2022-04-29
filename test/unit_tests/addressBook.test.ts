@@ -4,7 +4,7 @@ import { ethers, artifacts, contract, web3 } from 'hardhat'
 import {
   MockERC20 as MockERC20Instance,
   Whitelist as WhitelistInstance,
-  OtokenFactory as OtokenFactoryInstance,
+  ONtokenFactory as ONtokenFactoryInstance,
   UpgradeableContractV1 as UpgradeableContractV1Instance,
   UpgradeableContractV2 as UpgradeableContractV2Instance,
   OwnedUpgradeabilityProxy as OwnedUpgradeabilityProxyInstance,
@@ -19,7 +19,7 @@ const { expectRevert } = require('@openzeppelin/test-helpers')
 const AddressBook = artifacts.require('AddressBook.sol')
 const MarginCalculator = artifacts.require('MarginCalculator.sol')
 
-contract('AddressBook', ([owner, otokenImplAdd, marginPoolAdd, random]) => {
+contract('AddressBook', ([owner, onTokenImplAdd, marginPoolAdd, random]) => {
   // ERC20 mocks
   let weth: MockERC20Instance
   // addressbook instance
@@ -35,14 +35,17 @@ contract('AddressBook', ([owner, otokenImplAdd, marginPoolAdd, random]) => {
     addressBook = await AddressBook.new()
   })
 
-  describe('Set otoken implementation address', () => {
-    it('should revert adding otoken implementation address from non-owner address', async () => {
-      await expectRevert(addressBook.setOtokenImpl(otokenImplAdd, { from: random }), 'Ownable: caller is not the owner')
+  describe('Set onToken implementation address', () => {
+    it('should revert adding onToken implementation address from non-owner address', async () => {
+      await expectRevert(
+        addressBook.setONtokenImpl(onTokenImplAdd, { from: random }),
+        'Ownable: caller is not the owner'
+      )
     })
 
-    it('should set otoken implementation address', async () => {
-      await addressBook.setOtokenImpl(otokenImplAdd)
-      assert.equal(await addressBook.getOtokenImpl(), otokenImplAdd, 'Otoken implementation address mismatch')
+    it('should set onToken implementation address', async () => {
+      await addressBook.setONtokenImpl(onTokenImplAdd)
+      assert.equal(await addressBook.getONtokenImpl(), onTokenImplAdd, 'ONtoken implementation address mismatch')
     })
   })
 
@@ -85,25 +88,25 @@ contract('AddressBook', ([owner, otokenImplAdd, marginPoolAdd, random]) => {
     })
   })
 
-  describe('Set otoken factory', () => {
-    let otokenFactory: OtokenFactoryInstance
+  describe('Set onToken factory', () => {
+    let onTokenFactory: ONtokenFactoryInstance
 
     before(async () => {
-      const OtokenFactory = await ethers.getContractFactory('OtokenFactory')
-      otokenFactory = (await OtokenFactory.deploy(addressBook.address)) as OtokenFactoryInstance
-      await otokenFactory.deployed()
+      const ONtokenFactory = await ethers.getContractFactory('ONtokenFactory')
+      onTokenFactory = (await ONtokenFactory.deploy(addressBook.address)) as ONtokenFactoryInstance
+      await onTokenFactory.deployed()
     })
 
-    it('should revert adding otoken factory address from non-owner address', async () => {
-      await expect(addressBook.setOtokenFactory(otokenFactory.address, { from: random })).to.be.revertedWith(
+    it('should revert adding onToken factory address from non-owner address', async () => {
+      await expect(addressBook.setONtokenFactory(onTokenFactory.address, { from: random })).to.be.revertedWith(
         'Ownable: caller is not the owner'
       )
     })
 
-    it('should set otoken factory address', async () => {
-      await addressBook.setOtokenFactory(otokenFactory.address, { from: owner })
+    it('should set onToken factory address', async () => {
+      await addressBook.setONtokenFactory(onTokenFactory.address, { from: owner })
 
-      assert.equal(await addressBook.getOtokenFactory(), otokenFactory.address, 'Otoken factory address mismatch')
+      assert.equal(await addressBook.getONtokenFactory(), onTokenFactory.address, 'ONtoken factory address mismatch')
     })
   })
 

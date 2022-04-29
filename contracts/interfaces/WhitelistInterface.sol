@@ -8,7 +8,7 @@ interface WhitelistInterface {
 
     function blacklistCollateral(address[] memory _collaterals) external;
 
-    function blacklistOtoken(address _otokenAddress) external;
+    function blacklistONtoken(address _onTokenAddress) external;
 
     function blacklistProduct(
         address _underlying,
@@ -21,7 +21,7 @@ interface WhitelistInterface {
 
     function isWhitelistedCollaterals(address[] memory _collaterals) external view returns (bool);
 
-    function isWhitelistedOtoken(address _otoken) external view returns (bool);
+    function isWhitelistedONtoken(address _onToken) external view returns (bool);
 
     function isWhitelistedProduct(
         address _underlying,
@@ -30,17 +30,17 @@ interface WhitelistInterface {
         bool _isPut
     ) external view returns (bool);
 
-   //  function owner() external view returns (address);
+    //  function owner() external view returns (address);
 
-   //  function renounceOwnership() external;
+    //  function renounceOwnership() external;
 
-   //  function transferOwnership(address newOwner) external;
+    //  function transferOwnership(address newOwner) external;
 
     function whitelistCallee(address _callee) external;
 
     function whitelistCollaterals(address[] memory _collaterals) external;
 
-    function whitelistOtoken(address _otokenAddress) external;
+    function whitelistONtoken(address _onTokenAddress) external;
 
     function whitelistProduct(
         address _underlying,

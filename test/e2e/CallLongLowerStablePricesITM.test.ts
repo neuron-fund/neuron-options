@@ -4,7 +4,7 @@ import { prettyObjectStringify } from '../../utils/log'
 import { testDeploy } from '../helpers/fixtures'
 import { testMintRedeemSettleFactory } from '../helpers/e2e/testMintRedeemSettle'
 
-const oTokenParams = {
+const onTokenParams = {
   collateralAssets: [CRV_CVX_ETH, LIDO_ST_ETH],
   collateralConstraints: [0, 0],
   underlyingAsset: WETH,
@@ -14,7 +14,7 @@ const oTokenParams = {
   isPut: false,
 }
 
-const longOTokenParams = {
+const longONTokenParams = {
   collateralAssets: [CRV_CVX_ETH, LIDO_ST_ETH],
   collateralConstraints: [0, 0],
   underlyingAsset: WETH,
@@ -26,7 +26,7 @@ const longOTokenParams = {
 
 const testsParams = [
   {
-    oTokenParams,
+    onTokenParams,
     initialPrices: {
       [USDC]: 1,
       [CRV_CVX_ETH]: 3400,
@@ -41,22 +41,22 @@ const testsParams = [
     },
     longsOwners: [
       {
-        oTokenParams: longOTokenParams,
-        oTokenAmountFormatted: 1,
+        onTokenParams: longONTokenParams,
+        onTokenAmountFormatted: 1,
         collateralAmountsFormatted: [1, 1],
       },
     ],
     vaults: [
       {
         collateralAmountsFormatted: [0.05, 0.05],
-        longToDeposit: longOTokenParams,
+        longToDeposit: longONTokenParams,
         longToDepositAmountFormatted: 1,
-        oTokenAmountFormatted: 1,
+        onTokenAmountFormatted: 1,
       },
     ],
   },
   {
-    oTokenParams,
+    onTokenParams,
     initialPrices: {
       [USDC]: 1,
       [CRV_CVX_ETH]: 3500,
@@ -71,22 +71,22 @@ const testsParams = [
     },
     longsOwners: [
       {
-        oTokenParams: longOTokenParams,
-        oTokenAmountFormatted: 1,
+        onTokenParams: longONTokenParams,
+        onTokenAmountFormatted: 1,
         collateralAmountsFormatted: [1, 1],
       },
     ],
     vaults: [
       {
         collateralAmountsFormatted: [0.5, 0.5],
-        longToDeposit: longOTokenParams,
+        longToDeposit: longONTokenParams,
         longToDepositAmountFormatted: 1,
-        oTokenAmountFormatted: 1,
+        onTokenAmountFormatted: 1,
       },
     ],
   },
   {
-    oTokenParams,
+    onTokenParams,
     initialPrices: {
       [USDC]: 1,
       [CRV_CVX_ETH]: 3500,
@@ -101,22 +101,22 @@ const testsParams = [
     },
     longsOwners: [
       {
-        oTokenParams: longOTokenParams,
-        oTokenAmountFormatted: 1,
+        onTokenParams: longONTokenParams,
+        onTokenAmountFormatted: 1,
         collateralAmountsFormatted: [1, 1],
       },
     ],
     vaults: [
       {
         collateralAmountsFormatted: [0.05, 0.05],
-        longToDeposit: longOTokenParams,
+        longToDeposit: longONTokenParams,
         longToDepositAmountFormatted: 1,
-        oTokenAmountFormatted: 1,
+        onTokenAmountFormatted: 1,
       },
     ],
   },
   {
-    oTokenParams,
+    onTokenParams,
     initialPrices: {
       [USDC]: 1,
       [CRV_CVX_ETH]: 3500,
@@ -131,17 +131,17 @@ const testsParams = [
     },
     longsOwners: [
       {
-        oTokenParams: longOTokenParams,
-        oTokenAmountFormatted: 1,
+        onTokenParams: longONTokenParams,
+        onTokenAmountFormatted: 1,
         collateralAmountsFormatted: [1, 1],
       },
     ],
     vaults: [
       {
         collateralAmountsFormatted: [0.5, 0.5],
-        longToDeposit: longOTokenParams,
+        longToDeposit: longONTokenParams,
         longToDepositAmountFormatted: 1,
-        oTokenAmountFormatted: 1,
+        onTokenAmountFormatted: 1,
       },
     ],
   },

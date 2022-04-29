@@ -1,5 +1,5 @@
 import path from 'path'
-import { USDC, DAI, WETH, CRV_CVX_ETH, LIDO_ST_ETH } from '../../constants/externalAddresses'
+import { WETH, USDC, CRV_CVX_ETH, LIDO_ST_ETH } from '../../constants/externalAddresses'
 import { prettyObjectStringify } from '../../utils/log'
 import { testDeploy } from '../helpers/fixtures'
 import { testMintRedeemSettleFactory } from '../helpers/e2e/testMintRedeemSettle'
@@ -52,6 +52,7 @@ const testsParams = [
         longToDeposit: longONTokenParams,
         longToDepositAmountFormatted: 1,
         onTokenAmountFormatted: 1,
+        burnAmountFormatted: 0.5,
       },
     ],
   },
@@ -82,6 +83,7 @@ const testsParams = [
         longToDeposit: longONTokenParams,
         longToDepositAmountFormatted: 1,
         onTokenAmountFormatted: 1,
+        burnAmountFormatted: 0.7,
       },
     ],
   },
@@ -104,6 +106,7 @@ const testsParams = [
         onTokenParams: longONTokenParams,
         onTokenAmountFormatted: 1,
         collateralAmountsFormatted: [1, 1],
+        burnAmountFormatted: 0.2,
       },
     ],
     vaults: [
@@ -112,6 +115,7 @@ const testsParams = [
         longToDeposit: longONTokenParams,
         longToDepositAmountFormatted: 1,
         onTokenAmountFormatted: 1,
+        burnAmountFormatted: 0.9,
       },
     ],
   },
@@ -142,6 +146,7 @@ const testsParams = [
         longToDeposit: longONTokenParams,
         longToDepositAmountFormatted: 1,
         onTokenAmountFormatted: 1,
+        burnAmountFormatted: 0.25,
       },
     ],
   },

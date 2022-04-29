@@ -1,19 +1,19 @@
-import { 
+import {
   MockERC20 as MockERC20Instance,
   CallTester as CallTesterInstance,
   MarginCalculator as MarginCalculatorInstance,
-  MockOtoken as MockOtokenInstance,
+  MockONtoken as MockONtokenInstance,
   MockOracle as MockOracleInstance,
   MockWhitelistModule as MockWhitelistModuleInstance,
   MarginPool as MarginPoolInstance,
   Controller as ControllerInstance,
   AddressBook as AddressBookInstance,
   OwnedUpgradeabilityProxy as OwnedUpgradeabilityProxyInstance,
-} from '../../typechain-types'  
+} from '../../typechain-types'
 
 import { ActionArgsStruct } from '../../typechain-types/Controller'
 
-import { createTokenAmount,  resp2bn } from '../helpers/utils'
+import { createTokenAmount, resp2bn } from '../helpers/utils'
 import { artifacts, contract, web3 } from 'hardhat'
 import { expect, assert } from 'chai'
 
@@ -23,8 +23,8 @@ const { expectRevert, expectEvent, time } = require('@openzeppelin/test-helpers'
 
 const CallTester = artifacts.require('CallTester.sol')
 const MockERC20 = artifacts.require('MockERC20.sol')
-const OtokenImplV1 = artifacts.require('OtokenImplV1.sol')
-const MockOtoken = artifacts.require('MockOtoken.sol')
+const ONtokenImplV1 = artifacts.require('ONtokenImplV1.sol')
+const MockONtoken = artifacts.require('MockONtoken.sol')
 const MockOracle = artifacts.require('MockOracle.sol')
 const OwnedUpgradeabilityProxy = artifacts.require('OwnedUpgradeabilityProxy.sol')
 const MarginCalculator = artifacts.require('MarginCalculator.sol')
@@ -61,8 +61,8 @@ contract(
     let controllerImplementation: ControllerInstance
     let controllerProxy: ControllerInstance
 
-    // deployed and whitelisted otoken
-    let whitelistedOtoken: MockOtokenInstance
+    // deployed and whitelisted onToken
+    let whitelistedONtoken: MockONtokenInstance
 
     const usdcDecimals = 6
     const wethDecimals = 18
@@ -76,12 +76,11 @@ contract(
       weth2 = await MockERC20.new('WETH', 'WETH', wethDecimals)
       // deploy Oracle module
       oracle = await MockOracle.new(addressBook.address, { from: owner })
-      
+
       const libMarginVault = await MarginVault.new()
       // const libArrayAddressUtils  = await ArrayAddressUtils.new()
       // await MarginCalculator.link(libArrayAddressUtils, libMarginVault)
 
-      
       //await MarginCalculator.link(libArrayAddressUtils)
       calculator = await MarginCalculator.new(oracle.address)
       // margin pool deployment
@@ -97,7 +96,7 @@ contract(
       // set whitelist module address
       await addressBook.setWhitelist(whitelist.address)
       // deploy Controller module
-      
+
       await Controller.link(libMarginVault)
       controllerImplementation = await Controller.new()
 
@@ -119,11 +118,11 @@ contract(
       await usdc.mint(random, createTokenAmount(10000, usdcDecimals))
       await usdc.mint(donor, createTokenAmount(10000, usdcDecimals))
 
-      //whitelisted dumb otoken
-      whitelistedOtoken = await MockOtoken.new()
-      await whitelist.whitelistOtoken(whitelistedOtoken.address, { from: owner })
+      //whitelisted dumb onToken
+      whitelistedONtoken = await MockONtoken.new()
+      await whitelist.whitelistONtoken(whitelistedONtoken.address, { from: owner })
       // await addressBook.setWhitelist(whitelist.address)
-      assert.isTrue(await whitelist.isWhitelistedOtoken(whitelistedOtoken.address))
+      assert.isTrue(await whitelist.isWhitelistedONtoken(whitelistedONtoken.address))
     })
 
     describe('Controller initialization', () => {
@@ -152,7 +151,7 @@ contract(
         assert.equal(
           await controllerProxy.isOperator(accountOwner1, accountOperator1),
           false,
-          'Address is already an operator',
+          'Address is already an operator'
         )
 
         await controllerProxy.setOperator(accountOperator1, true, { from: accountOwner1 })
@@ -160,7 +159,7 @@ contract(
         assert.equal(
           await controllerProxy.isOperator(accountOwner1, accountOperator1),
           true,
-          'Operator address mismatch',
+          'Operator address mismatch'
         )
       })
 
@@ -174,7 +173,7 @@ contract(
         assert.equal(
           await controllerProxy.isOperator(accountOwner1, accountOperator1),
           false,
-          'Operator address mismatch',
+          'Operator address mismatch'
         )
       })
 
@@ -186,10 +185,10 @@ contract(
     describe('Vault', () => {
       it('should get vault', async () => {
         const vaultId = BigNumber.from(0)
-        await controllerProxy.vaults(accountOwner1, vaultId) 
+        await controllerProxy.vaults(accountOwner1, vaultId)
       })
 
-     /* it('should get vault balance', async () => {
+      /* it('should get vault balance', async () => {
         const vaultId = BigNumber.from(0)
         const proceed = await controllerProxy.getProceed(accountOwner1, vaultId)
         assert.isTrue(proceed.length==0)
@@ -201,9 +200,9 @@ contract(
         const actionArgs = [
           getAction(ActionType.OpenVault, {
             owner: accountOwner1,
-            shortOtoken:whitelistedOtoken.address,
+            shortONtoken: whitelistedONtoken.address,
             vaultId: '1',
-          })
+          }),
         ]
         await expectRevert(controllerProxy.operate(actionArgs, { from: random }), 'C6')
       })
@@ -212,9 +211,9 @@ contract(
         const actionArgs = [
           getAction(ActionType.OpenVault, {
             owner: accountOwner1,
-            shortOtoken:whitelistedOtoken.address,
+            shortONtoken: whitelistedONtoken.address,
             vaultId: '0',
-          })
+          }),
         ]
         await expectRevert(controllerProxy.operate(actionArgs, { from: accountOwner1 }), 'C15')
       })
@@ -223,9 +222,10 @@ contract(
         const actionArgs = [
           getAction(ActionType.OpenVault, {
             owner: accountOwner1,
-            shortOtoken: ZERO_ADDR,
+            shortONtoken: ZERO_ADDR,
             vaultId: '1',
-          })        ]
+          }),
+        ]
 
         await expectRevert(controllerProxy.operate(actionArgs, { from: accountOwner1 }), 'C23')
       })
@@ -234,14 +234,14 @@ contract(
         const actionArgs: ActionArgsStruct[] = [
           getAction(ActionType.OpenVault, {
             owner: accountOwner1,
-            shortOtoken: whitelistedOtoken.address,
+            shortONtoken: whitelistedONtoken.address,
             vaultId: 1,
           }),
           getAction(ActionType.OpenVault, {
             owner: accountOwner1,
-            shortOtoken: whitelistedOtoken.address,
+            shortONtoken: whitelistedONtoken.address,
             vaultId: 2,
-          })
+          }),
         ]
         await expectRevert(controllerProxy.operate(actionArgs, { from: accountOwner1 }), 'C13')
       })
@@ -252,9 +252,9 @@ contract(
         const actionArgs = [
           getAction(ActionType.OpenVault, {
             owner: accountOwner1,
-            shortOtoken: whitelistedOtoken.address,
+            shortONtoken: whitelistedONtoken.address,
             vaultId: invalidVault,
-          })
+          }),
         ]
 
         await expectRevert(controllerProxy.operate(actionArgs, { from: accountOwner1 }), 'C15') //'A3')
@@ -267,14 +267,14 @@ contract(
         const actionArgs = [
           getAction(ActionType.OpenVault, {
             owner: accountOwner1,
-            shortOtoken: whitelistedOtoken.address,
+            shortONtoken: whitelistedONtoken.address,
             vaultId: '1',
           }),
           getAction(ActionType.OpenVault, {
             owner: accountOwner2,
-            shortOtoken: whitelistedOtoken.address,
+            shortONtoken: whitelistedONtoken.address,
             vaultId: '1',
-          })
+          }),
         ]
         await expectRevert(controllerProxy.operate(actionArgs, { from: accountOwner1 }), 'C12')
       })
@@ -285,9 +285,9 @@ contract(
         const actionArgs = [
           getAction(ActionType.OpenVault, {
             owner: accountOwner1,
-            shortOtoken: whitelistedOtoken.address,
+            shortONtoken: whitelistedONtoken.address,
             vaultId: vaultCounterBefore.toNumber() + 1,
-          })
+          }),
         ]
         await controllerProxy.operate(actionArgs, { from: accountOwner1 })
 
@@ -300,7 +300,7 @@ contract(
         assert.equal(
           await controllerProxy.isOperator(accountOwner1, accountOperator1),
           true,
-          'Operator address mismatch',
+          'Operator address mismatch'
         )
 
         const vaultCounterBefore = await controllerProxy.accountVaultCounter(accountOwner1)
@@ -308,9 +308,9 @@ contract(
         const actionArgs = [
           getAction(ActionType.OpenVault, {
             owner: accountOwner1,
-            shortOtoken: whitelistedOtoken.address,
+            shortONtoken: whitelistedONtoken.address,
             vaultId: vaultCounterBefore.toNumber() + 1,
-          })
+          }),
         ]
         await controllerProxy.operate(actionArgs, { from: accountOperator1 })
 
@@ -320,9 +320,9 @@ contract(
     })
 
     describe('Expiry', () => {
-      it('should return false for non expired otoken', async () => {
-        const otoken: MockOtokenInstance = await MockOtoken.new()
-        await otoken.init(
+      it('should return false for non expired onToken', async () => {
+        const onToken: MockONtokenInstance = await MockONtoken.new()
+        await onToken.init(
           addressBook.address,
           weth.address,
           usdc.address,
@@ -330,19 +330,19 @@ contract(
           ['0'],
           createTokenAmount(200),
           resp2bn(await time.latest()).add(60000 * 60000),
-          true,
+          true
         )
 
-        const hasExpired = resp2bn(await otoken.expiryTimestamp()) < resp2bn(await time.latest())
+        const hasExpired = resp2bn(await onToken.expiryTimestamp()) < resp2bn(await time.latest())
 
-        assert.equal(hasExpired, false, 'Otoken expiry check mismatch')
+        assert.equal(hasExpired, false, 'ONtoken expiry check mismatch')
       })
 
-      it('should return true for expired otoken', async () => {
-        // Otoken deployment
-        const expiredOtoken = await MockOtoken.new()
-        // init otoken
-        await expiredOtoken.init(
+      it('should return true for expired onToken', async () => {
+        // ONtoken deployment
+        const expiredONtoken = await MockONtoken.new()
+        // init onToken
+        await expiredONtoken.init(
           addressBook.address,
           weth.address,
           usdc.address,
@@ -350,12 +350,11 @@ contract(
           ['0'],
           createTokenAmount(200),
           1219835219,
-          true,
+          true
         )
 
-        const hasExpired = resp2bn(await expiredOtoken.expiryTimestamp()) < resp2bn(await time.latest())
-        assert.equal(hasExpired, true, 'Otoken expiry check mismatch')
-
+        const hasExpired = resp2bn(await expiredONtoken.expiryTimestamp()) < resp2bn(await time.latest())
+        assert.equal(hasExpired, true, 'ONtoken expiry check mismatch')
       })
     })
 
@@ -393,7 +392,7 @@ contract(
       it('should revert activating call action restriction from non-owner', async () => {
         await expectRevert(
           controllerProxy.setCallRestriction(true, { from: random }),
-          'Ownable: caller is not the owner',
+          'Ownable: caller is not the owner'
         )
       })
 
@@ -460,18 +459,16 @@ contract(
         const vaultCounter = await controllerProxy.accountVaultCounter(accountOwner1)
         const timestampBefore = (await controllerProxy.getVaultWithDetails(accountOwner1, vaultCounter.toNumber()))[1]
 
-
         await controllerProxy.sync(accountOwner1, vaultCounter.toNumber(), { from: random })
 
-         const timestampAfter = (await controllerProxy.getVaultWithDetails(accountOwner1, vaultCounter.toNumber()))[1]
+        const timestampAfter = (await controllerProxy.getVaultWithDetails(accountOwner1, vaultCounter.toNumber()))[1]
 
         assert.isAbove(
-            timestampAfter.toNumber(),
-            timestampBefore.toNumber(),
-            'Vault latest update timestamp did not sync',
+          timestampAfter.toNumber(),
+          timestampBefore.toNumber(),
+          'Vault latest update timestamp did not sync'
         )
       })
-
     })
 
     describe('Donate to pool', () => {
@@ -484,11 +481,8 @@ contract(
 
         const storedBalanceAfter = await marginPool.getStoredBalance(usdc.address)
 
-        assert.equal(
-          storedBalanceAfter.sub(storedBalanceBefore).toString(),
-          amountToDonate,
-          'Donated amount mismatch',
-        )
+        assert.equal(storedBalanceAfter.sub(storedBalanceBefore).toString(), amountToDonate, 'Donated amount mismatch')
       })
     })
-  })
+  }
+)

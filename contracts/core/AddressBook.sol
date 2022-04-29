@@ -10,10 +10,10 @@ import {OwnedUpgradeabilityProxy} from "../packages/oz/upgradeability/OwnedUpgra
  * @title AddressBook Module
  */
 contract AddressBook is Ownable {
-    /// @dev Otoken implementation key
-    bytes32 private constant OTOKEN_IMPL = keccak256("OTOKEN_IMPL");
-    /// @dev OtokenFactory key
-    bytes32 private constant OTOKEN_FACTORY = keccak256("OTOKEN_FACTORY");
+    /// @dev ONtoken implementation key
+    bytes32 private constant ON_TOKEN_IMPL = keccak256("ON_TOKEN_IMPL");
+    /// @dev ONtokenFactory key
+    bytes32 private constant ON_TOKEN_FACTORY = keccak256("ON_TOKEN_FACTORY");
     /// @dev Whitelist key
     bytes32 private constant WHITELIST = keccak256("WHITELIST");
     /// @dev Controller key
@@ -36,19 +36,19 @@ contract AddressBook is Ownable {
     event AddressAdded(bytes32 indexed id, address indexed add);
 
     /**
-     * @notice return Otoken implementation address
-     * @return Otoken implementation address
+     * @notice return ONtoken implementation address
+     * @return ONtoken implementation address
      */
-    function getOtokenImpl() external view returns (address) {
-        return getAddress(OTOKEN_IMPL);
+    function getONtokenImpl() external view returns (address) {
+        return getAddress(ON_TOKEN_IMPL);
     }
 
     /**
-     * @notice return oTokenFactory address
-     * @return OtokenFactory address
+     * @notice return onTokenFactory address
+     * @return ONtokenFactory address
      */
-    function getOtokenFactory() external view returns (address) {
-        return getAddress(OTOKEN_FACTORY);
+    function getONtokenFactory() external view returns (address) {
+        return getAddress(ON_TOKEN_FACTORY);
     }
 
     /**
@@ -100,21 +100,21 @@ contract AddressBook is Ownable {
     }
 
     /**
-     * @notice set Otoken implementation address
+     * @notice set ONtoken implementation address
      * @dev can only be called by the addressbook owner
-     * @param _otokenImpl Otoken implementation address
+     * @param _onTokenImpl ONtoken implementation address
      */
-    function setOtokenImpl(address _otokenImpl) external onlyOwner {
-        setAddress(OTOKEN_IMPL, _otokenImpl);
+    function setONtokenImpl(address _onTokenImpl) external onlyOwner {
+        setAddress(ON_TOKEN_IMPL, _onTokenImpl);
     }
 
     /**
-     * @notice set OtokenFactory address
+     * @notice set ONtokenFactory address
      * @dev can only be called by the addressbook owner
-     * @param _otokenFactory OtokenFactory address
+     * @param _onTokenFactory ONtokenFactory address
      */
-    function setOtokenFactory(address _otokenFactory) external onlyOwner {
-        setAddress(OTOKEN_FACTORY, _otokenFactory);
+    function setONtokenFactory(address _onTokenFactory) external onlyOwner {
+        setAddress(ON_TOKEN_FACTORY, _onTokenFactory);
     }
 
     /**

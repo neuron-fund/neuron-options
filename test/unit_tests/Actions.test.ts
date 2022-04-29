@@ -167,7 +167,7 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
 
       assert.equal(depositArgs.owner, owner)
       // assert.equal(depositArgs.vaultTypes, new BigNumber(0))
-      assert.equal(depositArgs.shortOtoken, random)
+      assert.equal(depositArgs.shortONtoken, random)
     })
   })
   describe('Parse Redeem Arguments', () => {
@@ -234,7 +234,7 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
 
       const depositArgs = await actionTester.getRedeemArgs()
       assert.equal(depositArgs.receiver, random)
-      assert.equal(depositArgs.otoken, assets[0])
+      assert.equal(depositArgs.onToken, assets[0])
       assert.equal(depositArgs.amount.toString(), amounts[0])
     })
   })
@@ -522,7 +522,7 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
       const mintArgs = await actionTester.getMintArgs()
       assert.equal(mintArgs.owner, owner)
       assert.equal(mintArgs.amount.toString(), amounts[0])
-      //assert.equal(mintArgs.otoken, assets[0])
+      //assert.equal(mintArgs.onToken, assets[0])
       assert.equal(mintArgs.to, random)
       assert.equal(mintArgs.vaultId.toString(), vaultId)
       // assert.equal(mintArgs.index.toString(), index)
@@ -552,7 +552,7 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
       const mintArgs = await actionTester.getMintArgs()
       assert.equal(mintArgs.owner, random)
       assert.equal(mintArgs.amount.toString(), amounts[0])
-      //assert.equal(mintArgs.otoken, assets[0])
+      //assert.equal(mintArgs.onToken, assets[0])
       assert.equal(mintArgs.to, owner)
       assert.equal(mintArgs.vaultId.toString(), vaultId)
       // assert.equal(mintArgs.index.toString(), index)

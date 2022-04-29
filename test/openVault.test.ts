@@ -6,14 +6,14 @@ import { ActionType, getAction } from './helpers/actions'
 import { testDeploy } from './helpers/fixtures'
 
 describe('Open Vault', function () {
-  it('open vault without non whitelisted oToken', async () => {
+  it('open vault without non whitelisted onToken', async () => {
     const { user } = await namedAccountsSigners(getNamedAccounts)
     const { controller } = await testDeploy()
 
     const actions: ActionArgsStruct[] = [
       getAction(ActionType.OpenVault, {
         owner: user.address,
-        shortOtoken: '0x8ad599c3a0ff1de082011efddc58f1908eb6e6d8',
+        shortONtoken: '0x8ad599c3a0ff1de082011efddc58f1908eb6e6d8',
         vaultId: 1,
       }),
     ]
@@ -25,7 +25,7 @@ describe('Open Vault', function () {
     const actions: ActionArgsStruct[] = [
       getAction(ActionType.OpenVault, {
         owner: user.address,
-        shortOtoken: '0x8ad599c3a0ff1de082011efddc58f1908eb6e6d8',
+        shortONtoken: '0x8ad599c3a0ff1de082011efddc58f1908eb6e6d8',
         vaultId: 0,
       }),
     ]

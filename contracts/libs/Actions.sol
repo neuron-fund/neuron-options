@@ -30,7 +30,7 @@ pragma solidity 0.8.9;
  * A21 cannot parse liquidate action with no round id
  * A22 can only parse arguments for call actions
  * A23 target address cannot be address(0)
- * A24 amounts for minting oToken should be array with 1 element
+ * A24 amounts for minting onToken should be array with 1 element
  * A26 param "assets" should have 1 element for redeem action
  * A27 param "assets" first element should not be zero address for redeem action
  * A28 param "amounts" should have 1 element for redeem action
@@ -79,26 +79,26 @@ library Actions {
         address owner;
         // index of the vault from which the asset will be minted
         uint256 vaultId;
-        // address to which we transfer the minted oTokens
+        // address to which we transfer the minted onTokens
         address to;
-        // amount of oTokens that is to be minted
+        // amount of onTokens that is to be minted
         uint256 amount;
     }
 
     struct BurnArgs {
         // address of the account owner
         address owner;
-        // index of the vault from which the oToken will be burned
+        // index of the vault from which the onToken will be burned
         uint256 vaultId;
-        // amount of oTokens that is to be burned
+        // amount of onTokens that is to be burned
         uint256 amount;
     }
 
     struct OpenVaultArgs {
         // address of the account owner
         address owner;
-        // We restrict vault to be specific for existing oToken so it's collaterals assets will be the same as oToken's
-        address shortOtoken;
+        // We restrict vault to be specific for existing onToken so it's collaterals assets will be the same as onToken's
+        address shortONtoken;
         // vault id to create
         uint256 vaultId;
     }
@@ -122,17 +122,17 @@ library Actions {
         // address from which we transfer the asset
         address from;
         // asset that is to be deposited
-        address longOtoken;
+        address longONtoken;
         // amount of asset that is to be deposited
         uint256 amount;
     }
 
     struct RedeemArgs {
-        // address to which we pay out the oToken proceeds
+        // address to which we pay out the onToken proceeds
         address receiver;
-        // oToken that is to be redeemed
-        address otoken;
-        // amount of oTokens that is to be redeemed
+        // onToken that is to be redeemed
+        address onToken;
+        // amount of onTokens that is to be redeemed
         uint256 amount;
     }
 
@@ -183,7 +183,7 @@ library Actions {
         require(_args.actionType == ActionType.OpenVault, "A1");
         require(_args.owner != address(0), "A2");
 
-        return OpenVaultArgs({shortOtoken: _args.secondAddress, owner: _args.owner, vaultId: _args.vaultId});
+        return OpenVaultArgs({shortONtoken: _args.secondAddress, owner: _args.owner, vaultId: _args.vaultId});
     }
 
     /**
@@ -247,7 +247,7 @@ library Actions {
                 owner: _args.owner,
                 vaultId: _args.vaultId,
                 from: _args.secondAddress,
-                longOtoken: _args.assets[0],
+                longONtoken: _args.assets[0],
                 amount: _args.amounts[0]
             });
     }
@@ -308,7 +308,7 @@ library Actions {
         require(_args.amounts.length == 1, "A28");
         require(_args.amounts[0] != 0, "A29");
 
-        return RedeemArgs({receiver: _args.secondAddress, otoken: _args.assets[0], amount: _args.amounts[0]});
+        return RedeemArgs({receiver: _args.secondAddress, onToken: _args.assets[0], amount: _args.amounts[0]});
     }
 
     /**

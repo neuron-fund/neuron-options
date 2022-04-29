@@ -2,7 +2,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { assert } from 'chai'
 import { parseUnits, formatUnits } from 'ethers/lib/utils'
 import { ethers, getNamedAccounts, network } from 'hardhat'
-import { MarginPool, Oracle, Otoken, OtokenFactory, Whitelist } from '../../../typechain-types'
+import { MarginPool, Oracle, ONtoken, ONtokenFactory, Whitelist } from '../../../typechain-types'
 import { Controller } from '../../../typechain-types/Controller'
 import { testVaultOwnersPrivateKeys } from '../../../utils/accounts'
 import { AddressZero } from '../../../utils/ethers'
@@ -12,17 +12,17 @@ import { waitNDays } from '../../../utils/time'
 import { addDecimalsToAmount, getERC20BalanceOf, getERC20Decimals } from '../erc20'
 import { TestDeployResult } from '../fixtures'
 import { setStablePrices } from '../oracle'
-import { CreateOtokenParamsObject, findOToken, oTokenDecimals, whitelistAndCreateOtoken } from '../otoken'
+import { CreateONtokenParamsObject, findONToken, onTokenDecimals, whitelistAndCreateONtoken } from '../onToken'
 import { isEqual as _isEqual } from 'lodash'
 import {
-  OTokenParams,
+  ONTokenParams,
   TestMintRedeemSettleParamsCheckpoints,
   TestMintRedeemSettleParams,
   TestMintRedeemSettleParamsVaultOwned,
   TestMintRedeemSettleParamsVault,
   LongOwnerWithSigner,
 } from './types'
-import { addExpiryToOtokenParams, calculateOtokenInfo, calculateRedeemForOtokenAmount, OtokenInfo } from './otoken'
+import { addExpiryToONtokenParams, calculateONtokenInfo, calculateRedeemForONtokenAmount, ONtokenInfo } from './onToken'
 import { burnVault, redeem, settleVault } from './controller'
 import { assertSettleVault, openVaultAndMint } from './vaults'
 
@@ -37,10 +37,10 @@ export const EXPECTED_DEVIATIONS = {
 
 export const testMintRedeemSettleFactory = (getDeployResults: () => TestDeployResult) => {
   // Contracts
-  return async <T extends OTokenParams, C extends TestMintRedeemSettleParamsCheckpoints<T>>(
+  return async <T extends ONTokenParams, C extends TestMintRedeemSettleParamsCheckpoints<T>>(
     params: TestMintRedeemSettleParams<T, C>
   ) => {
-    const { controller, whitelist, oTokenFactory, oracle, marginPool } = getDeployResults()
+    const { controller, whitelist, onTokenFactory, oracle, marginPool } = getDeployResults()
     // Init arguments
     const {
       user,
@@ -51,60 +51,60 @@ export const testMintRedeemSettleFactory = (getDeployResults: () => TestDeployRe
       initialPrices,
       expiryPrices,
       mockERC20Owners,
-      oTokenParams,
+      onTokenParams,
       expiryDays,
     } = await getInitParams(params)
 
     // Set initial prices
     await setStablePrices(oracle, deployer, params.initialPrices)
 
-    const oToken = await createAndAssertOtoken(whitelist, oTokenFactory, deployer, oTokenParams, user)
+    const onToken = await createAndAssertONtoken(whitelist, onTokenFactory, deployer, onTokenParams, user)
 
     const longsInfo =
       longsVaults &&
       longsVaults.map(x =>
-        calculateOtokenInfo({
+        calculateONtokenInfo({
           initialPrices,
           checkpoints: params.checkpointsDays,
-          oTokenParams: x.oTokenParams,
+          onTokenParams: x.onTokenParams,
           vaults: longsVaults,
         })
       )
-    const shortInfo = calculateOtokenInfo({
+    const shortInfo = calculateONtokenInfo({
       initialPrices,
       checkpoints: params.checkpointsDays,
-      oTokenParams,
+      onTokenParams,
       vaults,
-      longsOtokenInfo: longsInfo,
+      longsONtokenInfo: longsInfo,
     })
 
-    await initLongs(controller, marginPool, oTokenFactory, whitelist, longsVaults, vaults, deployer, mockERC20Owners)
+    await initLongs(controller, marginPool, onTokenFactory, whitelist, longsVaults, vaults, deployer, mockERC20Owners)
 
-    // Mint oTokens for vaults with oTokenAmountFormatted specified or 0 checkpoint
-    const initalMintVaults = vaults.filter(x => x.oTokenAmountFormatted)
+    // Mint onTokens for vaults with onTokenAmountFormatted specified or 0 checkpoint
+    const initalMintVaults = vaults.filter(x => x.onTokenAmountFormatted)
     for (const vault of initalMintVaults) {
       const mintedAmount = await openVaultAndMint(
         controller,
         marginPool,
-        params.oTokenParams,
-        oToken,
+        params.onTokenParams,
+        onToken,
         vault,
-        vault.oTokenAmountFormatted,
-        oTokenFactory,
+        vault.onTokenAmountFormatted,
+        onTokenFactory,
         vault.longToDeposit,
         vault.longToDepositAmountFormatted,
         mockERC20Owners
       )
-      await oToken.connect(vault.owner).transfer(redeemer.address, mintedAmount)
+      await onToken.connect(vault.owner).transfer(redeemer.address, mintedAmount)
     }
 
-    // Mint oTokens for checkpoints and wait time
+    // Mint onTokens for checkpoints and wait time
     await mintOnCheckpoints(
       controller,
       marginPool,
-      oToken,
+      onToken,
       oracle,
-      oTokenFactory,
+      onTokenFactory,
       params,
       vaults,
       deployer,
@@ -112,54 +112,54 @@ export const testMintRedeemSettleFactory = (getDeployResults: () => TestDeployRe
       mockERC20Owners
     )
 
-    // Get burn oTokens from redeemer
+    // Get burn onTokens from redeemer
     for (const vault of vaults) {
       if (vault.burnAmountFormatted) {
-        await oToken
+        await onToken
           .connect(redeemer)
-          .transfer(vault.owner.address, parseUnits(vault.burnAmountFormatted.toString(), oTokenDecimals))
+          .transfer(vault.owner.address, parseUnits(vault.burnAmountFormatted.toString(), onTokenDecimals))
       }
     }
 
     // Burn vaults
     const vaultsToBurn = vaults.filter(x => x.burnAmountFormatted)
     for (const vault of vaultsToBurn) {
-      await burnVault(controller, oToken, vault)
+      await burnVault(controller, onToken, vault)
     }
 
     // Check redeemer gets right amount of options
-    const { mintedAmount: totalOtokenRedeemableFormatted } = shortInfo
-    const totalOtokenRedeemable = addDecimalsToAmount(totalOtokenRedeemableFormatted, oTokenDecimals)
-    const redeemerBalanceAfterMint = await getERC20BalanceOf(redeemer, oToken.address)
+    const { mintedAmount: totalONtokenRedeemableFormatted } = shortInfo
+    const totalONtokenRedeemable = addDecimalsToAmount(totalONtokenRedeemableFormatted, onTokenDecimals)
+    const redeemerBalanceAfterMint = await getERC20BalanceOf(redeemer, onToken.address)
     assert(
-      redeemerBalanceAfterMint.eq(totalOtokenRedeemable),
-      `Redeemer balance of oToken is not correct\n Expected: ${totalOtokenRedeemable}\n Got: ${redeemerBalanceAfterMint}`
+      redeemerBalanceAfterMint.eq(totalONtokenRedeemable),
+      `Redeemer balance of onToken is not correct\n Expected: ${totalONtokenRedeemable}\n Got: ${redeemerBalanceAfterMint}`
     )
 
     await waitNDays(expiryDays + 1, network.provider)
     await setStablePrices(oracle, deployer, expiryPrices)
 
-    await redeem(oToken, controller, redeemer, addDecimalsToAmount(totalOtokenRedeemableFormatted, oTokenDecimals))
-    await assertRedeem(params, vaults, redeemer, longsInfo, totalOtokenRedeemableFormatted)
+    await redeem(onToken, controller, redeemer, addDecimalsToAmount(totalONtokenRedeemableFormatted, onTokenDecimals))
+    await assertRedeem(params, vaults, redeemer, longsInfo, totalONtokenRedeemableFormatted)
 
     // Settle minter vaults and assert that returned collateral matches expected
     for (const vault of vaults) {
       console.log(`Settle vault № ${vaults.indexOf(vault)}`)
       await settleVault(controller, vault)
-      await assertSettleVault(params, vault, vaults, params.oTokenParams, shortInfo, longsInfo)
+      await assertSettleVault(params, vault, vaults, params.onTokenParams, shortInfo, longsInfo)
     }
 
     // Settle long owners vaults and assert that returned collateral matches expected
     for (const vault of longsVaults) {
       console.log(`Settle longsOwnersVaults vault № ${longsVaults.indexOf(vault)}`)
-      const longInfo = longsInfo.find(x => _isEqual(vault.oTokenParams, x.oTokenParams))
+      const longInfo = longsInfo.find(x => _isEqual(vault.onTokenParams, x.onTokenParams))
       await settleVault(controller, vault)
-      await assertSettleVault(params, vault, [vault], vault.oTokenParams, longInfo, [])
+      await assertSettleVault(params, vault, [vault], vault.onTokenParams, longInfo, [])
     }
   }
 }
 
-async function getInitParams<T extends OTokenParams, C extends TestMintRedeemSettleParamsCheckpoints<T>>(
+async function getInitParams<T extends ONTokenParams, C extends TestMintRedeemSettleParamsCheckpoints<T>>(
   params: TestMintRedeemSettleParams<T, C>
 ) {
   const { user, deployer, redeemer } = await namedAccountsSigners(getNamedAccounts)
@@ -179,7 +179,7 @@ async function getInitParams<T extends OTokenParams, C extends TestMintRedeemSet
     : []
 
   const { initialPrices, expiryPrices, mockERC20Owners } = params
-  const oTokenParams = addExpiryToOtokenParams(params.oTokenParams)
+  const onTokenParams = addExpiryToONtokenParams(params.onTokenParams)
 
   return {
     user,
@@ -190,49 +190,49 @@ async function getInitParams<T extends OTokenParams, C extends TestMintRedeemSet
     initialPrices,
     expiryPrices,
     mockERC20Owners,
-    oTokenParams,
-    expiryDays: params.oTokenParams.expiryDays,
+    onTokenParams,
+    expiryDays: params.onTokenParams.expiryDays,
   }
 }
 
-async function createAndAssertOtoken(
+async function createAndAssertONtoken(
   whitelist: Whitelist,
-  oTokenFactory: OtokenFactory,
+  onTokenFactory: ONtokenFactory,
   deployer: SignerWithAddress,
-  oTokenParams: CreateOtokenParamsObject,
+  onTokenParams: CreateONtokenParamsObject,
   connectTo: SignerWithAddress
 ) {
-  await whitelistAndCreateOtoken(
+  await whitelistAndCreateONtoken(
     {
       whitelist,
-      oTokenFactory,
+      onTokenFactory,
       protocolOwner: deployer,
-      oTokenCreator: deployer,
+      onTokenCreator: deployer,
     },
-    oTokenParams
+    onTokenParams
   )
-  const longOToken = await findOToken(connectTo, oTokenFactory, oTokenParams)
+  const longONToken = await findONToken(connectTo, onTokenFactory, onTokenParams)
   assert(
-    longOToken.address !== AddressZero,
-    `Long Otoken with address is zero. Otoken params:
-     ${prettyObjectStringify(oTokenParams)}`
+    longONToken.address !== AddressZero,
+    `Long ONtoken with address is zero. ONtoken params:
+     ${prettyObjectStringify(onTokenParams)}`
   )
 
-  return longOToken
+  return longONToken
 }
 
-async function assertRedeem<T extends OTokenParams, C extends TestMintRedeemSettleParamsCheckpoints<T>>(
+async function assertRedeem<T extends ONTokenParams, C extends TestMintRedeemSettleParamsCheckpoints<T>>(
   params: TestMintRedeemSettleParams<T, C>,
   vaults: TestMintRedeemSettleParamsVault<T, C>[],
   redeemer: SignerWithAddress,
-  longsInfo: OtokenInfo[],
+  longsInfo: ONtokenInfo[],
   redeemAmount: number
 ) {
-  const { oTokenParams, expiryPrices } = params
+  const { onTokenParams, expiryPrices } = params
 
-  const totalRedeem = await calculateRedeemForOtokenAmount(
+  const totalRedeem = await calculateRedeemForONtokenAmount(
     params,
-    params.oTokenParams,
+    params.onTokenParams,
     vaults,
     redeemer,
     longsInfo,
@@ -242,11 +242,11 @@ async function assertRedeem<T extends OTokenParams, C extends TestMintRedeemSett
   // Assert user gets right redeem
   let totalRedeemUsdRecieved = 0
   for (const [i, expectedCollateralAmountFormatted] of totalRedeem.collateralsFormatted.entries()) {
-    const userCollateralBalance = await getERC20BalanceOf(redeemer, oTokenParams.collateralAssets[i])
-    const collateralDecimals = await getERC20Decimals(redeemer, oTokenParams.collateralAssets[i])
+    const userCollateralBalance = await getERC20BalanceOf(redeemer, onTokenParams.collateralAssets[i])
+    const collateralDecimals = await getERC20Decimals(redeemer, onTokenParams.collateralAssets[i])
     const userCollateralBalanceFormatted = Number(formatUnits(userCollateralBalance, collateralDecimals))
 
-    const expireCollateralPrice = expiryPrices[oTokenParams.collateralAssets[i]]
+    const expireCollateralPrice = expiryPrices[onTokenParams.collateralAssets[i]]
     const userCollateralBalanceValue = userCollateralBalanceFormatted * expireCollateralPrice
 
     totalRedeemUsdRecieved += userCollateralBalanceValue
@@ -286,12 +286,12 @@ async function assertRedeem<T extends OTokenParams, C extends TestMintRedeemSett
   )
 }
 
-async function mintOnCheckpoints<T extends OTokenParams, C extends TestMintRedeemSettleParamsCheckpoints<T>>(
+async function mintOnCheckpoints<T extends ONTokenParams, C extends TestMintRedeemSettleParamsCheckpoints<T>>(
   controller: Controller,
   marginPool: MarginPool,
-  oToken: Otoken,
+  onToken: ONtoken,
   oracle: Oracle,
-  oTokenFactory: OtokenFactory,
+  onTokenFactory: ONtokenFactory,
   params: TestMintRedeemSettleParams<T, C>,
   vaults: TestMintRedeemSettleParamsVaultOwned<T, C>[],
   deployer: SignerWithAddress,
@@ -308,28 +308,28 @@ async function mintOnCheckpoints<T extends OTokenParams, C extends TestMintRedee
     const vaultsToMintOnCheckpoint = vaults.filter(x => x.mintOnCheckoints?.[cumul_checkpoint])
 
     for (const vault of vaultsToMintOnCheckpoint) {
-      const amountToMint = vault.mintOnCheckoints[cumul_checkpoint].oTokenAmountFormatted
+      const amountToMint = vault.mintOnCheckoints[cumul_checkpoint].onTokenAmountFormatted
       const mintedAmount = await openVaultAndMint(
         controller,
         marginPool,
-        params.oTokenParams,
-        oToken,
+        params.onTokenParams,
+        onToken,
         vault,
         amountToMint,
-        oTokenFactory,
+        onTokenFactory,
         vault.longToDeposit,
         vault.longToDepositAmountFormatted,
         mockERC20Owners
       )
-      await oToken.connect(vault.owner).transfer(redeemer.address, mintedAmount)
+      await onToken.connect(vault.owner).transfer(redeemer.address, mintedAmount)
     }
   }
 }
 
-async function initLongs<T extends OTokenParams, C extends TestMintRedeemSettleParamsCheckpoints<T>>(
+async function initLongs<T extends ONTokenParams, C extends TestMintRedeemSettleParamsCheckpoints<T>>(
   controller: Controller,
   marginPool: MarginPool,
-  oTokenFactory: OtokenFactory,
+  onTokenFactory: ONtokenFactory,
   whitelist: Whitelist,
   longsVaults: LongOwnerWithSigner,
   shortVaults: TestMintRedeemSettleParamsVaultOwned<T, C>[],
@@ -337,36 +337,36 @@ async function initLongs<T extends OTokenParams, C extends TestMintRedeemSettleP
   mockERC20Owners: { [key: string]: SignerWithAddress }
 ) {
   for (const longVault of longsVaults) {
-    const longOTokenParams = addExpiryToOtokenParams(longVault.oTokenParams)
-    const oTokenAmount = parseUnits(longVault.oTokenAmountFormatted.toString(), oTokenDecimals)
+    const longONTokenParams = addExpiryToONtokenParams(longVault.onTokenParams)
+    const onTokenAmount = parseUnits(longVault.onTokenAmountFormatted.toString(), onTokenDecimals)
 
-    const longOtoken = await createAndAssertOtoken(whitelist, oTokenFactory, deployer, longOTokenParams, deployer)
-    const mintedOTokenBalance = await openVaultAndMint(
+    const longONtoken = await createAndAssertONtoken(whitelist, onTokenFactory, deployer, longONTokenParams, deployer)
+    const mintedONTokenBalance = await openVaultAndMint(
       controller,
       marginPool,
-      longOTokenParams,
-      longOtoken,
+      longONTokenParams,
+      longONtoken,
       longVault,
-      longVault.oTokenAmountFormatted,
-      oTokenFactory,
+      longVault.onTokenAmountFormatted,
+      onTokenFactory,
       undefined,
       undefined,
       mockERC20Owners
     )
     assert(
-      mintedOTokenBalance.eq(oTokenAmount),
-      `Minted oToken balance is wrong.\n Expected ${oTokenAmount}, got ${mintedOTokenBalance}`
+      mintedONTokenBalance.eq(onTokenAmount),
+      `Minted onToken balance is wrong.\n Expected ${onTokenAmount}, got ${mintedONTokenBalance}`
     )
 
     const vaultsToGetLong = shortVaults.filter(
-      x => x.longToDepositAmountFormatted && x.longToDeposit && _isEqual(longVault.oTokenParams, x.longToDeposit)
+      x => x.longToDepositAmountFormatted && x.longToDeposit && _isEqual(longVault.onTokenParams, x.longToDeposit)
     )
     for (const vaultToGetLong of vaultsToGetLong) {
-      await longOtoken
+      await longONtoken
         .connect(longVault.owner)
         .transfer(
           vaultToGetLong.owner.address,
-          parseUnits(vaultToGetLong.longToDepositAmountFormatted.toString(), oTokenDecimals)
+          parseUnits(vaultToGetLong.longToDepositAmountFormatted.toString(), onTokenDecimals)
         )
     }
   }

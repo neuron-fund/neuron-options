@@ -11,16 +11,16 @@ import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IER
 
 /**
  * MarginVault Error Codes
- * V1: invalid short otoken amount
- * V2: invalid short otoken index
- * V3: short otoken address mismatch
- * V4: invalid long otoken amount
- * V5: invalid long otoken index
- * V6: long otoken address mismatch
+ * V1: invalid short onToken amount
+ * V2: invalid short onToken index
+ * V3: short onToken address mismatch
+ * V4: invalid long onToken amount
+ * V5: invalid long onToken index
+ * V6: long onToken address mismatch
  * V7: invalid collateral amount
  * V8: invalid collateral token index
  * V9: collateral token address mismatch
- * V10: shortOtoken should be empty when performing addShort or the same as vault already have
+ * V10: shortONtoken should be empty when performing addShort or the same as vault already have
  * V11: _collateralAssets and _amounts length mismatch
  * V12: _collateralAssets and vault.collateralAssets length mismatch
  * V13: _amount for withdrawing long is exceeding unused long amount in the vault
@@ -40,66 +40,66 @@ library MarginVault {
 
     // vault is a struct of 6 arrays that describe a position a user has, a user can have multiple vaults.
     struct Vault {
-        address shortOtoken;
-        // addresses of oTokens a user has shorted (i.e. written) against this vault
-        // addresses of oTokens a user has bought and deposited in this vault
-        // user can be long oTokens without opening a vault (e.g. by buying on a DEX)
-        // generally, long oTokens will be 'deposited' in vaults to act as collateral in order to write oTokens against (i.e. in spreads)
-        address longOtoken;
+        address shortONtoken;
+        // addresses of onTokens a user has shorted (i.e. written) against this vault
+        // addresses of onTokens a user has bought and deposited in this vault
+        // user can be long onTokens without opening a vault (e.g. by buying on a DEX)
+        // generally, long onTokens will be 'deposited' in vaults to act as collateral in order to write onTokens against (i.e. in spreads)
+        address longONtoken;
         // addresses of other ERC-20s a user has deposited as collateral in this vault
         address[] collateralAssets;
-        // quantity of oTokens minted/written for each oToken address in oTokenAddress
+        // quantity of onTokens minted/written for each onToken address in onTokenAddress
         uint256 shortAmount;
-        // quantity of oTokens owned and held in the vault for each oToken address in longOtokens
+        // quantity of onTokens owned and held in the vault for each onToken address in longONtokens
         uint256 longAmount;
         uint256 usedLongAmount;
         // quantity of ERC-20 deposited as collateral in the vault for each ERC-20 address in collateralAssets
         uint256[] collateralAmounts;
-        // Collateral which is currently used for minting oTokens and can't be used until expiry
+        // Collateral which is currently used for minting onTokens and can't be used until expiry
         uint256[] reservedCollateralAmounts;
         uint256[] usedCollateralValues;
         uint256[] availableCollateralAmounts;
     }
 
     /**
-     * @dev increase the short oToken balance in a vault when a new oToken is minted
+     * @dev increase the short onToken balance in a vault when a new onToken is minted
      * @param _vault vault to add or increase the short position in
-     * @param _shortOtoken address of the _shortOtoken being minted from the user's vault
-     * @param _amount number of _shortOtoken being minted from the user's vault
+     * @param _shortONtoken address of the _shortONtoken being minted from the user's vault
+     * @param _amount number of _shortONtoken being minted from the user's vault
      */
     function addShort(
         Vault storage _vault,
-        address _shortOtoken,
+        address _shortONtoken,
         uint256 _amount
     ) external {
         require(_amount > 0, "V1");
-        require(_vault.shortOtoken == address(0) || _vault.shortOtoken == _shortOtoken, "V10");
+        require(_vault.shortONtoken == address(0) || _vault.shortONtoken == _shortONtoken, "V10");
 
-        if (_vault.shortOtoken == _shortOtoken) {
+        if (_vault.shortONtoken == _shortONtoken) {
             _vault.shortAmount = _vault.shortAmount.add(_amount);
         } else {
-            _vault.shortOtoken = _shortOtoken;
+            _vault.shortONtoken = _shortONtoken;
             _vault.shortAmount = _amount;
         }
     }
 
     /**
-     * @dev decrease the short oToken balance in a vault when an oToken is burned
+     * @dev decrease the short onToken balance in a vault when an onToken is burned
      * @param _vault vault to decrease short position in
-     * @param _shortOtoken address of the _shortOtoken being reduced in the user's vault
-     * @param _amount number of _shortOtoken being reduced in the user's vault
+     * @param _shortONtoken address of the _shortONtoken being reduced in the user's vault
+     * @param _amount number of _shortONtoken being reduced in the user's vault
      * @param _newCollateralRatio ratio represents how much of already used collateral will be used after burn
      * @param _newUsedLongAmount new used long amount
      */
     function removeShort(
         Vault storage _vault,
-        address _shortOtoken,
+        address _shortONtoken,
         uint256 _amount,
         FPI.FixedPointInt memory _newCollateralRatio,
         uint256 _newUsedLongAmount
     ) external returns (uint256[] memory freedCollateralAmounts, uint256[] memory freedCollateralValues) {
-        // check that the removed short oToken exists in the vault
-        require(_vault.shortOtoken == _shortOtoken, "V3");
+        // check that the removed short onToken exists in the vault
+        require(_vault.shortONtoken == _shortONtoken, "V3");
 
         uint256 newShortAmount = _vault.shortAmount.sub(_amount);
         uint256 collateralAssetsLength = _vault.collateralAssets.length;
@@ -159,37 +159,37 @@ library MarginVault {
     }
 
     /**
-     * @dev increase the long oToken balance in a vault when an oToken is deposited
+     * @dev increase the long onToken balance in a vault when an onToken is deposited
      * @param _vault vault to add a long position to
-     * @param _longOtoken address of the _longOtoken being added to the user's vault
-     * @param _amount number of _longOtoken the protocol is adding to the user's vault
+     * @param _longONtoken address of the _longONtoken being added to the user's vault
+     * @param _amount number of _longONtoken the protocol is adding to the user's vault
      */
     function addLong(
         Vault storage _vault,
-        address _longOtoken,
+        address _longONtoken,
         uint256 _amount
     ) external {
         require(_amount > 0, "V4");
-        address existingLong = _vault.longOtoken;
-        require((existingLong == _longOtoken) || (existingLong == address(0)), "V6");
+        address existingLong = _vault.longONtoken;
+        require((existingLong == _longONtoken) || (existingLong == address(0)), "V6");
 
         _vault.longAmount = _vault.longAmount.add(_amount);
-        _vault.longOtoken = _longOtoken;
+        _vault.longONtoken = _longONtoken;
     }
 
     /**
-     * @dev decrease the long oToken balance in a vault when an oToken is withdrawn
+     * @dev decrease the long onToken balance in a vault when an onToken is withdrawn
      * @param _vault vault to remove a long position from
-     * @param _longOtoken address of the _longOtoken being removed from the user's vault
-     * @param _amount number of _longOtoken the protocol is removing from the user's vault
+     * @param _longONtoken address of the _longONtoken being removed from the user's vault
+     * @param _amount number of _longONtoken the protocol is removing from the user's vault
      */
     function removeLong(
         Vault storage _vault,
-        address _longOtoken,
+        address _longONtoken,
         uint256 _amount
     ) external {
-        // check that the removed long oToken exists in the vault at the specified index
-        require(_vault.longOtoken == _longOtoken, "V6");
+        // check that the removed long onToken exists in the vault at the specified index
+        require(_vault.longONtoken == _longONtoken, "V6");
 
         uint256 vaultLongAmountBefore = _vault.longAmount;
         require((vaultLongAmountBefore - _vault.usedLongAmount) >= _amount, "V13");
@@ -240,7 +240,7 @@ library MarginVault {
      * used when vaults mint option to lock provided assets
      * @param _vault vault to remove collateral from
      * @param _amounts amount of collateral assets being locked in the user's vault
-     * @param _usedLongAmount amount of long oToken being locked in the user's vault
+     * @param _usedLongAmount amount of long onToken being locked in the user's vault
      * @param _usedCollateralValues values of collaterals amounts being locked
      */
     function useVaultsAssets(

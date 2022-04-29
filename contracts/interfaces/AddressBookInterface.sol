@@ -4,9 +4,9 @@ pragma solidity 0.8.9;
 interface AddressBookInterface {
     /* Getters */
 
-    function getOtokenImpl() external view returns (address);
+    function getONtokenImpl() external view returns (address);
 
-    function getOtokenFactory() external view returns (address);
+    function getONtokenFactory() external view returns (address);
 
     function getWhitelist() external view returns (address);
 
@@ -24,11 +24,11 @@ interface AddressBookInterface {
 
     /* Setters */
 
-    function setOtokenImpl(address _otokenImpl) external;
+    function setONtokenImpl(address _onTokenImpl) external;
 
-    function setOtokenFactory(address _factory) external;
+    function setONtokenFactory(address _factory) external;
 
-    function setOracleImpl(address _otokenImpl) external;
+    function setOracleImpl(address _onTokenImpl) external;
 
     function setWhitelist(address _whitelist) external;
 

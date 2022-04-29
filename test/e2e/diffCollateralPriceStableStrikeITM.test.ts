@@ -6,7 +6,7 @@ import { testMintRedeemSettleFactory } from '../helpers/e2e/testMintRedeemSettle
 
 const testsParams = [
   {
-    oTokenParams: {
+    onTokenParams: {
       collateralAssets: [USDT, DAI],
       collateralConstraints: [0, 0],
       underlyingAsset: WETH,
@@ -30,12 +30,12 @@ const testsParams = [
     vaults: [
       {
         collateralAmountsFormatted: [3800, 3800],
-        oTokenAmountFormatted: 1,
+        onTokenAmountFormatted: 1,
       },
     ],
   },
   {
-    oTokenParams: {
+    onTokenParams: {
       collateralAssets: [USDT, DAI],
       collateralConstraints: [0, 0],
       underlyingAsset: WETH,
@@ -59,12 +59,12 @@ const testsParams = [
     vaults: [
       {
         collateralAmountsFormatted: [3800, 0],
-        oTokenAmountFormatted: 1,
+        onTokenAmountFormatted: 1,
       },
     ],
   },
   {
-    oTokenParams: {
+    onTokenParams: {
       collateralAssets: [USDT, DAI],
       collateralConstraints: [0, 0],
       underlyingAsset: WETH,
@@ -88,12 +88,12 @@ const testsParams = [
     vaults: [
       {
         collateralAmountsFormatted: [0, 5000],
-        oTokenAmountFormatted: 1,
+        onTokenAmountFormatted: 1,
       },
     ],
   },
   {
-    oTokenParams: {
+    onTokenParams: {
       collateralAssets: [USDT, DAI],
       collateralConstraints: [0, 0],
       underlyingAsset: WETH,
@@ -117,12 +117,12 @@ const testsParams = [
     vaults: [
       {
         collateralAmountsFormatted: [2000, 7990],
-        oTokenAmountFormatted: 1,
+        onTokenAmountFormatted: 1,
       },
     ],
   },
   {
-    oTokenParams: {
+    onTokenParams: {
       collateralAssets: [USDT, DAI],
       collateralConstraints: [0, 0],
       underlyingAsset: WETH,
@@ -146,16 +146,16 @@ const testsParams = [
     vaults: [
       {
         collateralAmountsFormatted: [2000, 4000],
-        oTokenAmountFormatted: 1,
+        onTokenAmountFormatted: 1,
       },
       {
         collateralAmountsFormatted: [4000, 0],
-        oTokenAmountFormatted: 1,
+        onTokenAmountFormatted: 1,
       },
     ],
   },
   {
-    oTokenParams: {
+    onTokenParams: {
       collateralAssets: [USDT, DAI],
       collateralConstraints: [0, 0],
       underlyingAsset: WETH,
@@ -179,16 +179,16 @@ const testsParams = [
     vaults: [
       {
         collateralAmountsFormatted: [2000, 4000],
-        oTokenAmountFormatted: 1,
+        onTokenAmountFormatted: 1,
       },
       {
         collateralAmountsFormatted: [8000, 0],
-        oTokenAmountFormatted: 1,
+        onTokenAmountFormatted: 1,
       },
     ],
   },
   {
-    oTokenParams: {
+    onTokenParams: {
       collateralAssets: [USDT, DAI],
       collateralConstraints: [0, 0],
       underlyingAsset: WETH,
@@ -212,15 +212,15 @@ const testsParams = [
     vaults: [
       {
         collateralAmountsFormatted: [2000, 4000],
-        oTokenAmountFormatted: 1,
+        onTokenAmountFormatted: 1,
       },
       {
         collateralAmountsFormatted: [4000, 0],
-        oTokenAmountFormatted: 1,
+        onTokenAmountFormatted: 1,
       },
       {
         collateralAmountsFormatted: [2000, 2000],
-        oTokenAmountFormatted: 1,
+        onTokenAmountFormatted: 1,
       },
     ],
   },

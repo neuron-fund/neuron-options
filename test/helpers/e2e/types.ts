@@ -1,8 +1,8 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { FixedSizeArray } from '../../../utils/types'
-import { OTokenPrices } from '../otoken'
+import { ONTokenPrices } from '../onToken'
 
-export type OTokenParams = {
+export type ONTokenParams = {
   collateralAssets: readonly string[]
   collateralConstraints: readonly number[]
   underlyingAsset: string
@@ -12,51 +12,51 @@ export type OTokenParams = {
   isPut: boolean
 }
 
-export type VaultCheckpointsMint<T extends OTokenParams, C extends TestMintRedeemSettleParamsCheckpoints<T>> = {
-  [key in keyof C]: { oTokenAmountFormatted: number }
+export type VaultCheckpointsMint<T extends ONTokenParams, C extends TestMintRedeemSettleParamsCheckpoints<T>> = {
+  [key in keyof C]: { onTokenAmountFormatted: number }
 }
 
-export type OtokenCollateralsAmounts<T extends OTokenParams> = FixedSizeArray<T['collateralAssets']['length'], number>
+export type ONtokenCollateralsAmounts<T extends ONTokenParams> = FixedSizeArray<T['collateralAssets']['length'], number>
 
 export type TestMintRedeemSettleParamsVault<
-  T extends OTokenParams,
+  T extends ONTokenParams,
   C extends TestMintRedeemSettleParamsCheckpoints<T>
 > = {
-  collateralAmountsFormatted: OtokenCollateralsAmounts<T>
-  longToDeposit?: OTokenParams
+  collateralAmountsFormatted: ONtokenCollateralsAmounts<T>
+  longToDeposit?: ONTokenParams
   longToDepositAmountFormatted?: number
   burnAmountFormatted?: number
 } & (
-  | { oTokenAmountFormatted: number; mintOnCheckoints?: VaultCheckpointsMint<T, C> }
-  | { oTokenAmountFormatted?: number; mintOnCheckoints: VaultCheckpointsMint<T, C> }
+  | { onTokenAmountFormatted: number; mintOnCheckoints?: VaultCheckpointsMint<T, C> }
+  | { onTokenAmountFormatted?: number; mintOnCheckoints: VaultCheckpointsMint<T, C> }
 )
 
 export type TestMintRedeemSettleParamsVaultOwned<
-  T extends OTokenParams,
+  T extends ONTokenParams,
   C extends TestMintRedeemSettleParamsCheckpoints<T>
 > = TestMintRedeemSettleParamsVault<T, C> & {
   owner: SignerWithAddress
 }
 
-export type TestMintRedeemSettleParamsCheckpoints<T extends OTokenParams> = {
+export type TestMintRedeemSettleParamsCheckpoints<T extends ONTokenParams> = {
   [key: number]: {
-    prices: OTokenPrices<T>
+    prices: ONTokenPrices<T>
   }
 }
 
 export type LongOwner = {
-  oTokenParams: OTokenParams
-  oTokenAmountFormatted: number
-  collateralAmountsFormatted: OtokenCollateralsAmounts<OTokenParams>
+  onTokenParams: ONTokenParams
+  onTokenAmountFormatted: number
+  collateralAmountsFormatted: ONtokenCollateralsAmounts<ONTokenParams>
 }
 
 export type LongOwnerWithSigner = (LongOwner & { owner: SignerWithAddress })[]
-export type TestMintRedeemSettleParams<T extends OTokenParams, C extends TestMintRedeemSettleParamsCheckpoints<T>> = {
-  oTokenParams: T
+export type TestMintRedeemSettleParams<T extends ONTokenParams, C extends TestMintRedeemSettleParamsCheckpoints<T>> = {
+  onTokenParams: T
   vaults: readonly TestMintRedeemSettleParamsVault<T, C>[]
   longsOwners?: readonly LongOwner[]
-  initialPrices: OTokenPrices<T>
-  expiryPrices: OTokenPrices<T>
+  initialPrices: ONTokenPrices<T>
+  expiryPrices: ONTokenPrices<T>
   checkpointsDays?: C
   mockERC20Owners?: { [key: string]: SignerWithAddress }
 }

@@ -64,7 +64,7 @@ export const getAction = <T extends keyof DefinedActionsMappings>(
 ) => getActionFactory(actionType, ActionTypeToMappings[actionType])(values)
 
 export const OpenVaultArgsMappings = {
-  shortOtoken: 'secondAddress',
+  shortONtoken: 'secondAddress',
   owner: 'owner',
   vaultId: 'vaultId',
 } as const
@@ -91,7 +91,7 @@ export const MintShortOptionArgsMappings = {
 
 export const RedeemArgsMappings = {
   receiver: 'secondAddress',
-  otoken: 'assets',
+  onToken: 'assets',
   amount: 'amounts',
 } as const
 
@@ -111,7 +111,7 @@ export const DepositLongOptionArgsMappings = {
   owner: 'owner',
   vaultId: 'vaultId',
   from: 'secondAddress',
-  longOtoken: 'assets',
+  longONtoken: 'assets',
   amount: 'amounts',
 } as const
 

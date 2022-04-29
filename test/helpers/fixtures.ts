@@ -6,8 +6,8 @@ import {
   MarginCalculator,
   MarginPool,
   Oracle,
-  Otoken,
-  OtokenFactory,
+  ONtoken,
+  ONtokenFactory,
   Whitelist,
 } from '../../typechain-types'
 
@@ -23,8 +23,8 @@ export const testDeploy = deployments.createFixture(async ({ deployments }) => {
   const Controller = await get('Controller')
   const Oracle = await get('Oracle')
   const Whitelist = await get('Whitelist')
-  const OtokenFactory = await get('OtokenFactory')
-  const Otoken = await get('Otoken')
+  const ONtokenFactory = await get('ONtokenFactory')
+  const ONtoken = await get('ONtoken')
   const MarginCalculator = await get('MarginCalculator')
   const MarginPool = await get('MarginPool')
 
@@ -32,8 +32,8 @@ export const testDeploy = deployments.createFixture(async ({ deployments }) => {
   const controller = (await ethers.getContractAt('Controller', Controller.address)) as Controller
   const oracle = (await ethers.getContractAt('Oracle', Oracle.address)) as Oracle
   const whitelist = (await ethers.getContractAt('Whitelist', Whitelist.address)) as Whitelist
-  const oTokenFactory = (await ethers.getContractAt('OtokenFactory', OtokenFactory.address)) as OtokenFactory
-  const oTokenImplementation = (await ethers.getContractAt('Otoken', Otoken.address)) as Otoken
+  const onTokenFactory = (await ethers.getContractAt('ONtokenFactory', ONtokenFactory.address)) as ONtokenFactory
+  const onTokenImplementation = (await ethers.getContractAt('ONtoken', ONtoken.address)) as ONtoken
   const marginCalculator = (await ethers.getContractAt('MarginCalculator', MarginCalculator.address)) as MarginCalculator // prettier-ignore
   const marginPool = (await ethers.getContractAt('MarginPool', MarginPool.address)) as MarginPool
 
@@ -43,9 +43,9 @@ export const testDeploy = deployments.createFixture(async ({ deployments }) => {
     marginPool,
     oracle,
     whitelist,
-    oTokenFactory,
+    onTokenFactory,
     marginCalculator,
-    oTokenImplementation,
+    onTokenImplementation,
   }
 })
 

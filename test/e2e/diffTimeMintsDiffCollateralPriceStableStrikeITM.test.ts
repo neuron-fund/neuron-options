@@ -6,7 +6,7 @@ import { testMintRedeemSettleFactory } from '../helpers/e2e/testMintRedeemSettle
 
 const testsParams = [
   {
-    oTokenParams: {
+    onTokenParams: {
       collateralAssets: [USDT, DAI],
       collateralConstraints: [0, 0],
       underlyingAsset: WETH,
@@ -48,13 +48,13 @@ const testsParams = [
     vaults: [
       {
         collateralAmountsFormatted: [3800, 3800],
-        oTokenAmountFormatted: 0.2,
+        onTokenAmountFormatted: 0.2,
         mintOnCheckoints: {
           2: {
-            oTokenAmountFormatted: 0.3,
+            onTokenAmountFormatted: 0.3,
           },
           4: {
-            oTokenAmountFormatted: 0.2,
+            onTokenAmountFormatted: 0.2,
           },
         },
       },

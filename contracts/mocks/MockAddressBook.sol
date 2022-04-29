@@ -2,25 +2,25 @@
 pragma solidity 0.8.9;
 
 contract MockAddressBook {
-    address private _otokenImpl;
+    address private _onTokenImpl;
     address private _whitelist;
-    address private _otokenFactoryImpl;
+    address private _onTokenFactoryImpl;
     address private _oracle;
     address private _controllerImpl;
     address private _oracleImpl;
     address private _calculatorImpl;
     address private _marginPool;
 
-    function setOtokenImpl(address _newImpl) external {
-        _otokenImpl = _newImpl;
+    function setONtokenImpl(address _newImpl) external {
+        _onTokenImpl = _newImpl;
     }
 
     function setWhitelist(address _newImpl) external {
         _whitelist = _newImpl;
     }
 
-    function setOtokenFactory(address _otokenFactory) external {
-        _otokenFactoryImpl = _otokenFactory;
+    function setONtokenFactory(address _onTokenFactory) external {
+        _onTokenFactoryImpl = _onTokenFactory;
     }
 
     function setController(address _controller) external {
@@ -39,16 +39,16 @@ contract MockAddressBook {
         _marginPool = _pool;
     }
 
-    function getOtokenImpl() external view returns (address) {
-        return _otokenImpl;
+    function getONtokenImpl() external view returns (address) {
+        return _onTokenImpl;
     }
 
     function getWhitelist() external view returns (address) {
         return _whitelist;
     }
 
-    function getOtokenFactory() external view returns (address) {
-        return _otokenFactoryImpl;
+    function getONtokenFactory() external view returns (address) {
+        return _onTokenFactoryImpl;
     }
 
     function getOracle() external view returns (address) {

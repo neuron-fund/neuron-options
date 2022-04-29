@@ -4,7 +4,7 @@
 pragma solidity 0.8.9;
 
 // import "../packages/oz/upgradeability/VersionedInitializable.sol";
-import "../interfaces/OtokenInterface.sol";
+import "../interfaces/ONtokenInterface.sol";
 import "../interfaces/CalleeInterface.sol";
 import "../interfaces/ERC20Interface.sol";
 
@@ -27,27 +27,27 @@ contract MockController {
     }
 
     /**
-     * @dev this function is used to test if controller can mint otokens
+     * @dev this function is used to test if controller can mint onTokens
      */
-    function testMintOtoken(
-        address _otoken,
+    function testMintONtoken(
+        address _onToken,
         address _account,
         uint256 _amount,
         uint256[] memory collateralsAmountsForMint,
         uint256[] memory collateralsValuesForMint
     ) external {
-        OtokenInterface(_otoken).mintOtoken(_account, _amount, collateralsAmountsForMint, collateralsValuesForMint);
+        ONtokenInterface(_onToken).mintONtoken(_account, _amount, collateralsAmountsForMint, collateralsValuesForMint);
     }
 
     /**
-     * @dev this function is used to test if controller can burn otokens
+     * @dev this function is used to test if controller can burn onTokens
      */
-    function testBurnOtoken(
-        address _otoken,
+    function testBurnONtoken(
+        address _onToken,
         address _account,
         uint256 _amount
     ) external {
-        OtokenInterface(_otoken).burnOtoken(_account, _amount);
+        ONtokenInterface(_onToken).burnONtoken(_account, _amount);
     }
 
     /**

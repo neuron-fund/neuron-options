@@ -4,7 +4,7 @@ import { prettyObjectStringify } from '../../utils/log'
 import { testDeploy } from '../helpers/fixtures'
 import { testMintRedeemSettleFactory } from '../helpers/e2e/testMintRedeemSettle'
 
-const oTokenParams = {
+const onTokenParams = {
   collateralAssets: [CRV_CVX_ETH, LIDO_ST_ETH],
   collateralConstraints: [0, 0],
   underlyingAsset: WETH,
@@ -16,7 +16,7 @@ const oTokenParams = {
 
 const testsParams = [
   {
-    oTokenParams: oTokenParams,
+    onTokenParams: onTokenParams,
     initialPrices: {
       [LIDO_ST_ETH]: 3500,
       [USDC]: 1.32,
@@ -32,12 +32,12 @@ const testsParams = [
     vaults: [
       {
         collateralAmountsFormatted: [0.7, 0.7],
-        oTokenAmountFormatted: 1,
+        onTokenAmountFormatted: 1,
       },
     ],
   },
   {
-    oTokenParams: oTokenParams,
+    onTokenParams: onTokenParams,
     initialPrices: {
       [LIDO_ST_ETH]: 3600,
       [USDC]: 1.1,
@@ -53,12 +53,12 @@ const testsParams = [
     vaults: [
       {
         collateralAmountsFormatted: [0.4, 0.9],
-        oTokenAmountFormatted: 1,
+        onTokenAmountFormatted: 1,
       },
     ],
   },
   {
-    oTokenParams: oTokenParams,
+    onTokenParams: onTokenParams,
     initialPrices: {
       [LIDO_ST_ETH]: 3500,
       [USDC]: 1.3,
@@ -74,12 +74,12 @@ const testsParams = [
     vaults: [
       {
         collateralAmountsFormatted: [0, 2],
-        oTokenAmountFormatted: 1,
+        onTokenAmountFormatted: 1,
       },
     ],
   },
   {
-    oTokenParams: oTokenParams,
+    onTokenParams: onTokenParams,
     initialPrices: {
       [LIDO_ST_ETH]: 4000,
       [USDC]: 1,
@@ -95,12 +95,12 @@ const testsParams = [
     vaults: [
       {
         collateralAmountsFormatted: [0.7, 2.2],
-        oTokenAmountFormatted: 1,
+        onTokenAmountFormatted: 1,
       },
     ],
   },
   {
-    oTokenParams: oTokenParams,
+    onTokenParams: onTokenParams,
     initialPrices: {
       [LIDO_ST_ETH]: 3500,
       [USDC]: 1.2,
@@ -116,15 +116,15 @@ const testsParams = [
     vaults: [
       {
         collateralAmountsFormatted: [0.7, 1.8],
-        oTokenAmountFormatted: 1,
+        onTokenAmountFormatted: 1,
       },
       {
         collateralAmountsFormatted: [1.5, 0],
-        oTokenAmountFormatted: 1,
+        onTokenAmountFormatted: 1,
       },
       {
         collateralAmountsFormatted: [0.6, 0.8],
-        oTokenAmountFormatted: 1,
+        onTokenAmountFormatted: 1,
       },
     ],
   },

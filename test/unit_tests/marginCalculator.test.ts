@@ -1,31 +1,26 @@
-import { 
+import {
   MockOracle as MockOracleInstance,
-  MockOtoken as MockOtokenInstance,
+  MockONtoken as MockONtokenInstance,
   MockERC20 as MockERC20Instance,
   CalculatorTester as CalculatorTesterInstance,
-  MockAddressBook as MockAddressBookInstance
+  MockAddressBook as MockAddressBookInstance,
 } from '../../typechain-types'
 
-
-
-
 import { artifacts, contract, web3 } from 'hardhat'
-import { createScaledNumber as scaleNum, createTokenAmount, createVault} from '../helpers/utils'
+import { createScaledNumber as scaleNum, createTokenAmount, createVault } from '../helpers/utils'
 import { assert } from 'chai'
 
 import { expectRevert, time } from '@openzeppelin/test-helpers'
 import { VaultStruct } from '../../typechain-types/CalculatorTester'
 
-
 const MockAddressBook = artifacts.require('MockAddressBook.sol')
 const MockOracle = artifacts.require('MockOracle.sol')
-const MockOtoken = artifacts.require('MockOtoken.sol')
+const MockONtoken = artifacts.require('MockONtoken.sol')
 const MockERC20 = artifacts.require('MockERC20.sol')
 const MarginCalculator = artifacts.require('CalculatorTester.sol')
 const MarginVault = artifacts.require('MarginVault.sol')
-const ArrayAddressUtils  = artifacts.require('ArrayAddressUtils.sol')
+const ArrayAddressUtils = artifacts.require('ArrayAddressUtils.sol')
 const ZERO_ADDR = '0x0000000000000000000000000000000000000000'
-
 
 contract('MarginCalculator', () => {
   let expiry: number
@@ -34,20 +29,20 @@ contract('MarginCalculator', () => {
   let addressBook: MockAddressBookInstance
   let oracle: MockOracleInstance
   // eth puts
-  let eth300Put: MockOtokenInstance
-  let eth250Put: MockOtokenInstance
-  let eth200Put: MockOtokenInstance
-  let eth100Put: MockOtokenInstance
+  let eth300Put: MockONtokenInstance
+  let eth250Put: MockONtokenInstance
+  let eth200Put: MockONtokenInstance
+  let eth100Put: MockONtokenInstance
   // eth puts cUSDC collateral
-  let eth300PutCUSDC: MockOtokenInstance
+  let eth300PutCUSDC: MockONtokenInstance
 
   // eth calls
-  let eth300Call: MockOtokenInstance
-  let eth250Call: MockOtokenInstance
-  let eth200Call: MockOtokenInstance
-  let eth100Call: MockOtokenInstance
+  let eth300Call: MockONtokenInstance
+  let eth250Call: MockONtokenInstance
+  let eth200Call: MockONtokenInstance
+  let eth100Call: MockONtokenInstance
   // eth calls cETH collateral
-  let eth300CallCETH: MockOtokenInstance
+  let eth300CallCETH: MockONtokenInstance
 
   let usdc: MockERC20Instance
   let dai: MockERC20Instance
@@ -71,8 +66,7 @@ contract('MarginCalculator', () => {
 
   before('set up contracts', async () => {
     const now = (await time.latest()).toNumber()
-    expiry = now; // + time.duration.days(30).toNumber()
-    
+    expiry = now // + time.duration.days(30).toNumber()
 
     // initiate addressbook first.
     addressBook = await MockAddressBook.new()
@@ -81,9 +75,8 @@ contract('MarginCalculator', () => {
     await addressBook.setOracle(oracle.address)
     // setup calculator
     const libMarginVault = await MarginVault.new()
-    const libArrayAddressUtils  = await ArrayAddressUtils.new()
+    const libArrayAddressUtils = await ArrayAddressUtils.new()
     // await MarginCalculator.link(libArrayAddressUtils, libMarginVault)
-
 
     calculator = await MarginCalculator.new(oracle.address)
     // setup usdc and weth
@@ -97,16 +90,52 @@ contract('MarginCalculator', () => {
     reth = await MockERC20.new('rETH', 'rETH', rtokenDecimals)
     tusd = await MockERC20.new('tUSD', 'tUSD', ttokenDecimals)
     // setup put tokens
-    eth300Put = await MockOtoken.new()
-    eth250Put = await MockOtoken.new()
-    eth200Put = await MockOtoken.new()
-    eth100Put = await MockOtoken.new()
-    eth300PutCUSDC = await MockOtoken.new()
+    eth300Put = await MockONtoken.new()
+    eth250Put = await MockONtoken.new()
+    eth200Put = await MockONtoken.new()
+    eth100Put = await MockONtoken.new()
+    eth300PutCUSDC = await MockONtoken.new()
 
-    await eth300Put.init(addressBook.address, weth.address, usdc.address, [usdc.address],['0'], scaleNum(300), expiry, true)
-    await eth250Put.init(addressBook.address, weth.address, usdc.address, [usdc.address],['0'], scaleNum(250), expiry, true)
-    await eth200Put.init(addressBook.address, weth.address, usdc.address, [usdc.address],['0'], scaleNum(200), expiry, true)
-    await eth100Put.init(addressBook.address, weth.address, usdc.address, [usdc.address],['0'], scaleNum(100), expiry, true)
+    await eth300Put.init(
+      addressBook.address,
+      weth.address,
+      usdc.address,
+      [usdc.address],
+      ['0'],
+      scaleNum(300),
+      expiry,
+      true
+    )
+    await eth250Put.init(
+      addressBook.address,
+      weth.address,
+      usdc.address,
+      [usdc.address],
+      ['0'],
+      scaleNum(250),
+      expiry,
+      true
+    )
+    await eth200Put.init(
+      addressBook.address,
+      weth.address,
+      usdc.address,
+      [usdc.address],
+      ['0'],
+      scaleNum(200),
+      expiry,
+      true
+    )
+    await eth100Put.init(
+      addressBook.address,
+      weth.address,
+      usdc.address,
+      [usdc.address],
+      ['0'],
+      scaleNum(100),
+      expiry,
+      true
+    )
     await eth300PutCUSDC.init(
       addressBook.address,
       weth.address,
@@ -115,18 +144,54 @@ contract('MarginCalculator', () => {
       ['0'],
       scaleNum(300),
       expiry,
-      true,
+      true
     )
     // setup call tokens
-    eth300Call = await MockOtoken.new()
-    eth250Call = await MockOtoken.new()
-    eth200Call = await MockOtoken.new()
-    eth100Call = await MockOtoken.new()
-    eth300CallCETH = await MockOtoken.new()
-    await eth300Call.init(addressBook.address, weth.address, usdc.address, [weth.address],['0'], scaleNum(300), expiry, false)
-    await eth250Call.init(addressBook.address, weth.address, usdc.address, [weth.address],['0'], scaleNum(250), expiry, false)
-    await eth200Call.init(addressBook.address, weth.address, usdc.address, [weth.address],['0'], scaleNum(200), expiry, false)
-    await eth100Call.init(addressBook.address, weth.address, usdc.address, [weth.address],['0'], scaleNum(100), expiry, false)
+    eth300Call = await MockONtoken.new()
+    eth250Call = await MockONtoken.new()
+    eth200Call = await MockONtoken.new()
+    eth100Call = await MockONtoken.new()
+    eth300CallCETH = await MockONtoken.new()
+    await eth300Call.init(
+      addressBook.address,
+      weth.address,
+      usdc.address,
+      [weth.address],
+      ['0'],
+      scaleNum(300),
+      expiry,
+      false
+    )
+    await eth250Call.init(
+      addressBook.address,
+      weth.address,
+      usdc.address,
+      [weth.address],
+      ['0'],
+      scaleNum(250),
+      expiry,
+      false
+    )
+    await eth200Call.init(
+      addressBook.address,
+      weth.address,
+      usdc.address,
+      [weth.address],
+      ['0'],
+      scaleNum(200),
+      expiry,
+      false
+    )
+    await eth100Call.init(
+      addressBook.address,
+      weth.address,
+      usdc.address,
+      [weth.address],
+      ['0'],
+      scaleNum(100),
+      expiry,
+      false
+    )
     await eth300CallCETH.init(
       addressBook.address,
       weth.address,
@@ -135,13 +200,11 @@ contract('MarginCalculator', () => {
       ['0'],
       scaleNum(300),
       expiry,
-      false,
+      false
     )
 
-
-    await oracle.setExpiryPriceFinalizedAllPeiodOver(usdc.address, expiry, createTokenAmount(1), true)        
+    await oracle.setExpiryPriceFinalizedAllPeiodOver(usdc.address, expiry, createTokenAmount(1), true)
     await oracle.setExpiryPriceFinalizedAllPeiodOver(weth.address, expiry, scaleNum(100), true)
-
   })
 
   describe('Deployment test', () => {
@@ -152,15 +215,33 @@ contract('MarginCalculator', () => {
 
   describe('Get cash value and payout rate', () => {
     let closeExpiry: number
-    let put: MockOtokenInstance
-    let call: MockOtokenInstance
+    let put: MockONtokenInstance
+    let call: MockONtokenInstance
     before('create calls and puts for getExpiredCashValue test', async () => {
       const now = (await time.latest()).toNumber()
       closeExpiry = now + time.duration.days(1).toNumber()
-      put = await MockOtoken.new()
-      call = await MockOtoken.new()
-      await put.init(addressBook.address, weth.address, usdc.address, [usdc.address],['0'], scaleNum(250), closeExpiry, true)
-      await call.init(addressBook.address, weth.address, usdc.address, [usdc.address],['0'], scaleNum(250), closeExpiry, false)
+      put = await MockONtoken.new()
+      call = await MockONtoken.new()
+      await put.init(
+        addressBook.address,
+        weth.address,
+        usdc.address,
+        [usdc.address],
+        ['0'],
+        scaleNum(250),
+        closeExpiry,
+        true
+      )
+      await call.init(
+        addressBook.address,
+        weth.address,
+        usdc.address,
+        [usdc.address],
+        ['0'],
+        scaleNum(250),
+        closeExpiry,
+        false
+      )
       await oracle.setIsFinalized(weth.address, closeExpiry, true)
       // set USDC expiry price to 1
       await oracle.setExpiryPrice(usdc.address, closeExpiry, scaleNum(1))
@@ -172,7 +253,7 @@ contract('MarginCalculator', () => {
     })
 
     it('Should revert if option is not expired yet.', async () => {
-      await expectRevert(calculator.getExpiredPayoutRate(put.address), 'MarginCalculator: Otoken not expired yet')
+      await expectRevert(calculator.getExpiredPayoutRate(put.address), 'MarginCalculator: ONtoken not expired yet')
       await time.increaseTo(closeExpiry + 2)
     })
 
@@ -235,7 +316,7 @@ contract('MarginCalculator', () => {
       const isPut = await call.isPut()
       await expectRevert(
         calculator.getExpiredCashValue(underlying, strike, expiryTimestamp, strikePrice, isPut),
-        'MarginCalculator: price at expiry not finalized yet',
+        'MarginCalculator: price at expiry not finalized yet'
       )
     })
 
@@ -249,16 +330,16 @@ contract('MarginCalculator', () => {
       const isPut = await call.isPut()
       await expectRevert(
         calculator.getExpiredCashValue(underlying, strike, expiryTimestamp, strikePrice, isPut),
-        'MarginCalculator: price at expiry not finalized yet',
+        'MarginCalculator: price at expiry not finalized yet'
       )
     })
   })
   /*
   describe('Should return invalid vault for edge cases', () => {
-      let smallPut: MockOtokenInstance
+      let smallPut: MockONtokenInstance
 
       before('setup put with low strke price', async () => {
-        smallPut = await MockOtoken.new()
+        smallPut = await MockONtoken.new()
         await smallPut.init(
           addressBook.address,
           weth.address,
@@ -285,7 +366,7 @@ contract('MarginCalculator', () => {
       })
 
       it('(3) Short: 1 unit of Put with strike price = 1e-8 => invalid vault, need at least 1 UCDC unit', async () => {
-        const dustPut = await MockOtoken.new()
+        const dustPut = await MockONtoken.new()
         await dustPut.init(addressBook.address, weth.address, usdc.address, usdc.address, 1, expiry, true)
         const vault = createVault(dustPut.address, undefined, [usdc.address], 1, undefined, [0])
         const netValue = await calculator.getExcessCollateral(vault)
@@ -293,7 +374,7 @@ contract('MarginCalculator', () => {
       })
 
       it('(4) Short: 1 unit of Put with strike price = 1.5 * 1e-6 => invalid vault, need at least 1 UCDC unit', async () => {
-        const dustPut = await MockOtoken.new()
+        const dustPut = await MockONtoken.new()
         const strikePrice = 1.5 * 1e2 //
         await dustPut.init(addressBook.address, weth.address, usdc.address, usdc.address, strikePrice, expiry, true)
         const mintAmount = createTokenAmount(1, 8)
@@ -303,7 +384,7 @@ contract('MarginCalculator', () => {
       })
 
       it('(5) Short: 1 200 call, long 1 0 call => need 0 usdc', async () => {
-        const zeroCall = await MockOtoken.new()
+        const zeroCall = await MockONtoken.new()
         await zeroCall.init(addressBook.address, weth.address, usdc.address, weth.address, 0, expiry, false)
 
         const vault = createVault(
@@ -555,11 +636,11 @@ contract('MarginCalculator', () => {
     /*
       const amountOne = scaleNum(1)
 
-      let put: MockOtokenInstance
+      let put: MockONtokenInstance
 
       before('create put with rUSD, set oracle price for rUSD', async () => {
         // create put with rUSD as collateral + underlying
-        put = await MockOtoken.new()
+        put = await MockONtoken.new()
         await put.init(addressBook.address, weth.address, tusd.address, [tusd.address], scaleNum(300), expiry, true)
         const usdcPrice = scaleNum(1)
         await oracle.setRealTimePrice(tusd.address, usdcPrice)
@@ -596,11 +677,11 @@ contract('MarginCalculator', () => {
     /*
       const amountOne = scaleNum(1)
 
-      let put: MockOtokenInstance
+      let put: MockONtokenInstance
 
       before('create put with rUSD, set oracle price for rUSD', async () => {
         // create put with rUSD as collateral + underlying
-        put = await MockOtoken.new()
+        put = await MockONtoken.new()
         await put.init(addressBook.address, weth.address, rusd.address, [rusd.address], scaleNum(300), expiry, true)
         const usdcPrice = scaleNum(1)
         await oracle.setRealTimePrice(rusd.address, usdcPrice)
@@ -796,11 +877,11 @@ contract('MarginCalculator', () => {
     /*
       const amountOne = scaleNum(1)
 
-      let call: MockOtokenInstance
+      let call: MockONtokenInstance
 
       before('create put with rETH', async () => {
         // create put with rUSD as collateral + underlying
-        call = await MockOtoken.new()
+        call = await MockONtoken.new()
         await call.init(addressBook.address, reth.address, usdc.address, [reth.address], scaleNum(300), expiry, false)
       })
 
@@ -1270,4 +1351,3 @@ contract('MarginCalculator', () => {
     */
   })
 })
-

@@ -7,7 +7,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title Whitelist Module
- * @notice The whitelist module keeps track of all valid oToken addresses, product hashes, collateral addresses, and callee addresses.
+ * @notice The whitelist module keeps track of all valid onToken addresses, product hashes, collateral addresses, and callee addresses.
  */
 contract Whitelist is WhitelistInterface, Ownable {
     /// @notice AddressBook module address
@@ -16,8 +16,8 @@ contract Whitelist is WhitelistInterface, Ownable {
     mapping(bytes32 => bool) internal whitelistedProduct;
     /// @dev mapping to track whitelisted collaterals
     mapping(bytes32 => bool) internal whitelistedCollaterals;
-    /// @dev mapping to track whitelisted oTokens
-    mapping(address => bool) internal whitelistedOtoken;
+    /// @dev mapping to track whitelisted onTokens
+    mapping(address => bool) internal whitelistedONtoken;
     /// @dev mapping to track whitelisted callee addresses for the call action
     mapping(address => bool) internal whitelistedCallee;
 
@@ -51,22 +51,22 @@ contract Whitelist is WhitelistInterface, Ownable {
     event CollateralWhitelisted(address[] indexed collateral);
     /// @notice emits an event when a collateral address is blacklist by the owner address
     event CollateralBlacklisted(address[] indexed collateral);
-    /// @notice emits an event when an oToken is whitelisted by the OtokenFactory module
-    event OtokenWhitelisted(address indexed otoken);
-    /// @notice emits an event when an oToken is blacklisted by the OtokenFactory module
-    event OtokenBlacklisted(address indexed otoken);
+    /// @notice emits an event when an onToken is whitelisted by the ONtokenFactory module
+    event ONtokenWhitelisted(address indexed onToken);
+    /// @notice emits an event when an onToken is blacklisted by the ONtokenFactory module
+    event ONtokenBlacklisted(address indexed onToken);
     /// @notice emits an event when a callee address is whitelisted by the owner address
     event CalleeWhitelisted(address indexed _callee);
     /// @notice emits an event when a callee address is blacklisted by the owner address
     event CalleeBlacklisted(address indexed _callee);
 
     /**
-     * @notice check if the sender is the oTokenFactory module
+     * @notice check if the sender is the onTokenFactory module
      */
     modifier onlyFactory() {
         require(
-            msg.sender == AddressBookInterface(addressBook).getOtokenFactory(),
-            "Whitelist: Sender is not OtokenFactory"
+            msg.sender == AddressBookInterface(addressBook).getONtokenFactory(),
+            "Whitelist: Sender is not ONtokenFactory"
         );
 
         _;
@@ -102,12 +102,12 @@ contract Whitelist is WhitelistInterface, Ownable {
     }
 
     /**
-     * @notice check if an oToken is whitelisted
-     * @param _otoken oToken address
-     * @return boolean, True if the oToken is whitelisted
+     * @notice check if an onToken is whitelisted
+     * @param _onToken onToken address
+     * @return boolean, True if the onToken is whitelisted
      */
-    function isWhitelistedOtoken(address _otoken) external view returns (bool) {
-        return whitelistedOtoken[_otoken];
+    function isWhitelistedONtoken(address _onToken) external view returns (bool) {
+        return whitelistedONtoken[_onToken];
     }
 
     /**
@@ -170,7 +170,7 @@ contract Whitelist is WhitelistInterface, Ownable {
 
     /**
      * @notice allows the owner to whitelist a collateral address
-     * @dev can only be called from the owner address. This function is used to whitelist any asset other than Otoken as collateral. WhitelistOtoken() is used to whitelist Otoken contracts.
+     * @dev can only be called from the owner address. This function is used to whitelist any asset other than ONtoken as collateral. WhitelistONtoken() is used to whitelist ONtoken contracts.
      * @param _collaterals collateral assets addresses
      */
     function whitelistCollaterals(address[] calldata _collaterals) external onlyOwner {
@@ -191,25 +191,25 @@ contract Whitelist is WhitelistInterface, Ownable {
     }
 
     /**
-     * @notice allows the OtokenFactory module to whitelist a new option
-     * @dev can only be called from the OtokenFactory address
-     * @param _otokenAddress oToken
+     * @notice allows the ONtokenFactory module to whitelist a new option
+     * @dev can only be called from the ONtokenFactory address
+     * @param _onTokenAddress onToken
      */
-    function whitelistOtoken(address _otokenAddress) external onlyFactory {
-        whitelistedOtoken[_otokenAddress] = true;
+    function whitelistONtoken(address _onTokenAddress) external onlyFactory {
+        whitelistedONtoken[_onTokenAddress] = true;
 
-        emit OtokenWhitelisted(_otokenAddress);
+        emit ONtokenWhitelisted(_onTokenAddress);
     }
 
     /**
      * @notice allows the owner to blacklist an option
      * @dev can only be called from the owner address
-     * @param _otokenAddress oToken
+     * @param _onTokenAddress onToken
      */
-    function blacklistOtoken(address _otokenAddress) external onlyOwner {
-        whitelistedOtoken[_otokenAddress] = false;
+    function blacklistONtoken(address _onTokenAddress) external onlyOwner {
+        whitelistedONtoken[_onTokenAddress] = false;
 
-        emit OtokenBlacklisted(_otokenAddress);
+        emit ONtokenBlacklisted(_onTokenAddress);
     }
 
     /**

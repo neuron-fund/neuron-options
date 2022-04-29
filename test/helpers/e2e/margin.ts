@@ -1,30 +1,30 @@
-import { OTokenPrices } from '../otoken'
-import { OTokenParams } from './types'
+import { ONTokenPrices } from '../onToken'
+import { ONTokenParams } from './types'
 
-export function calculateMarginRequired<T extends OTokenParams>(
+export function calculateMarginRequired<T extends ONTokenParams>(
   mintAmount: number,
-  shortOtokenParams: T,
-  prices: OTokenPrices<T>,
-  longOtokenParams?: OTokenParams,
+  shortONtokenParams: T,
+  prices: ONTokenPrices<T>,
+  longONtokenParams?: ONTokenParams,
   longAmount?: number
 ) {
-  const { strikePriceFormatted: shortStrikePriceFormatted, strikeAsset, underlyingAsset, isPut } = shortOtokenParams
+  const { strikePriceFormatted: shortStrikePriceFormatted, strikeAsset, underlyingAsset, isPut } = shortONtokenParams
 
   let marginRequired: number
   let longUsedAmount = 0
-  if (longOtokenParams && longAmount) {
+  if (longONtokenParams && longAmount) {
     const spreadMargin = isPut
       ? getPutSpreadMarginRequired(
           mintAmount,
           shortStrikePriceFormatted,
           longAmount,
-          longOtokenParams?.strikePriceFormatted
+          longONtokenParams?.strikePriceFormatted
         )
       : getCallSpreadMarginRequired(
           mintAmount,
           shortStrikePriceFormatted,
           longAmount,
-          longOtokenParams?.strikePriceFormatted
+          longONtokenParams?.strikePriceFormatted
         )
     marginRequired = spreadMargin.marginRequired
     longUsedAmount = spreadMargin.longAmountUsed

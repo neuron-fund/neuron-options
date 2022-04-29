@@ -22,15 +22,15 @@ interface MarginCalculatorInterface {
             uint256 usedLongAmount
         );
 
-    function isMarginableLong(address longOtokenAddress, MarginVault.Vault memory _vault) external view returns (bool);
+    function isMarginableLong(address longONtokenAddress, MarginVault.Vault memory _vault) external view returns (bool);
 
     function getExcessCollateral(MarginVault.Vault memory _vault) external view returns (uint256[] memory);
 
-    function getExpiredPayoutRate(address _otoken) external view returns (uint256[] memory);
+    function getExpiredPayoutRate(address _onToken) external view returns (uint256[] memory);
 
     function getMaxShortAmount(MarginVault.Vault memory _vault) external view returns (uint256);
 
-    function getPayout(address _otoken, uint256 _amount) external view returns (uint256[] memory);
+    function getPayout(address _onToken, uint256 _amount) external view returns (uint256[] memory);
 
     function oracle() external view returns (address);
 

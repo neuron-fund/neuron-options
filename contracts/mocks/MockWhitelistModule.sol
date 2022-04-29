@@ -4,7 +4,7 @@ pragma solidity 0.8.9;
 import {WhitelistInterface} from "../interfaces/WhitelistInterface.sol";
 
 contract MockWhitelistModule is WhitelistInterface {
-    mapping(address => bool) public whitelistedOtoken;
+    mapping(address => bool) public whitelistedONtoken;
     mapping(bytes32 => bool) private whitelistedProduct;
     mapping(bytes32 => bool) internal whitelistedCollaterals;
     mapping(address => bool) private whitelistedCallee;
@@ -15,8 +15,8 @@ contract MockWhitelistModule is WhitelistInterface {
         whitelistedCollaterals[keccak256(abi.encode(_collaterals))] = false;
     }
 
-    function blacklistOtoken(address _otokenAddress) external {
-        whitelistedOtoken[_otokenAddress] = false;
+    function blacklistONtoken(address _onTokenAddress) external {
+        whitelistedONtoken[_onTokenAddress] = false;
     }
 
     function blacklistProduct(
@@ -45,7 +45,6 @@ contract MockWhitelistModule is WhitelistInterface {
         whitelistedProduct[productHash] = true;
     }
 
-
     function isWhitelistedProduct(
         address _underlying,
         address _strike,
@@ -56,12 +55,12 @@ contract MockWhitelistModule is WhitelistInterface {
         return whitelistedProduct[productHash];
     }
 
-    function whitelistOtoken(address _otoken) external {
-        whitelistedOtoken[_otoken] = true;
+    function whitelistONtoken(address _onToken) external {
+        whitelistedONtoken[_onToken] = true;
     }
 
-    function isWhitelistedOtoken(address _otoken) external view returns (bool) {
-        return whitelistedOtoken[_otoken];
+    function isWhitelistedONtoken(address _onToken) external view returns (bool) {
+        return whitelistedONtoken[_onToken];
     }
 
     function isWhitelistedCollaterals(address[] memory _collaterals) external view returns (bool) {

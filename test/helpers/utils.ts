@@ -10,8 +10,8 @@ import { BigNumber } from 'ethers'
   shortAmounts: (BigNumber | string | number)[]
   longAmounts: (BigNumber | string | number)[]
   collateralAmounts: (BigNumber | string | number)[]
-  shortOtokens: string[]
-  longOtokens: string[]
+  shortONtokens: string[]
+  longONtokens: string[]
   collateralAssets: string[]
 }*/
 
@@ -33,8 +33,8 @@ export const resp2bn = (resp: any) => {
 
 /**
  * Create a vault for testing
- * @param shortOtoken
- * @param longOtoken
+ * @param shortONtoken
+ * @param longONtoken
  * @param collateralAsset
  * @param shortAmount
  * @param longAmount
@@ -42,16 +42,16 @@ export const resp2bn = (resp: any) => {
  */
 
 export const createVault = (
-  shortOtoken: string | undefined,
-  longOtoken: string | undefined,
+  shortONtoken: string | undefined,
+  longONtoken: string | undefined,
   collateralAssets: Array<string>,
   shortAmount: string | BigNumber | number | undefined,
   longAmount: string | BigNumber | number | undefined,
   collateralAmounts: Array<string | BigNumber | number | undefined>
 ): VaultStruct => {
   return {
-    shortOtoken: shortOtoken !== undefined ? shortOtoken : ZERO_ADDR,
-    longOtoken: longOtoken !== undefined ? longOtoken : ZERO_ADDR,
+    shortONtoken: shortONtoken !== undefined ? shortONtoken : ZERO_ADDR,
+    longONtoken: longONtoken !== undefined ? longONtoken : ZERO_ADDR,
     collateralAssets: collateralAssets ? collateralAssets : [],
     shortAmount: shortAmount !== undefined ? shortAmount : '0',
     longAmount: longAmount !== undefined ? longAmount : '0',

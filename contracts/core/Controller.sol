@@ -11,7 +11,7 @@ import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import {MarginVault} from "../libs/MarginVault.sol";
 import {Actions} from "../libs/Actions.sol";
 import {AddressBookInterface} from "../interfaces/AddressBookInterface.sol";
-import {OtokenInterface} from "../interfaces/OtokenInterface.sol";
+import {ONtokenInterface} from "../interfaces/ONtokenInterface.sol";
 import {MarginCalculatorInterface} from "../interfaces/MarginCalculatorInterface.sol";
 import {OracleInterface} from "../interfaces/OracleInterface.sol";
 import {WhitelistInterface} from "../interfaces/WhitelistInterface.sol";
@@ -37,22 +37,22 @@ import {FPI} from "../libs/FixedPointInt256.sol";
  * C13: can not run actions on different vaults
  * C14: invalid final vault state
  * C15: can not run actions on inexistent vault
- * C16: cannot deposit long otoken from this address
- * C17: otoken is not whitelisted to be used as collateral
- * C18: otoken used as collateral is already expired
- * C19: can not withdraw an expired otoken
+ * C16: cannot deposit long onToken from this address
+ * C17: onToken is not whitelisted to be used as collateral
+ * C18: onToken used as collateral is already expired
+ * C19: can not withdraw an expired onToken
  * C20: cannot deposit collateral from this address
  * C21: asset is not whitelisted to be used as collateral
- * C22: can not withdraw collateral from a vault with an expired short otoken
- * C23: otoken is not whitelisted to be minted
- * C24: can not mint expired otoken
+ * C22: can not withdraw collateral from a vault with an expired short onToken
+ * C23: onToken is not whitelisted to be minted
+ * C24: can not mint expired onToken
  * C25: cannot burn from this address
- * C26: can not burn expired otoken
- * C27: otoken is not whitelisted to be redeemed
- * C28: can not redeem un-expired otoken
+ * C26: can not burn expired onToken
+ * C27: onToken is not whitelisted to be redeemed
+ * C28: can not redeem un-expired onToken
  * C29: asset prices not finalized yet
- * C30: can't settle vault with no otoken
- * C31: can not settle vault with un-expired otoken
+ * C30: can't settle vault with no onToken
+ * C31: can not settle vault with un-expired onToken
  * C32: can not settle undercollateralized vault
  * C33: can not liquidate vault
  * C34: can not leave less than collateral dust
@@ -60,11 +60,11 @@ import {FPI} from "../libs/FixedPointInt256.sol";
  * C36: cap amount should be greater than zero
  * C37: collateral exceed naked margin cap
  * C38: assets and amounts length must be the same
- * C39: vault is not associated with oToken
- * C40: assets array should be the same as associated oToken collateralAssets array
- * C41: otoken is not associated with vault
+ * C39: vault is not associated with onToken
+ * C40: assets array should be the same as associated onToken collateralAssets array
+ * C41: onToken is not associated with vault
  * C42: vault does not have long to withdraw
- * C43: vault has no collateral to mint oToken
+ * C43: vault has no collateral to mint onToken
  * C44: deposit/withdraw collateral amounts should be same length as collateral assets amount for correspoding vault short
  */
 
@@ -83,7 +83,7 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     MarginCalculatorInterface public calculator;
     MarginPoolInterface public pool;
 
-    ///@dev scale used in MarginCalculator and decimals of oToken
+    ///@dev scale used in MarginCalculator and decimals of onToken
     uint256 internal constant BASE = 8;
 
     /// @notice address that has permission to partially pause the system, where system functionality is paused
@@ -116,17 +116,17 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     event AccountOperatorUpdated(address indexed accountOwner, address indexed operator, bool isSet);
     /// @notice emits an event when a new vault is opened
     event VaultOpened(address indexed accountOwner, uint256 vaultId);
-    /// @notice emits an event when a long oToken is deposited into a vault
-    event LongOtokenDeposited(
-        address indexed otoken,
+    /// @notice emits an event when a long onToken is deposited into a vault
+    event LongONtokenDeposited(
+        address indexed onToken,
         address indexed accountOwner,
         address indexed from,
         uint256 vaultId,
         uint256 amount
     );
-    /// @notice emits an event when a long oToken is withdrawn from a vault
-    event LongOtokenWithdrawed(
-        address indexed otoken,
+    /// @notice emits an event when a long onToken is withdrawn from a vault
+    event LongONtokenWithdrawed(
+        address indexed onToken,
         address indexed accountOwner,
         address indexed to,
         uint256 vaultId,
@@ -148,35 +148,35 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         uint256 vaultId,
         uint256 amount
     );
-    /// @notice emits an event when a short oToken is minted from a vault
-    event ShortOtokenMinted(
-        address indexed otoken,
+    /// @notice emits an event when a short onToken is minted from a vault
+    event ShortONtokenMinted(
+        address indexed onToken,
         address indexed accountOwner,
         address indexed to,
         uint256 vaultId,
         uint256 amount
     );
-    /// @notice emits an event when a short oToken is burned
-    event ShortOtokenBurned(
-        address indexed otoken,
+    /// @notice emits an event when a short onToken is burned
+    event ShortONtokenBurned(
+        address indexed onToken,
         address indexed accountOwner,
         address indexed sender,
         uint256 vaultId,
         uint256 amount
     );
-    /// @notice emits an event when an oToken is redeemed
+    /// @notice emits an event when an onToken is redeemed
     event Redeem(
-        address indexed otoken,
+        address indexed onToken,
         address indexed redeemer,
         address indexed receiver,
         address[] collateralAssets,
-        uint256 otokenBurned,
+        uint256 onTokenBurned,
         uint256[] payouts
     );
     /// @notice emits an event when a vault is settled
     event VaultSettled(
         address indexed accountOwner,
-        address indexed shortOtoken,
+        address indexed shortONtoken,
         address to,
         uint256[] payouts,
         uint256 vaultId
@@ -442,22 +442,24 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @dev return if an expired oToken is ready to be settled, only true when price for underlying,
+     * @dev return if an expired onToken is ready to be settled, only true when price for underlying,
      * strike and collateral assets at this specific expiry is available in our Oracle module
-     * @param _otoken oToken
+     * @param _onToken onToken
      */
-    function isSettlementAllowed(address _otoken) external view returns (bool) {
-        (address[] memory collaterals, address underlying, address strike, uint256 expiry) = _getOtokenDetails(_otoken);
+    function isSettlementAllowed(address _onToken) external view returns (bool) {
+        (address[] memory collaterals, address underlying, address strike, uint256 expiry) = _getONtokenDetails(
+            _onToken
+        );
         return canSettleAssets(underlying, strike, collaterals, expiry);
     }
 
     /**
-     * @notice check if an oToken has expired
-     * @param _otoken oToken address
-     * @return True if the otoken has expired, False if not
+     * @notice check if an onToken has expired
+     * @param _onToken onToken address
+     * @return True if the onToken has expired, False if not
      */
-    function hasExpired(address _otoken) external view returns (bool) {
-        return block.timestamp >= OtokenInterface(_otoken).expiryTimestamp();
+    function hasExpired(address _onToken) external view returns (bool) {
+        return block.timestamp >= ONtokenInterface(_onToken).expiryTimestamp();
     }
 
     /**
@@ -527,9 +529,9 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             } else if (actionType == Actions.ActionType.WithdrawCollateral) {
                 _withdrawCollateral(Actions._parseWithdrawCollateralArgs(action));
             } else if (actionType == Actions.ActionType.MintShortOption) {
-                _mintOtoken(Actions._parseMintArgs(action));
+                _mintONtoken(Actions._parseMintArgs(action));
             } else if (actionType == Actions.ActionType.BurnShortOption) {
-                _burnOtoken(Actions._parseBurnArgs(action));
+                _burnONtoken(Actions._parseBurnArgs(action));
             } else if (actionType == Actions.ActionType.Redeem) {
                 _redeem(Actions._parseRedeemArgs(action));
             } else if (actionType == Actions.ActionType.SettleVault) {
@@ -555,16 +557,16 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         uint256 vaultId = accountVaultCounter[_args.owner].add(1);
 
         require(_args.vaultId == vaultId, "C15");
-        require(whitelist.isWhitelistedOtoken(_args.shortOtoken), "C23");
+        require(whitelist.isWhitelistedONtoken(_args.shortONtoken), "C23");
 
-        OtokenInterface oToken = OtokenInterface(_args.shortOtoken);
+        ONtokenInterface onToken = ONtokenInterface(_args.shortONtoken);
 
         // store new vault
         accountVaultCounter[_args.owner] = vaultId;
-        // every vault is linked to certain oToken which this vault can mint
-        vaults[_args.owner][vaultId].shortOtoken = _args.shortOtoken;
-        address[] memory collateralAssets = oToken.getCollateralAssets();
-        // store collateral assets of linked oToken to vault
+        // every vault is linked to certain onToken which this vault can mint
+        vaults[_args.owner][vaultId].shortONtoken = _args.shortONtoken;
+        address[] memory collateralAssets = onToken.getCollateralAssets();
+        // store collateral assets of linked onToken to vault
         vaults[_args.owner][vaultId].collateralAssets = collateralAssets;
 
         uint256 assetsLength = collateralAssets.length;
@@ -579,8 +581,8 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @notice deposit a long oToken into a vault
-     * @dev only the account owner or operator can deposit a long oToken, cannot be called when system is partiallyPaused or fullyPaused
+     * @notice deposit a long onToken into a vault
+     * @dev only the account owner or operator can deposit a long onToken, cannot be called when system is partiallyPaused or fullyPaused
      * @param _args DepositArgs structure
      */
     function _depositLong(Actions.DepositLongArgs memory _args)
@@ -589,27 +591,27 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         onlyAuthorized(msg.sender, _args.owner)
     {
         require(_checkVaultId(_args.owner, _args.vaultId), "C35");
-        // only allow vault owner or vault operator to deposit long otoken
+        // only allow vault owner or vault operator to deposit long onToken
         require((_args.from == msg.sender) || (_args.from == _args.owner), "C16");
 
-        require(whitelist.isWhitelistedOtoken(_args.longOtoken), "C17");
+        require(whitelist.isWhitelistedONtoken(_args.longONtoken), "C17");
 
-        // Check if short and long oTokens params are matched,
+        // Check if short and long onTokens params are matched,
         // they must be they should differ only in strike value
         require(
-            calculator.isMarginableLong(_args.longOtoken, vaults[_args.owner][_args.vaultId]),
+            calculator.isMarginableLong(_args.longONtoken, vaults[_args.owner][_args.vaultId]),
             "not marginable long"
         );
 
-        vaults[_args.owner][_args.vaultId].addLong(_args.longOtoken, _args.amount);
-        pool.transferToPool(_args.longOtoken, _args.from, _args.amount);
+        vaults[_args.owner][_args.vaultId].addLong(_args.longONtoken, _args.amount);
+        pool.transferToPool(_args.longONtoken, _args.from, _args.amount);
 
-        emit LongOtokenDeposited(_args.longOtoken, _args.owner, _args.from, _args.vaultId, _args.amount);
+        emit LongONtokenDeposited(_args.longONtoken, _args.owner, _args.from, _args.vaultId, _args.amount);
     }
 
     /**
-     * @notice withdraw a long oToken from a vault
-     * @dev only the account owner or operator can withdraw a long oToken, cannot be called when system is partiallyPaused or fullyPaused
+     * @notice withdraw a long onToken from a vault
+     * @dev only the account owner or operator can withdraw a long onToken, cannot be called when system is partiallyPaused or fullyPaused
      * @param _args WithdrawArgs structure
      */
     function _withdrawLong(Actions.WithdrawLongArgs memory _args)
@@ -619,19 +621,19 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     {
         require(_checkVaultId(_args.owner, _args.vaultId), "C35");
 
-        address otokenAddress = vaults[_args.owner][_args.vaultId].longOtoken;
-        require(otokenAddress == address(0), "C42");
+        address onTokenAddress = vaults[_args.owner][_args.vaultId].longONtoken;
+        require(onTokenAddress == address(0), "C42");
 
-        OtokenInterface otoken = OtokenInterface(vaults[_args.owner][_args.vaultId].longOtoken);
+        ONtokenInterface onToken = ONtokenInterface(vaults[_args.owner][_args.vaultId].longONtoken);
 
         // Can't withdraw after expiry, should call settleVault to execute long
-        require(block.timestamp < otoken.expiryTimestamp(), "C19");
+        require(block.timestamp < onToken.expiryTimestamp(), "C19");
 
-        vaults[_args.owner][_args.vaultId].removeLong(otokenAddress, _args.amount);
+        vaults[_args.owner][_args.vaultId].removeLong(onTokenAddress, _args.amount);
 
-        pool.transferToUser(otokenAddress, _args.to, _args.amount);
+        pool.transferToUser(onTokenAddress, _args.to, _args.amount);
 
-        emit LongOtokenWithdrawed(otokenAddress, _args.owner, _args.to, _args.vaultId, _args.amount);
+        emit LongONtokenWithdrawed(onTokenAddress, _args.owner, _args.to, _args.vaultId, _args.amount);
     }
 
     /**
@@ -706,21 +708,21 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @notice mint short oTokens from a vault which creates an obligation that is recorded in the vault
-     * @dev only the account owner or operator can mint an oToken, cannot be called when system is partiallyPaused or fullyPaused
+     * @notice mint short onTokens from a vault which creates an obligation that is recorded in the vault
+     * @dev only the account owner or operator can mint an onToken, cannot be called when system is partiallyPaused or fullyPaused
      * @param _args MintArgs structure
      */
-    function _mintOtoken(Actions.MintArgs memory _args)
+    function _mintONtoken(Actions.MintArgs memory _args)
         internal
         notPartiallyPaused
         onlyAuthorized(msg.sender, _args.owner)
     {
         require(_checkVaultId(_args.owner, _args.vaultId), "C35");
 
-        address vaultShortOtoken = vaults[_args.owner][_args.vaultId].shortOtoken;
+        address vaultShortONtoken = vaults[_args.owner][_args.vaultId].shortONtoken;
 
-        OtokenInterface otoken = OtokenInterface(vaultShortOtoken);
-        require(block.timestamp < otoken.expiryTimestamp(), "C24");
+        ONtokenInterface onToken = ONtokenInterface(vaultShortONtoken);
+        require(block.timestamp < onToken.expiryTimestamp(), "C24");
 
         // Mint maximum possible shorts if zero
         if (_args.amount == 0) {
@@ -732,7 +734,7 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             revert("C43");
         }
 
-        // collateralsValuesRequired - is value of each collateral used for minting oToken in strike asset,
+        // collateralsValuesRequired - is value of each collateral used for minting onToken in strike asset,
         // in other words -  usedCollateralsAmounts[i] * collateralAssetPriceInStrike[i]
         // collateralsAmountsUsed and collateralsValuesUsed takes into account amounts used from long too
         // collateralsAmountsRequired is amounts required from vaults deposited collaterals only, without using long
@@ -742,8 +744,8 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             uint256[] memory collateralsValuesUsed,
             uint256 usedLongAmount
         ) = calculator.getCollateralsToCoverShort(vaults[_args.owner][_args.vaultId], _args.amount);
-        otoken.mintOtoken(_args.to, _args.amount, collateralsAmountsUsed, collateralsValuesUsed);
-        vaults[_args.owner][_args.vaultId].addShort(vaultShortOtoken, _args.amount);
+        onToken.mintONtoken(_args.to, _args.amount, collateralsAmountsUsed, collateralsValuesUsed);
+        vaults[_args.owner][_args.vaultId].addShort(vaultShortONtoken, _args.amount);
         // Updates vault's data regarding used and available collaterals,
         // and used collaterals values for later calculations on vault settlement
         vaults[_args.owner][_args.vaultId].useVaultsAssets(
@@ -752,33 +754,33 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             collateralsValuesUsed
         );
 
-        emit ShortOtokenMinted(vaultShortOtoken, _args.owner, _args.to, _args.vaultId, _args.amount);
+        emit ShortONtokenMinted(vaultShortONtoken, _args.owner, _args.to, _args.vaultId, _args.amount);
     }
 
     /**
-     * @notice burn oTokens to reduce or remove the minted oToken obligation recorded in a vault
-     * @dev only the account owner or operator can burn an oToken, cannot be called when system is partiallyPaused or fullyPaused
+     * @notice burn onTokens to reduce or remove the minted onToken obligation recorded in a vault
+     * @dev only the account owner or operator can burn an onToken, cannot be called when system is partiallyPaused or fullyPaused
      * @param _args MintArgs structure
      */
-    function _burnOtoken(Actions.BurnArgs memory _args)
+    function _burnONtoken(Actions.BurnArgs memory _args)
         internal
         notPartiallyPaused
         onlyAuthorized(msg.sender, _args.owner)
     {
         // check that vault id is valid for this vault owner
         require(_checkVaultId(_args.owner, _args.vaultId), "C35");
-        address oTokenAddress = vaults[_args.owner][_args.vaultId].shortOtoken;
-        OtokenInterface otoken = OtokenInterface(oTokenAddress);
+        address onTokenAddress = vaults[_args.owner][_args.vaultId].shortONtoken;
+        ONtokenInterface onToken = ONtokenInterface(onTokenAddress);
 
-        // do not allow burning expired otoken
-        require(block.timestamp < otoken.expiryTimestamp(), "C26");
+        // do not allow burning expired onToken
+        require(block.timestamp < onToken.expiryTimestamp(), "C26");
 
-        otoken.burnOtoken(_args.owner, _args.amount);
+        onToken.burnONtoken(_args.owner, _args.amount);
 
         // Cases:
         // New short amount needs less collateral or no at all cause long amount is enough
 
-        // remove otoken from vault
+        // remove onToken from vault
         // collateralRation represents how much of already used collateral will be used after burn
         (FPI.FixedPointInt memory collateralRatio, uint256 newUsedLongAmount) = calculator.getAfterBurnCollateralRatio(
             vaults[_args.owner][_args.vaultId],
@@ -786,38 +788,38 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         );
         (uint256[] memory freedCollateralAmounts, uint256[] memory freedCollateralValues) = vaults[_args.owner][
             _args.vaultId
-        ].removeShort(oTokenAddress, _args.amount, collateralRatio, newUsedLongAmount);
+        ].removeShort(onTokenAddress, _args.amount, collateralRatio, newUsedLongAmount);
 
-        // Update oToken info regarding collaterization after burn
-        otoken.reduceCollaterization(freedCollateralAmounts, freedCollateralValues, _args.amount);
+        // Update onToken info regarding collaterization after burn
+        onToken.reduceCollaterization(freedCollateralAmounts, freedCollateralValues, _args.amount);
 
-        emit ShortOtokenBurned(oTokenAddress, _args.owner, msg.sender, _args.vaultId, _args.amount);
+        emit ShortONtokenBurned(onTokenAddress, _args.owner, msg.sender, _args.vaultId, _args.amount);
     }
 
     /**
-     * @notice redeem an oToken after expiry, receiving the payout of the oToken in the collateral asset
+     * @notice redeem an onToken after expiry, receiving the payout of the onToken in the collateral asset
      * @dev cannot be called when system is fullyPaused
      * @param _args RedeemArgs structure
      */
     function _redeem(Actions.RedeemArgs memory _args) internal {
-        OtokenInterface otoken = OtokenInterface(_args.otoken);
+        ONtokenInterface onToken = ONtokenInterface(_args.onToken);
 
-        // check that otoken to redeem is whitelisted
-        require(whitelist.isWhitelistedOtoken(_args.otoken), "C27");
+        // check that onToken to redeem is whitelisted
+        require(whitelist.isWhitelistedONtoken(_args.onToken), "C27");
 
-        (address[] memory collaterals, address underlying, address strike, uint256 expiry) = _getOtokenDetails(
-            address(otoken)
+        (address[] memory collaterals, address underlying, address strike, uint256 expiry) = _getONtokenDetails(
+            address(onToken)
         );
 
-        // only allow redeeming expired otoken
+        // only allow redeeming expired onToken
         require(block.timestamp >= expiry, "C28");
 
         // Check prices are finalised
         require(canSettleAssets(underlying, strike, collaterals, expiry), "C29");
 
-        uint256[] memory payout = calculator.getPayout(_args.otoken, _args.amount);
+        uint256[] memory payout = calculator.getPayout(_args.onToken, _args.amount);
 
-        otoken.burnOtoken(msg.sender, _args.amount);
+        onToken.burnONtoken(msg.sender, _args.amount);
 
         for (uint256 i = 0; i < collaterals.length; i++) {
             if (payout[i] > 0) {
@@ -825,11 +827,11 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             }
         }
 
-        emit Redeem(_args.otoken, msg.sender, _args.receiver, collaterals, _args.amount, payout);
+        emit Redeem(_args.onToken, msg.sender, _args.receiver, collaterals, _args.amount, payout);
     }
 
     /**
-     * @notice settle a vault after expiry, removing the net proceeds/collateral after both long and short oToken payouts have settled
+     * @notice settle a vault after expiry, removing the net proceeds/collateral after both long and short onToken payouts have settled
      * @dev deletes a vault of vaultId after net proceeds/collateral is removed, cannot be called when system is fullyPaused
      * @param _args SettleVaultArgs structure
      */
@@ -838,30 +840,30 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
         (MarginVault.Vault memory vault, ) = getVaultWithDetails(_args.owner, _args.vaultId);
 
-        OtokenInterface otoken;
+        ONtokenInterface onToken;
 
         // new scope to avoid stack too deep error
-        // check if there is short or long otoken in vault
-        // do not allow settling vault that have no short or long otoken
-        // if there is a long otoken, burn it
-        // store otoken address outside of this scope
+        // check if there is short or long onToken in vault
+        // do not allow settling vault that have no short or long onToken
+        // if there is a long onToken, burn it
+        // store onToken address outside of this scope
         {
-            bool hasLong = vault.longOtoken != address(0);
+            bool hasLong = vault.longONtoken != address(0);
 
-            otoken = OtokenInterface(vault.shortOtoken);
+            onToken = ONtokenInterface(vault.shortONtoken);
 
             if (hasLong && vault.longAmount > 0) {
-                OtokenInterface longOtoken = OtokenInterface(vault.longOtoken);
+                ONtokenInterface longONtoken = ONtokenInterface(vault.longONtoken);
 
-                longOtoken.burnOtoken(address(pool), vault.longAmount);
+                longONtoken.burnONtoken(address(pool), vault.longAmount);
             }
         }
 
-        (address[] memory collaterals, address underlying, address strike, uint256 expiry) = _getOtokenDetails(
-            address(otoken)
+        (address[] memory collaterals, address underlying, address strike, uint256 expiry) = _getONtokenDetails(
+            address(onToken)
         );
 
-        // do not allow settling vault with un-expired otoken
+        // do not allow settling vault with un-expired onToken
         require(block.timestamp >= expiry, "C31");
         require(canSettleAssets(underlying, strike, collaterals, expiry), "C29");
 
@@ -878,7 +880,7 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         uint256 vaultId = _args.vaultId;
         address payoutRecipient = _args.to;
 
-        emit VaultSettled(_args.owner, address(otoken), payoutRecipient, payouts, vaultId);
+        emit VaultSettled(_args.owner, address(onToken), payoutRecipient, payouts, vaultId);
     }
 
     /**
@@ -912,10 +914,10 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @dev get otoken detail
-     * @return oToken collaterals, underlying, strike, expiry
+     * @dev get onToken detail
+     * @return onToken collaterals, underlying, strike, expiry
      */
-    function _getOtokenDetails(address _otoken)
+    function _getONtokenDetails(address _onToken)
         internal
         view
         returns (
@@ -925,19 +927,19 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             uint256
         )
     {
-        OtokenInterface otoken = OtokenInterface(_otoken);
-        (address[] memory collaterals, , , , address underlying, address strike, , uint256 expiry, , ) = otoken
-            .getOtokenDetails();
+        ONtokenInterface onToken = ONtokenInterface(_onToken);
+        (address[] memory collaterals, , , , address underlying, address strike, , uint256 expiry, , ) = onToken
+            .getONtokenDetails();
         return (collaterals, underlying, strike, expiry);
     }
 
     /**
      * @dev return if underlying, strike, collateral are all allowed to be settled
-     * @param _underlying oToken underlying asset
-     * @param _strike oToken strike asset
-     * @param _collaterals oToken collateral assets
-     * @param _expiry otoken expiry timestamp
-     * @return True if the oToken has expired AND all oracle prices at the expiry timestamp have been finalized, False if not
+     * @param _underlying onToken underlying asset
+     * @param _strike onToken strike asset
+     * @param _collaterals onToken collateral assets
+     * @param _expiry onToken expiry timestamp
+     * @return True if the onToken has expired AND all oracle prices at the expiry timestamp have been finalized, False if not
      */
     function canSettleAssets(
         address _underlying,

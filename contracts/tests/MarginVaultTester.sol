@@ -29,36 +29,36 @@ contract MarginVaultTester {
 
     function testAddShort(
         uint256 _vaultIndex,
-        address _shortOtoken,
+        address _shortONtoken,
         uint256 _amount
     ) external {
-        vault[msg.sender][_vaultIndex].addShort(_shortOtoken, _amount);
+        vault[msg.sender][_vaultIndex].addShort(_shortONtoken, _amount);
     }
 
     function testRemoveShort(
         uint256 _vaultIndex,
-        address _shortOtoken,
+        address _shortONtoken,
         uint256 _amount,
         FPI.FixedPointInt memory _newCollateralRatio,
         uint256 _newUsedLongAmount
     ) external {
-        vault[msg.sender][_vaultIndex].removeShort(_shortOtoken, _amount, _newCollateralRatio, _newUsedLongAmount);
+        vault[msg.sender][_vaultIndex].removeShort(_shortONtoken, _amount, _newCollateralRatio, _newUsedLongAmount);
     }
 
     function testAddLong(
         uint256 _vaultIndex,
-        address _longOtoken,
+        address _longONtoken,
         uint256 _amount
     ) external {
-        vault[msg.sender][_vaultIndex].addLong(_longOtoken, _amount);
+        vault[msg.sender][_vaultIndex].addLong(_longONtoken, _amount);
     }
 
     function testRemoveLong(
         uint256 _vaultIndex,
-        address _longOtoken,
+        address _longONtoken,
         uint256 _amount
     ) external {
-        vault[msg.sender][_vaultIndex].removeLong(_longOtoken, _amount);
+        vault[msg.sender][_vaultIndex].removeLong(_longONtoken, _amount);
     }
 
     function testAddCollaterals(
