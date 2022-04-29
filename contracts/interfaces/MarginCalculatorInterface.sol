@@ -12,7 +12,7 @@ interface MarginCalculatorInterface {
         view
         returns (FPI.FixedPointInt memory, uint256);
 
-    function getCollateralRequired(MarginVault.Vault memory _vault, uint256 _amount)
+    function getCollateralsToCoverShort(MarginVault.Vault memory _vault, uint256 _shortAmount)
         external
         view
         returns (

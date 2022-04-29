@@ -24,6 +24,7 @@ struct Vault {
   uint256[] usedCollateralValues;
   uint256[] availableCollateralAmounts;
 }
+
 ```
 
 ### addShort
@@ -34,11 +35,11 @@ function addShort(struct MarginVault.Vault _vault, address _shortOtoken, uint256
 
 _increase the short oToken balance in a vault when a new oToken is minted_
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _vault | struct MarginVault.Vault | vault to add or increase the short position in |
-| _shortOtoken | address | address of the _shortOtoken being minted from the user&#x27;s vault |
-| _amount | uint256 | number of _shortOtoken being minted from the user&#x27;s vault |
+| Name          | Type                     | Description                                                          |
+| ------------- | ------------------------ | -------------------------------------------------------------------- |
+| \_vault       | struct MarginVault.Vault | vault to add or increase the short position in                       |
+| \_shortOtoken | address                  | address of the \_shortOtoken being minted from the user&#x27;s vault |
+| \_amount      | uint256                  | number of \_shortOtoken being minted from the user&#x27;s vault      |
 
 ### removeShort
 
@@ -48,13 +49,13 @@ function removeShort(struct MarginVault.Vault _vault, address _shortOtoken, uint
 
 _decrease the short oToken balance in a vault when an oToken is burned_
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _vault | struct MarginVault.Vault | vault to decrease short position in |
-| _shortOtoken | address | address of the _shortOtoken being reduced in the user&#x27;s vault |
-| _amount | uint256 | number of _shortOtoken being reduced in the user&#x27;s vault |
-| _newCollateralRatio | struct FPI.FixedPointInt | ratio representing how much of alreadt used collateral will be used after burn |
-| _newUsedLongAmount | uint256 | new used long amount |
+| Name                 | Type                     | Description                                                                    |
+| -------------------- | ------------------------ | ------------------------------------------------------------------------------ |
+| \_vault              | struct MarginVault.Vault | vault to decrease short position in                                            |
+| \_shortOtoken        | address                  | address of the \_shortOtoken being reduced in the user&#x27;s vault            |
+| \_amount             | uint256                  | number of \_shortOtoken being reduced in the user&#x27;s vault                 |
+| \_newCollateralRatio | struct FPI.FixedPointInt | ratio representing how much of alreadt used collateral will be used after burn |
+| \_newUsedLongAmount  | uint256                  | new used long amount                                                           |
 
 ### toFPImulAndBack
 
@@ -70,11 +71,11 @@ function addLong(struct MarginVault.Vault _vault, address _longOtoken, uint256 _
 
 _increase the long oToken balance in a vault when an oToken is deposited_
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _vault | struct MarginVault.Vault | vault to add a long position to |
-| _longOtoken | address | address of the _longOtoken being added to the user&#x27;s vault |
-| _amount | uint256 | number of _longOtoken the protocol is adding to the user&#x27;s vault |
+| Name         | Type                     | Description                                                            |
+| ------------ | ------------------------ | ---------------------------------------------------------------------- |
+| \_vault      | struct MarginVault.Vault | vault to add a long position to                                        |
+| \_longOtoken | address                  | address of the \_longOtoken being added to the user&#x27;s vault       |
+| \_amount     | uint256                  | number of \_longOtoken the protocol is adding to the user&#x27;s vault |
 
 ### removeLong
 
@@ -84,11 +85,11 @@ function removeLong(struct MarginVault.Vault _vault, address _longOtoken, uint25
 
 _decrease the long oToken balance in a vault when an oToken is withdrawn_
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _vault | struct MarginVault.Vault | vault to remove a long position from |
-| _longOtoken | address | address of the _longOtoken being removed from the user&#x27;s vault |
-| _amount | uint256 | number of _longOtoken the protocol is removing from the user&#x27;s vault |
+| Name         | Type                     | Description                                                                |
+| ------------ | ------------------------ | -------------------------------------------------------------------------- |
+| \_vault      | struct MarginVault.Vault | vault to remove a long position from                                       |
+| \_longOtoken | address                  | address of the \_longOtoken being removed from the user&#x27;s vault       |
+| \_amount     | uint256                  | number of \_longOtoken the protocol is removing from the user&#x27;s vault |
 
 ### addCollaterals
 
@@ -98,11 +99,11 @@ function addCollaterals(struct MarginVault.Vault _vault, address[] _collateralAs
 
 _increase the collaterals balances in a vault_
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _vault | struct MarginVault.Vault | vault to add collateral to |
-| _collateralAssets | address[] | addresses of the _collateralAssets being added to the user&#x27;s vault |
-| _amounts | uint256[] | number of _collateralAssets being added to the user&#x27;s vault |
+| Name               | Type                     | Description                                                              |
+| ------------------ | ------------------------ | ------------------------------------------------------------------------ |
+| \_vault            | struct MarginVault.Vault | vault to add collateral to                                               |
+| \_collateralAssets | address[]                | addresses of the \_collateralAssets being added to the user&#x27;s vault |
+| \_amounts          | uint256[]                | number of \_collateralAssets being added to the user&#x27;s vault        |
 
 ### removeCollateral
 
@@ -112,14 +113,13 @@ function removeCollateral(struct MarginVault.Vault _vault, uint256[] _amounts) e
 
 _decrease the collateral balance in a vault_
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _vault | struct MarginVault.Vault | vault to remove collateral from |
-| _amounts | uint256[] | number of _collateralAssets being removed from the user&#x27;s vault |
+| Name      | Type                     | Description                                                           |
+| --------- | ------------------------ | --------------------------------------------------------------------- |
+| \_vault   | struct MarginVault.Vault | vault to remove collateral from                                       |
+| \_amounts | uint256[]                | number of \_collateralAssets being removed from the user&#x27;s vault |
 
-### useCollateralBulk
+### useVaultsAssets
 
 ```solidity
-function useCollateralBulk(struct MarginVault.Vault _vault, uint256[] _amounts, uint256 _usedLongAmount, uint256[] _reservedCollateralValues) external
+function useVaultsAssets(struct MarginVault.Vault _vault, uint256[] _amounts, uint256 _usedLongAmount, uint256[] _reservedCollateralValues) external
 ```
-

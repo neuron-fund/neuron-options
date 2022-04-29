@@ -53,12 +53,12 @@ contract MarginCalculator is Ownable {
     }
 
     struct OTokenDetails {
-        address[] collaterals; // yvUSDC
-        uint256[] collateralsAmounts; // yvUSDC
-        uint256[] collateralsValues; // yvUSDC
-        uint256[] collateralsDecimals; // yvUSDC
-        address underlying; // WETH
-        address strikeAsset; // USDC
+        address[] collaterals;
+        uint256[] collateralsAmounts;
+        uint256[] collateralsValues;
+        uint256[] collateralsDecimals;
+        address underlying;
+        address strikeAsset;
         uint256 strikePrice;
         uint256 expiry;
         bool isPut;
@@ -108,7 +108,7 @@ contract MarginCalculator is Ownable {
     function getExpiredPayoutRate(address _otoken) public view returns (uint256[] memory collateralsPayoutRate) {
         require(_otoken != address(0), "MarginCalculator: Invalid token address");
 
-        OTokenDetails memory oTokenDetails = _getOtokenDetailsFull(_otoken);
+        OTokenDetails memory oTokenDetails = _getOtokenDetailsStruct(_otoken);
 
         require(block.timestamp >= oTokenDetails.expiry, "MarginCalculator: Otoken not expired yet");
 
@@ -482,15 +482,8 @@ contract MarginCalculator is Ownable {
     }
 
     /**
-     * @dev check if asset array contain a token address
-     * @return True if the array is not empty
-     */
-    function _isNotEmpty(address[] memory _assets) internal pure returns (bool) {
-        return _assets.length > 0 && _assets[0] != address(0);
-    }
-
-    /**
-     * @dev if there is a short option and a long option in the vault, ensure that the long option is able to be used as collateral for the short option
+     * @notice if there is a short option and a long option in the vault,
+     * ensure that the long option is able to be used as collateral for the short option
      * @param _vault the vault to check
      * @return true if long is marginable or false if not
      */
@@ -499,8 +492,8 @@ contract MarginCalculator is Ownable {
         if (_vault.longOtoken != address(0)) return true;
 
         // check if longCollateralAssets is same as shortCollateralAssets
-        OTokenDetails memory long = _getOtokenDetailsFull(longOtokenAddress);
-        OTokenDetails memory short = _getOtokenDetailsFull(_vault.shortOtoken);
+        OTokenDetails memory long = _getOtokenDetailsStruct(longOtokenAddress);
+        OTokenDetails memory short = _getOtokenDetailsStruct(_vault.shortOtoken);
 
         bool isSameLongCollaterals = keccak256(abi.encode(long.collaterals)) ==
             keccak256(abi.encode(short.collaterals));
@@ -552,7 +545,7 @@ contract MarginCalculator is Ownable {
     }
 
     /**
-     * @dev get otoken detail, from both otoken versions
+     * @dev get otoken detail
      */
     function _getOtokenDetails(address _otoken)
         internal
@@ -574,7 +567,10 @@ contract MarginCalculator is Ownable {
         return otoken.getOtokenDetails();
     }
 
-    function _getOtokenDetailsFull(address _otoken) internal view returns (OTokenDetails memory) {
+    /**
+     * @dev same as _getOtokenDetails but returns struct, usefull to avoid stack too deep
+     */
+    function _getOtokenDetailsStruct(address _otoken) internal view returns (OTokenDetails memory) {
         OTokenDetails memory oTokenDetails;
         (
             address[] memory collaterals, // yvUSDC
@@ -603,6 +599,11 @@ contract MarginCalculator is Ownable {
         return oTokenDetails;
     }
 
+    /**
+     * @dev return ratio which represends how much of already used collateral will be used after burn
+     * @param _vault the vault to use
+     * @param _shortBurnAmount amount of shorts to burn
+     */
     function getAfterBurnCollateralRatio(MarginVault.Vault memory _vault, uint256 _shortBurnAmount)
         external
         view
@@ -639,7 +640,8 @@ contract MarginCalculator is Ownable {
     }
 
     /**
-     * @notice calculates maximal short amount can be minted for collateral in a given vault
+     * @notice calculates maximal short amount can be minted for collateral and long in a given vault
+     * @param _vault the vault to check
      */
     function getMaxShortAmount(MarginVault.Vault memory _vault) external view returns (uint256) {
         VaultDetails memory vaultDetails = _getVaultDetails(_vault);
@@ -655,8 +657,10 @@ contract MarginCalculator is Ownable {
 
     /**
      * @notice calculates collateral required to mint amount of oToken for a given vault
+     * @param _vault the vault to check
+     * @param _shortAmount amount of short oToken to be covered by collateral
      */
-    function getCollateralRequired(MarginVault.Vault memory _vault, uint256 _shortAmount)
+    function _getCollateralsToCoverShort(MarginVault.Vault memory _vault, uint256 _shortAmount)
         external
         view
         returns (
@@ -668,9 +672,16 @@ contract MarginCalculator is Ownable {
     {
         VaultDetails memory vaultDetails = _getVaultDetails(_vault);
 
-        return _getCollateralRequired(vaultDetails, _shortAmount);
+        return _getCollateralsToCoverShort(vaultDetails, _shortAmount);
     }
 
+    /**
+     * @notice calculates how much value of collaterals denominated in strike asset
+     * required to mint short amount with for provided vault and long amounts available
+     * @param _vaultDetails details of the vault to calculate for
+     * @param _shortAmount short oToken amount to be covered
+     * @param _longAmount long oToken amount that can be used to cover short
+     */
     function _getValueRequired(
         VaultDetails memory _vaultDetails,
         uint256 _shortAmount,
@@ -691,7 +702,7 @@ contract MarginCalculator is Ownable {
                 _vaultDetails.longStrikePrice
             );
 
-        // Convert value to Strike asset for calls
+        // Convert value to strike asset for calls
         valueRequired = isPut
             ? valueRequired
             : _convertAmountOnLivePrice(valueRequired, _vaultDetails.underlyingAsset, _vaultDetails.strikeAsset);
@@ -699,9 +710,13 @@ contract MarginCalculator is Ownable {
     }
 
     /**
-     * @notice calculates collateral required to mint amount of oToken for a given vault
+     * @notice calculates collateral amounts, values required and used (including long)
+     * required to mint amount of oToken for a given vault
+     * @param _vaultDetails details of the vault to calculate for
+     * @param _shortAmount short oToken amount to be covered
+     * @return collateralsAmountsRequired, collateralsValuesRequired, collateralsAmountsUsed, collateralsValuesUsed
      */
-    function _getCollateralRequired(VaultDetails memory _vaultDetails, uint256 _shortAmount)
+    function _getCollateralsToCoverShort(VaultDetails memory _vaultDetails, uint256 _shortAmount)
         internal
         view
         returns (
@@ -725,7 +740,7 @@ contract MarginCalculator is Ownable {
             ,
             uint256[] memory collateralsAmountsUsed,
             uint256[] memory collateralsValuesUsed
-        ) = _calculateCollateralsRequired(_vaultDetails, valueRequired, toUseLongAmount);
+        ) = _getCollateralsToCoverValue(_vaultDetails, valueRequired, toUseLongAmount);
 
         return (
             collateralsAmountsRequired,
@@ -735,10 +750,18 @@ contract MarginCalculator is Ownable {
         );
     }
 
-    function _calculateCollateralsRequired(
+    /**
+     * @notice calculates vault's deposited collateral amounts and values
+     * required to cover provided value (denominated in strike asset) for a given vault
+     * @param _vaultDetails details of the vault to calculate for
+     * @param _valueRequired value required to cover, denominated in strike asset
+     * @param _toUseLongAmount long amounts that can be used to fully or partly cover the value
+     * @return collateralsAmountsRequired, collateralsValuesRequired, collateralsAmountsUsed, collateralsValuesUsed
+     */
+    function _getCollateralsToCoverValue(
         VaultDetails memory _vaultDetails,
         FPI.FixedPointInt memory _valueRequired,
-        FPI.FixedPointInt memory _usedLongAmount
+        FPI.FixedPointInt memory _toUseLongAmount
     )
         internal
         view
@@ -749,12 +772,13 @@ contract MarginCalculator is Ownable {
             uint256[] memory
         )
     {
-        // Create "higher" variable in stack same as function argument to prevent stack too deep error when accessing _valueRequired, same for _vaultDetails.collateralsDecimals
+        // Create "higher" variable in stack same as function argument to prevent stack too deep error
+        // when accessing _valueRequired, same for _vaultDetails.collateralsDecimals
         FPI.FixedPointInt memory valueRequired = _valueRequired;
 
         uint256[] memory collateralsDecimals = _vaultDetails.collateralsDecimals;
-        // availableCollateralsValues is how much worth available collateral in strike asset
-        // availableCollateralTotalValue - how much value totally available in vault in valueAsset
+        // availableCollateralsValues is how much worth each available collateral in strike asset
+        // availableCollateralTotalValue - how much value totally available in vault in strike asset
         (
             FPI.FixedPointInt[] memory availableCollateralsAmounts,
             FPI.FixedPointInt[] memory availableCollateralsValues,
@@ -767,21 +791,27 @@ contract MarginCalculator is Ownable {
 
         uint256 collateralsLength = _vaultDetails.collateralAssets.length;
 
-        uint256[] memory collateralsAmountsUsed;
-        uint256[] memory collateralsValuesUsed;
+        // collateralsAmountsUsed - is amounts of each collateral
+        // used to cover short, including collateral from long
+        uint256[] memory collateralsAmountsUsed = new uint256[](collateralsLength);
+        // collateralsValuesUsed - is value (in strike asset)
+        // of each collateral used to cover short, including collateral from long
+        uint256[] memory collateralsValuesUsed = new uint256[](collateralsLength);
         if (_vaultDetails.longOtoken != address(0)) {
             (collateralsAmountsUsed, collateralsValuesUsed) = _calculateOtokenCollaterizationsOfAmount(
                 _vaultDetails.longOtoken,
-                _usedLongAmount
+                _toUseLongAmount
             );
-        } else {
-            collateralsAmountsUsed = new uint256[](collateralsLength);
-            collateralsValuesUsed = new uint256[](collateralsLength);
         }
 
+        // collateralsAmountsRequired - is amounts of each collateral
+        // used to cover short which will be taken from vaults deposited collateral
         uint256[] memory collateralsAmountsRequired = new uint256[](collateralsLength);
+        // collateralsValuesRequired - is values (in strike asset)
+        // of each collateral used to cover short which will be taken from vaults deposited collateral
         uint256[] memory collateralsValuesRequired = new uint256[](collateralsLength);
 
+        // collaterizationRatio reporesents how much of vaults deposited collateral will be locked for covering short
         FPI.FixedPointInt memory collaterizationRatio = valueRequired.isGreaterThan(ZERO)
             ? valueRequired.div(availableCollateralTotalValue)
             : ZERO;
@@ -796,9 +826,6 @@ contract MarginCalculator is Ownable {
                     collateralsDecimals[i],
                     true
                 );
-            } else {
-                collateralsAmountsRequired[i] = 0;
-                collateralsValuesRequired[i] = 0;
             }
             collateralsAmountsUsed[i] = collateralsAmountsUsed[i].add(collateralsAmountsRequired[i]);
             collateralsValuesUsed[i] = collateralsValuesUsed[i].add(collateralsValuesRequired[i]);
@@ -807,6 +834,14 @@ contract MarginCalculator is Ownable {
         return (collateralsAmountsRequired, collateralsValuesRequired, collateralsAmountsUsed, collateralsValuesUsed);
     }
 
+    /**
+     * @notice calculates vault's available collateral amounts value and total value of all collateral
+     * not including value and amounts from vault's long, values are denominated in strike asset
+     * @param _vaultDetails details of the vault to calculate for
+     * @return availableCollateralsAmounts - amounts of collaterals available in vault
+     * availableCollateralsValues - how much worth available vaults collateral in strike asset
+     * availableCollateralTotalValue - how much value totally available in vault in valueAsset
+     */
     function _calculateVaultAvailableCollateralsValues(VaultDetails memory _vaultDetails)
         internal
         view
@@ -816,7 +851,7 @@ contract MarginCalculator is Ownable {
             FPI.FixedPointInt memory
         )
     {
-        address _valueAsset = _vaultDetails.strikeAsset;
+        address _strikeAsset = _vaultDetails.strikeAsset;
         address[] memory _collateralAssets = _vaultDetails.collateralAssets;
         uint256[] memory _unusedCollateralAmounts = _vaultDetails.availableCollateralAmounts;
         uint256[] memory _collateralsDecimals = _vaultDetails.collateralsDecimals;
@@ -824,11 +859,12 @@ contract MarginCalculator is Ownable {
         uint256 collateralsLength = _collateralAssets.length;
         // then we need arrays to use short otoken collateral constraints
         OtokenInterface short = OtokenInterface(_vaultDetails.shortOtoken);
+        // collateral constraints - is absolute amounts of collateral that can be used to cover corresponding short
+        // used to restrict high collaterization with risky assets
         uint256[] memory _shortCollateralConstraints = short.getCollateralConstraints();
+        // _shortCollateralsAmounts - amounts of existing collaterization of oToken by every collateral
         uint256[] memory _shortCollateralsAmounts = short.getCollateralsAmounts();
-        // availableCollateralsValues is how much worth available collateral in strike asset
         FPI.FixedPointInt[] memory availableCollateralsValues = new FPI.FixedPointInt[](collateralsLength);
-        // availableCollateralTotalValue - how much value totally available in vault in valueAsset
         FPI.FixedPointInt memory availableCollateralTotalValue;
 
         FPI.FixedPointInt[] memory availableCollateralsAmounts = new FPI.FixedPointInt[](collateralsLength);
@@ -840,19 +876,21 @@ contract MarginCalculator is Ownable {
             }
             availableCollateralsAmounts[i] = FPI.fromScaledUint(_unusedCollateralAmounts[i], _collateralsDecimals[i]);
 
+            // if this collateral token has constraint
             if (_shortCollateralConstraints[i] > 0) {
-                //if this collateral token has constraint
                 FPI.FixedPointInt memory maxAmount = FPI.fromScaledUint(
                     _shortCollateralConstraints[i].sub(_shortCollateralsAmounts[i]),
                     _collateralsDecimals[i]
                 );
+                // take min from constraint or this collateral avaialable
                 availableCollateralsAmounts[i] = FPI.min(maxAmount, availableCollateralsAmounts[i]);
             }
 
+            // convert amounts to value in strike asset by current price
             availableCollateralsValues[i] = _convertAmountOnLivePrice(
                 availableCollateralsAmounts[i],
                 _collateralAssets[i],
-                _valueAsset
+                _strikeAsset
             );
 
             availableCollateralTotalValue = availableCollateralTotalValue.add(availableCollateralsValues[i]);
@@ -934,6 +972,12 @@ contract MarginCalculator is Ownable {
         return (FPI.max(firstPart, secondPart), longAmountUsed);
     }
 
+    /**
+     * @dev calculates current oToken's amount collaterization with it's collaterals
+     * @return (collateralsAmountsUsed, collateralsValuesUsed)
+     * collateralsAmountsUsed - is amounts of each collateral used to cover oToken
+     * collateralsValuesUsed - is value (in strike asset) of each collateral used to cover oToken
+     */
     function _calculateOtokenCollaterizationsOfAmount(address _otoken, FPI.FixedPointInt memory _amount)
         internal
         view

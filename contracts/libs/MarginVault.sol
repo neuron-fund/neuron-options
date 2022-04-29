@@ -88,7 +88,7 @@ library MarginVault {
      * @param _vault vault to decrease short position in
      * @param _shortOtoken address of the _shortOtoken being reduced in the user's vault
      * @param _amount number of _shortOtoken being reduced in the user's vault
-     * @param _newCollateralRatio ratio representing how much of alreadt used collateral will be used after burn
+     * @param _newCollateralRatio ratio represents how much of already used collateral will be used after burn
      * @param _newUsedLongAmount new used long amount
      */
     function removeShort(
@@ -109,16 +109,16 @@ library MarginVault {
         freedCollateralAmounts = new uint256[](collateralAssetsLength);
         freedCollateralValues = new uint256[](collateralAssetsLength);
         uint256[] memory newAvailableCollateralAmounts = _vault.availableCollateralAmounts;
+        // If new short amount is zero, just free all reserved collateral
         if (newShortAmount == 0) {
             newAvailableCollateralAmounts = _vault.collateralAmounts;
-            for (uint256 i = 0; i < collateralAssetsLength; i++) {
-                newReservedCollateralAmounts[i] = 0;
-                newUsedCollateralValues[i] = 0;
-                freedCollateralAmounts[i] = _vault.reservedCollateralAmounts[i];
-                freedCollateralValues[i] = _vault.usedCollateralValues[i];
-            }
+
+            newReservedCollateralAmounts = new uint256[](collateralAssetsLength);
+            newUsedCollateralValues = new uint256[](collateralAssetsLength);
+            freedCollateralAmounts = _vault.reservedCollateralAmounts;
+            freedCollateralValues = _vault.usedCollateralValues;
         } else {
-            // usedLeftRatio is multiplier which is used to calculate the new used collateral values and used amounts
+            // _newCollateralRatio is multiplier which is used to calculate the new used collateral values and used amounts
             for (uint256 i = 0; i < collateralAssetsLength; i++) {
                 uint256 collateralDecimals = uint256(IERC20Metadata(_vault.collateralAssets[i]).decimals());
                 newReservedCollateralAmounts[i] = toFPImulAndBack(
@@ -146,6 +146,9 @@ library MarginVault {
         _vault.usedLongAmount = _newUsedLongAmount;
     }
 
+    /**
+     * @dev helper function to transform uint256 to FPI multiply by another FPI and transform back to uint256
+     */
     function toFPImulAndBack(
         uint256 _value,
         uint256 _decimals,
@@ -232,7 +235,15 @@ library MarginVault {
         _vault.availableCollateralAmounts = availableCollateralAmounts;
     }
 
-    function useCollateralBulk(
+    /**
+     * @dev decrease vaults avalaible collateral and long to update vaults used assets data
+     * used when vaults mint option to lock provided assets
+     * @param _vault vault to remove collateral from
+     * @param _amounts amount of collateral assets being locked in the user's vault
+     * @param _usedLongAmount amount of long oToken being locked in the user's vault
+     * @param _usedCollateralValues values of collaterals amounts being locked
+     */
+    function useVaultsAssets(
         Vault storage _vault,
         uint256[] memory _amounts,
         uint256 _usedLongAmount,

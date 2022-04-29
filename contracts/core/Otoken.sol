@@ -13,12 +13,13 @@ import {Constants} from "./Constants.sol";
 /**
  * @title Otoken
  * @notice Otoken is the ERC20 token for an option
- * @dev The Otoken inherits ERC20Upgradeable because we need to use the init instead of constructor
+ * @dev The Otoken inherits ERC20Upgradeable thats' why we need to use the init instead of constructor
  */
 contract Otoken is ERC20PermitUpgradeable {
     using SafeMath for uint256;
 
-    /// @notice total amount of minted oTokens, does not decrease on burn when otoken is redeemed, but decreases when burnOToken is called by vault owner
+    /// @notice total amount of minted oTokens, does not decrease on burn when otoken is redeemed
+    // but decreases when burnOToken is called by vault owner for correct calculations in MarginCalculator
     // used for calculating redeems and settles
     uint256 public collaterizedTotalAmount;
 
@@ -34,12 +35,12 @@ contract Otoken is ERC20PermitUpgradeable {
     /// @notice assets that is held as collateral against short/written options
     address[] public collateralAssets;
 
-    /// @notice amounts of collateralAssets used for collaterization of total supply of this oToken
-    /// updated upon every mint
+    /// @notice amounts of collateralAssets used for collaterization of collaterizedTotalAmount of this oToken
+    /// updated upon every mint and burn by vaults owners
     uint256[] public collateralsAmounts;
 
-    /// @notice value of collateral assets denominated in strike asset, used for mint total supply of this oToken
-    /// updated upon every mint
+    /// @notice value of collateral assets denominated in strike asset, used for mint collaterizedTotalAmount of this oToken
+    /// updated upon every mint and burn by vaults owners
     uint256[] public collateralsValues;
 
     /// @notice amounts of collateralConstraints used to limit the maximum number of untrusted collateral tokens (0 - no limit)
@@ -143,18 +144,30 @@ contract Otoken is ERC20PermitUpgradeable {
         );
     }
 
+    /**
+     * @dev helper function to get full array of collateral assets
+     */
     function getCollateralAssets() external view returns (address[] memory) {
         return collateralAssets;
     }
 
+    /**
+     * @dev helper function to get full array of collateral constraints
+     */
     function getCollateralConstraints() external view returns (uint256[] memory) {
         return collateralConstraints;
     }
 
+    /**
+     * @dev helper function to get full array of collateral amounts
+     */
     function getCollateralsAmounts() external view returns (uint256[] memory) {
         return collateralsAmounts;
     }
 
+    /**
+     * @dev helper function to get full array of collateral values
+     */
     function getCollateralsValues() external view returns (uint256[] memory) {
         return collateralsValues;
     }
@@ -212,6 +225,10 @@ contract Otoken is ERC20PermitUpgradeable {
         _burn(account, amount);
     }
 
+    /**
+     * @notice reduces collaterization amounts and values of oToken, used when oToken is burned by vault's owner
+     * @dev Controller only method where access control is taken care of by _beforeTokenTransfer hook
+     */
     function reduceCollaterization(
         uint256[] calldata collateralsAmountsForReduce,
         uint256[] calldata collateralsValuesForReduce,
