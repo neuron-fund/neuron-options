@@ -18,7 +18,6 @@ import '@nomiclabs/hardhat-solhint'
 import 'hardhat-contract-sizer'
 import { getHardhatAccounts } from './utils/accounts'
 import '@nomiclabs/hardhat-truffle5'
-import 'solidity-docgen';
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -91,13 +90,6 @@ const config: HardhatUserConfig = {
       default: 16,
     },
   },
-  docgen: {
-    outputDir: 'docs',
-    pages: 'files', // 'single' 'items' 'files'
-    theme: 'markdown',
-    collapseNewlines: true,
-    pageExtension: '.md',
-  }
 }
 
 export default config

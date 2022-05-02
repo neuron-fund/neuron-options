@@ -166,39 +166,6 @@ contract MarginCalculator is Ownable {
     }
 
     /**
-     * @notice returns the cash value of provided amount of assets on expiry price, denominated in usd
-     * @param _assets - array of addresses of assets
-     * @param _assetsAmounts - amounts of assets, should be same length array as assets
-     * @param _expiry - timestamp to get price at
-     * @return totalValue - total value in usd of all provided assets
-     */
-    // function getAssetsTotalValueExpiry(
-    //     address[] memory _assets,
-    //     uint256[] memory _assetsAmounts,
-    //     uint256 _expiry
-    // ) internal view returns (FPI.FixedPointInt memory totalValue) {
-    //     for (uint256 i = 0; i < _assets.length; i++) {
-    //         uint256 assetDecimals = uint256(IERC20Metadata(_assets[i]).decimals());
-    //         (uint256 price, bool priceFinalized) = oracle.getExpiryPrice(_assets[i], _expiry);
-    //         require(priceFinalized, "MarginCalculator: price at expiry not finalized yet");
-    //         totalValue = totalValue.add(
-    //             FPI.fromScaledUint(price, BASE).mul(FPI.fromScaledUint(_assetsAmounts[i], assetDecimals))
-    //         );
-    //     }
-    // }
-
-    /**
-      @notice return the amounts of collateral from the vault to use for minting amount of onToken
-     */
-    // structs to avoid stack too deep error
-    // struct to store shortAmount, shortStrike and shortUnderlyingPrice scaled to 1e27
-    struct ShortScaledDetails {
-        FPI.FixedPointInt shortAmount;
-        FPI.FixedPointInt shortStrike;
-        FPI.FixedPointInt shortUnderlyingPrice;
-    }
-
-    /**
      * @notice returns the amount of collateral that can be removed from an actual or a theoretical vault
      * @dev return amount is denominated in the collateral asset for the onToken in the vault, or the collateral asset in the vault
      * @param _vault theoretical vault that needs to be checked
@@ -338,20 +305,6 @@ contract MarginCalculator is Ownable {
         return _getCashValue(strikePrice, underlyingPriceInStrike, _isPut);
     }
 
-    /// @dev added this struct to avoid stack-too-deep error
-    struct ONtokenDetails {
-        address[] collateralAssets;
-        uint256[] collateralsAmounts;
-        uint256[] collateralsValues;
-        uint256[] collateralsDecimals;
-        address underlyingAsset;
-        address strikeAsset;
-        uint256 strikePrice;
-        uint256 expiryTimestamp;
-        bool isPut;
-        uint256 collaterizedTotalAmount;
-    }
-
     /**
      * @notice convert an amount in asset A to equivalent amount of asset B, based on a live price
      * @dev function includes the amount and applies .mul() first to increase the accuracy
@@ -460,30 +413,7 @@ contract MarginCalculator is Ownable {
 
         ) = _getONtokenDetails(address(short));
 
-        /*
-        vaultDetails.collateralsDecimals = new uint256[](_vault.collateralAssets.length);
-        for (uint256 i = 0; i < _vault.collateralAssets.length; i++) {
-            vaultDetails.collateralsDecimals[i] = uint256(IERC20Metadata(_vault.collateralAssets[i]).decimals());
-        }
-        */
-
         return vaultDetails;
-    }
-
-    /**
-     * @dev calculate the cash value obligation for an expired vault, where a positive number is an obligation
-     *
-     * Formula: net = (short cash value * short amount) - ( long cash value * long Amount )
-     *
-     * @return cash value obligation denominated in the strike asset
-     */
-    function _getExpiredSpreadCashValue(
-        FPI.FixedPointInt memory _shortAmount,
-        FPI.FixedPointInt memory _longAmount,
-        FPI.FixedPointInt memory _shortCashValue,
-        FPI.FixedPointInt memory _longCashValue
-    ) internal pure returns (FPI.FixedPointInt memory) {
-        return _shortCashValue.mul(_shortAmount).sub(_longCashValue.mul(_longAmount));
     }
 
     /**
@@ -516,23 +446,6 @@ contract MarginCalculator is Ownable {
             long.expiry == short.expiry &&
             long.strikePrice != short.strikePrice &&
             long.isPut == short.isPut;
-    }
-
-    /**
-     * @notice get a product hash
-     * @param _underlying option underlying asset
-     * @param _strike option strike asset
-     * @param _collaterals option collateral asset
-     * @param _isPut option type
-     * @return product hash
-     */
-    function _getProductHash(
-        address _underlying,
-        address _strike,
-        address[] memory _collaterals,
-        bool _isPut
-    ) internal pure returns (bytes32) {
-        return keccak256(abi.encode(_underlying, _strike, _collaterals, _isPut));
     }
 
     /**
@@ -582,12 +495,12 @@ contract MarginCalculator is Ownable {
     function _getONtokenDetailsStruct(address _onToken) internal view returns (ONTokenDetails memory) {
         ONTokenDetails memory onTokenDetails;
         (
-            address[] memory collaterals, // yvUSDC
+            address[] memory collaterals,
             uint256[] memory collateralsAmounts,
             uint256[] memory collateralsValues,
             uint256[] memory collateralsDecimals,
-            address underlying, // WETH
-            address strikeAsset, // USDC
+            address underlying,
+            address strikeAsset,
             uint256 strikePrice,
             uint256 expiry,
             bool isPut,
