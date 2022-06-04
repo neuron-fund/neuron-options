@@ -15,7 +15,6 @@ contract ActionTester {
     Actions.BurnArgs private burnArgs;
     Actions.RedeemArgs private redeemArgs;
     Actions.SettleVaultArgs private settleVaultArgs;
-    Actions.CallArgs private callArgs;
 
     function testParseDespositCollateralAction(Actions.ActionArgs memory _args) external {
         depositCollateralArgs = Actions._parseDepositCollateralArgs(_args);
@@ -48,7 +47,6 @@ contract ActionTester {
     function getWithdrawLong() external view returns (Actions.WithdrawLongArgs memory) {
         return withdrawLongArgs;
     }
-
 
     function testParseOpenVaultAction(Actions.ActionArgs memory _args) external {
         openVaultArgs = Actions._parseOpenVaultArgs(_args);
@@ -88,13 +86,5 @@ contract ActionTester {
 
     function getBurnArgs() external view returns (Actions.BurnArgs memory) {
         return burnArgs;
-    }
-
-    function testParseCallAction(Actions.ActionArgs memory _args) external {
-        callArgs = Actions._parseCallArgs(_args);
-    }
-
-    function getCallArgs() external view returns (Actions.CallArgs memory) {
-        return callArgs;
     }
 }

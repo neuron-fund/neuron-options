@@ -167,13 +167,6 @@ library Actions {
         address to;
     }
 
-    struct CallArgs {
-        // address of the callee contract
-        address callee;
-        // data field for external calls
-        bytes data;
-    }
-
     /**
      * @notice parses the passed in action arguments to get the arguments for an open vault action
      * @param _args general action arguments structure
@@ -322,17 +315,5 @@ library Actions {
         require(_args.secondAddress != address(0), "A17");
 
         return SettleVaultArgs({owner: _args.owner, vaultId: _args.vaultId, to: _args.secondAddress});
-    }
-
-    /**
-     * @notice parses the passed in action arguments to get the arguments for a call action
-     * @param _args general action arguments structure
-     * @return arguments for a call action
-     */
-    function _parseCallArgs(ActionArgs memory _args) internal pure returns (CallArgs memory) {
-        require(_args.actionType == ActionType.Call, "A22");
-        require(_args.secondAddress != address(0), "A23");
-
-        return CallArgs({callee: _args.secondAddress, data: _args.data});
     }
 }

@@ -35,37 +35,24 @@ import {FPI} from "../libs/FixedPointInt256.sol";
  * C11: partialPauser cannot be set to address zero
  * C12: can not run actions for different owners
  * C13: can not run actions on different vaults
- * C14: invalid final vault state
- * C15: can not run actions on inexistent vault
- * C16: cannot deposit long onToken from this address
- * C17: onToken is not whitelisted to be used as collateral
- * C18: onToken used as collateral is already expired
- * C19: can not withdraw an expired onToken
- * C20: cannot deposit collateral from this address
- * C21: asset is not whitelisted to be used as collateral
- * C22: can not withdraw collateral from a vault with an expired short onToken
- * C23: onToken is not whitelisted to be minted
- * C24: can not mint expired onToken
- * C25: cannot burn from this address
- * C26: can not burn expired onToken
- * C27: onToken is not whitelisted to be redeemed
- * C28: can not redeem un-expired onToken
- * C29: asset prices not finalized yet
- * C30: can't settle vault with no onToken
- * C31: can not settle vault with un-expired onToken
- * C32: can not settle undercollateralized vault
- * C33: can not liquidate vault
- * C34: can not leave less than collateral dust
- * C35: invalid vault id
- * C36: cap amount should be greater than zero
- * C37: collateral exceed naked margin cap
- * C38: assets and amounts length must be the same
- * C39: vault is not associated with onToken
- * C40: assets array should be the same as associated onToken collateralAssets array
- * C41: onToken is not associated with vault
- * C42: vault does not have long to withdraw
- * C43: vault has no collateral to mint onToken
- * C44: deposit/withdraw collateral amounts should be same length as collateral assets amount for correspoding vault short
+ * C14: can not run actions on inexistent vault
+ * C15: cannot deposit long onToken from this address
+ * C16: onToken is not whitelisted to be used as collateral
+ * C17: can not withdraw an expired onToken
+ * C18: cannot deposit collateral from this address
+ * C19: onToken is not whitelisted
+ * C20: can not mint expired onToken
+ * C21: can not burn expired onToken
+ * C22: onToken is not whitelisted to be redeemed
+ * C23: can not redeem un-expired onToken
+ * C24: asset prices not finalized yet
+ * C25: can not settle vault with un-expired onToken
+ * C26: invalid vault id
+ * C27: vault does not have long to withdraw
+ * C28: vault has no collateral to mint onToken
+ * C29: deposit/withdraw collateral amounts should be same length as collateral assets amount for correspoding vault short
+ * C30: donate asset adress is zero
+ * C31: donate asset is one of collaterls in associated onToken
  */
 
 /**
@@ -82,9 +69,6 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     OracleInterface public oracle;
     MarginCalculatorInterface public calculator;
     MarginPoolInterface public pool;
-
-    ///@dev scale used in MarginCalculator and decimals of onToken
-    uint256 internal constant BASE = 8;
 
     /// @notice address that has permission to partially pause the system, where system functionality is paused
     /// except redeem and settleVault
@@ -251,7 +235,6 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
      */
     modifier onlyWhitelistedCallee(address _callee) {
         if (callRestricted) {
-            // require(_isCalleeWhitelisted(_callee), "C3");
             require(whitelist.isWhitelistedCallee(_callee), "C3");
         }
 
@@ -305,8 +288,28 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
      * @dev use donate() instead of direct transfer() to store the balance in assetBalance
      * @param _asset asset address
      * @param _amount amount to donate to pool
+     * @param _onToken to donate _asset for
      */
-    function donate(address _asset, uint256 _amount) external {
+    function donate(
+        address _asset,
+        uint256 _amount,
+        address _onToken
+    ) external {
+        require(_asset != address(0), "C30");
+        require(whitelist.isWhitelistedONtoken(_onToken), "C19");
+
+        address[] memory _collateralAssets = ONtokenInterface(_onToken).getCollateralAssets();
+
+        bool isCollateralAsset = false;
+        for (uint256 i = 0; i < _collateralAssets.length; i++) {
+            if (_collateralAssets[i] == _asset) {
+                isCollateralAsset = true;
+                break;
+            }
+        }
+
+        require(isCollateralAsset, "C31");
+
         pool.transferToPool(_asset, msg.sender, _amount);
 
         emit Donated(msg.sender, _asset, _amount);
@@ -410,17 +413,6 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @notice sync vault latest update timestamp
-     * @dev anyone can update the latest time the vault was touched by calling this function
-     * vaultLatestUpdate will sync if the vault is well collateralized
-     * @param _owner vault owner address
-     * @param _vaultId vault id
-     */
-    function sync(address _owner, uint256 _vaultId) external nonReentrant notFullyPaused {
-        vaultLatestUpdate[_owner][_vaultId] = block.timestamp;
-    }
-
-    /**
      * @notice check if a specific address is an operator for an owner account
      * @param _owner account owner address
      * @param _operator account operator address
@@ -503,11 +495,7 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
             // actions except Settle, Redeem, Liquidate and Call are "Vault-updating actions"
             // only allow update 1 vault in each operate call
-            if (
-                (actionType != Actions.ActionType.SettleVault) &&
-                (actionType != Actions.ActionType.Redeem) &&
-                (actionType != Actions.ActionType.Call)
-            ) {
+            if ((actionType != Actions.ActionType.SettleVault) && (actionType != Actions.ActionType.Redeem)) {
                 // check if this action is manipulating the same vault as all other actions, if a vault has already been updated
                 if (vaultUpdated) {
                     require(vaultOwner == action.owner, "C12");
@@ -536,8 +524,6 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
                 _redeem(Actions._parseRedeemArgs(action));
             } else if (actionType == Actions.ActionType.SettleVault) {
                 _settleVault(Actions._parseSettleVaultArgs(action));
-            } else if (actionType == Actions.ActionType.Call) {
-                _call(Actions._parseCallArgs(action));
             }
         }
 
@@ -556,8 +542,8 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     {
         uint256 vaultId = accountVaultCounter[_args.owner].add(1);
 
-        require(_args.vaultId == vaultId, "C15");
-        require(whitelist.isWhitelistedONtoken(_args.shortONtoken), "C23");
+        require(_args.vaultId == vaultId, "C14");
+        require(whitelist.isWhitelistedONtoken(_args.shortONtoken), "C19");
 
         ONtokenInterface onToken = ONtokenInterface(_args.shortONtoken);
 
@@ -590,11 +576,11 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         notPartiallyPaused
         onlyAuthorized(msg.sender, _args.owner)
     {
-        require(_checkVaultId(_args.owner, _args.vaultId), "C35");
+        require(_checkVaultId(_args.owner, _args.vaultId), "C26");
         // only allow vault owner or vault operator to deposit long onToken
-        require((_args.from == msg.sender) || (_args.from == _args.owner), "C16");
+        require((_args.from == msg.sender) || (_args.from == _args.owner), "C15");
 
-        require(whitelist.isWhitelistedONtoken(_args.longONtoken), "C17");
+        require(whitelist.isWhitelistedONtoken(_args.longONtoken), "C16");
 
         // Check if short and long onTokens params are matched,
         // they must be they should differ only in strike value
@@ -619,15 +605,15 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         notPartiallyPaused
         onlyAuthorized(msg.sender, _args.owner)
     {
-        require(_checkVaultId(_args.owner, _args.vaultId), "C35");
+        require(_checkVaultId(_args.owner, _args.vaultId), "C26");
 
         address onTokenAddress = vaults[_args.owner][_args.vaultId].longONtoken;
-        require(onTokenAddress == address(0), "C42");
+        require(onTokenAddress != address(0), "C27");
 
         ONtokenInterface onToken = ONtokenInterface(vaults[_args.owner][_args.vaultId].longONtoken);
 
         // Can't withdraw after expiry, should call settleVault to execute long
-        require(block.timestamp < onToken.expiryTimestamp(), "C19");
+        require(block.timestamp < onToken.expiryTimestamp(), "C17");
 
         vaults[_args.owner][_args.vaultId].removeLong(onTokenAddress, _args.amount);
 
@@ -646,13 +632,13 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         notPartiallyPaused
         onlyAuthorized(msg.sender, _args.owner)
     {
-        require(_checkVaultId(_args.owner, _args.vaultId), "C35");
+        require(_checkVaultId(_args.owner, _args.vaultId), "C26");
         // only allow vault owner or vault operator to deposit collateral
-        require((_args.from == msg.sender) || (_args.from == _args.owner), "C20");
+        require((_args.from == msg.sender) || (_args.from == _args.owner), "C18");
 
         address[] memory collateralAssets = vaults[_args.owner][_args.vaultId].collateralAssets;
         uint256 collateralsLength = collateralAssets.length;
-        require(collateralsLength == _args.amounts.length, "C44");
+        require(collateralsLength == _args.amounts.length, "C29");
 
         for (uint256 i = 0; i < collateralsLength; i++) {
             if (_args.amounts[i] > 0) {
@@ -679,7 +665,7 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         notPartiallyPaused
         onlyAuthorized(msg.sender, _args.owner)
     {
-        require(_checkVaultId(_args.owner, _args.vaultId), "C35");
+        require(_checkVaultId(_args.owner, _args.vaultId), "C26");
 
         (MarginVault.Vault memory vault, ) = getVaultWithDetails(_args.owner, _args.vaultId);
 
@@ -717,21 +703,23 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         notPartiallyPaused
         onlyAuthorized(msg.sender, _args.owner)
     {
-        require(_checkVaultId(_args.owner, _args.vaultId), "C35");
+        require(_checkVaultId(_args.owner, _args.vaultId), "C26");
 
-        address vaultShortONtoken = vaults[_args.owner][_args.vaultId].shortONtoken;
+        MarginVault.Vault storage vault = vaults[_args.owner][_args.vaultId];
+
+        address vaultShortONtoken = vault.shortONtoken;
 
         ONtokenInterface onToken = ONtokenInterface(vaultShortONtoken);
-        require(block.timestamp < onToken.expiryTimestamp(), "C24");
+        require(block.timestamp < onToken.expiryTimestamp(), "C20");
 
         // Mint maximum possible shorts if zero
         if (_args.amount == 0) {
-            _args.amount = calculator.getMaxShortAmount(vaults[_args.owner][_args.vaultId]);
+            _args.amount = calculator.getMaxShortAmount(vault);
         }
 
         // If amount is still zero must be not enough collateral to mint any short
         if (_args.amount == 0) {
-            revert("C43");
+            revert("C28");
         }
 
         // collateralsValuesRequired - is value of each collateral used for minting onToken in strike asset,
@@ -743,16 +731,12 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             uint256[] memory collateralsAmountsUsed,
             uint256[] memory collateralsValuesUsed,
             uint256 usedLongAmount
-        ) = calculator.getCollateralsToCoverShort(vaults[_args.owner][_args.vaultId], _args.amount);
+        ) = calculator.getCollateralsToCoverShort(vault, _args.amount);
         onToken.mintONtoken(_args.to, _args.amount, collateralsAmountsUsed, collateralsValuesUsed);
-        vaults[_args.owner][_args.vaultId].addShort(vaultShortONtoken, _args.amount);
+        vault.addShort(_args.amount);
         // Updates vault's data regarding used and available collaterals,
         // and used collaterals values for later calculations on vault settlement
-        vaults[_args.owner][_args.vaultId].useVaultsAssets(
-            collateralsAmountsRequired,
-            usedLongAmount,
-            collateralsValuesUsed
-        );
+        vault.useVaultsAssets(collateralsAmountsRequired, usedLongAmount, collateralsValuesUsed);
 
         emit ShortONtokenMinted(vaultShortONtoken, _args.owner, _args.to, _args.vaultId, _args.amount);
     }
@@ -768,12 +752,12 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         onlyAuthorized(msg.sender, _args.owner)
     {
         // check that vault id is valid for this vault owner
-        require(_checkVaultId(_args.owner, _args.vaultId), "C35");
+        require(_checkVaultId(_args.owner, _args.vaultId), "C26");
         address onTokenAddress = vaults[_args.owner][_args.vaultId].shortONtoken;
         ONtokenInterface onToken = ONtokenInterface(onTokenAddress);
 
         // do not allow burning expired onToken
-        require(block.timestamp < onToken.expiryTimestamp(), "C26");
+        require(block.timestamp < onToken.expiryTimestamp(), "C21");
 
         onToken.burnONtoken(_args.owner, _args.amount);
 
@@ -788,7 +772,7 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         );
         (uint256[] memory freedCollateralAmounts, uint256[] memory freedCollateralValues) = vaults[_args.owner][
             _args.vaultId
-        ].removeShort(onTokenAddress, _args.amount, collateralRatio, newUsedLongAmount);
+        ].removeShort(_args.amount, collateralRatio, newUsedLongAmount);
 
         // Update onToken info regarding collaterization after burn
         onToken.reduceCollaterization(freedCollateralAmounts, freedCollateralValues, _args.amount);
@@ -805,17 +789,17 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         ONtokenInterface onToken = ONtokenInterface(_args.onToken);
 
         // check that onToken to redeem is whitelisted
-        require(whitelist.isWhitelistedONtoken(_args.onToken), "C27");
+        require(whitelist.isWhitelistedONtoken(_args.onToken), "C22");
 
         (address[] memory collaterals, address underlying, address strike, uint256 expiry) = _getONtokenDetails(
             address(onToken)
         );
 
         // only allow redeeming expired onToken
-        require(block.timestamp >= expiry, "C28");
+        require(block.timestamp >= expiry, "C23");
 
         // Check prices are finalised
-        require(canSettleAssets(underlying, strike, collaterals, expiry), "C29");
+        require(canSettleAssets(underlying, strike, collaterals, expiry), "C24");
 
         uint256[] memory payout = calculator.getPayout(_args.onToken, _args.amount);
 
@@ -836,7 +820,7 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
      * @param _args SettleVaultArgs structure
      */
     function _settleVault(Actions.SettleVaultArgs memory _args) internal onlyAuthorized(msg.sender, _args.owner) {
-        require(_checkVaultId(_args.owner, _args.vaultId), "C35");
+        require(_checkVaultId(_args.owner, _args.vaultId), "C26");
 
         (MarginVault.Vault memory vault, ) = getVaultWithDetails(_args.owner, _args.vaultId);
 
@@ -864,8 +848,8 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         );
 
         // do not allow settling vault with un-expired onToken
-        require(block.timestamp >= expiry, "C31");
-        require(canSettleAssets(underlying, strike, collaterals, expiry), "C29");
+        require(block.timestamp >= expiry, "C25");
+        require(canSettleAssets(underlying, strike, collaterals, expiry), "C24");
 
         uint256[] memory payouts = calculator.getExcessCollateral(vault);
 
@@ -884,17 +868,6 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @notice execute arbitrary calls
-     * @dev cannot be called when system is partiallyPaused or fullyPaused
-     * @param _args Call action
-     */
-    function _call(Actions.CallArgs memory _args) internal notPartiallyPaused onlyWhitelistedCallee(_args.callee) {
-        CalleeInterface(_args.callee).callFunction(payable(msg.sender), _args.data);
-
-        emit CallExecuted(msg.sender, _args.callee, _args.data);
-    }
-
-    /**
      * @notice check if a vault id is valid for a given account owner address
      * @param _accountOwner account owner address
      * @param _vaultId vault id to check
@@ -905,17 +878,11 @@ contract Controller is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @notice return if a callee address is whitelisted or not
-     * @param _callee callee address
-     * @return True if callee address is whitelisted, False if not
-     */
-    function _isCalleeWhitelisted(address _callee) internal view returns (bool) {
-        return whitelist.isWhitelistedCallee(_callee);
-    }
-
-    /**
      * @dev get onToken detail
-     * @return onToken collaterals, underlying, strike, expiry
+     * @return collaterals, of onToken
+     * @return underlying, of onToken
+     * @return strike, of onToken
+     * @return expiry, of onToken
      */
     function _getONtokenDetails(address _onToken)
         internal

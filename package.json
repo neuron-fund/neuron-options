@@ -7,10 +7,10 @@
     "start": "npx hardhat node --hostname 0.0.0.0",
     "test": "FORK_BLOCK_NUMBER=13719189 npx hardhat test",
     "docgen": "rm -rf ./docs && npx solidity-docgen --solc-module solc && rm -r ./docs/@* ./docs/mocks ./docs/tests ./docs/hardhat ./docs/Migr* && node ./utils/refine_docs.js",
-    "unit-tests": "npx hardhat test ./test/unit_tests/* --config ./hardhat_test.config.ts",
+    "unit-tests": "npx hardhat test ./test/unit_tests/* --config ./hardhat.config.ts",
     "e2e-tests": "npx hardhat test ./test/e2e/*",
     "start-local-fork": "FORK_BLOCK_NUMBER=13719189 npx hardhat node --no-deploy",
-    "start-local": "npx hardhat node --config ./hardhat_test.config.ts",
+    "start-local": "npx hardhat node --config ./hardhat.config.ts",
     "size-contracts": "OPTIMIZER=200 npx hardhat compile --quiet --no-typechain && npx hardhat size-contracts",
     "watch-size": "watch 'npm run size-contracts' ./contracts",
     "prepare": "husky install"

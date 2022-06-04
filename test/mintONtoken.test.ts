@@ -15,6 +15,7 @@ describe('Mint ONtoken', function () {
 
     const onTokenParams: CreateONtokenParamsObject = {
       collateralAssets: [USDC, DAI],
+      collateralConstraints: [0, 0],
       underlyingAsset: WETH,
       strikeAsset: USDC,
       strikePriceFormatted: 3800,

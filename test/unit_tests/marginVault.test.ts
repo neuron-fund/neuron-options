@@ -87,7 +87,7 @@ contract('MarginVault', ([deployer, controller]) => {
     it('should add short onTokens', async () => {
       const vaultCounter = BigNumber.from(0)
 
-      await marginVaultTester.testAddShort(vaultCounter, onToken.address, 10)
+      await marginVaultTester.testAddShort(vaultCounter,  10)
       const vault = await marginVaultTester.getVault(vaultCounter)
       assert.equal(vault.shortAmount.toString(), BigNumber.from(10).toString())
     })
@@ -95,13 +95,7 @@ contract('MarginVault', ([deployer, controller]) => {
     it('should revert when adding 0 short', async () => {
       const vaultCounter = BigNumber.from(0)
 
-      await expectRevert(marginVaultTester.testAddShort(vaultCounter, onToken.address, 0), 'V1')
-    })
-
-    it('should revert V10 when trying to add second short onToken', async () => {
-      const vaultCounter = BigNumber.from(0)
-
-      await expectRevert(marginVaultTester.testAddShort(vaultCounter, onToken2.address, 12), 'V10')
+      await expectRevert(marginVaultTester.testAddShort(vaultCounter,  0), 'V1')
     })
   })
 
@@ -112,7 +106,7 @@ contract('MarginVault', ([deployer, controller]) => {
       const vaultBefore = await marginVaultTester.getVault(vaultCounter)
       const fpiZero: FixedPointIntStruct = { value: BigNumber.from(0) }
 
-      await marginVaultTester.testRemoveShort(vaultCounter, onToken.address, toRemove, fpiZero, 0)
+      await marginVaultTester.testRemoveShort(vaultCounter, toRemove, fpiZero, 0)
       const vaultAfter = await marginVaultTester.getVault(vaultCounter)
 
       assert.equal(
@@ -128,7 +122,7 @@ contract('MarginVault', ([deployer, controller]) => {
       const toRemove = vaultBefore.shortAmount
       const fpiZero: FixedPointIntStruct = { value: BigNumber.from(0) }
 
-      await marginVaultTester.testRemoveShort(vaultCounter, onToken.address, toRemove, fpiZero, 0)
+      await marginVaultTester.testRemoveShort(vaultCounter, toRemove, fpiZero, 0)
       const vaultAfter = await marginVaultTester.getVault(vaultCounter)
 
       assert.equal(
@@ -140,12 +134,6 @@ contract('MarginVault', ([deployer, controller]) => {
       assert.equal(BigNumber.from(vaultAfter.shortAmount).toString(), '0', 'resutl amount should be 0')
 
       //  assert.equal(vaultAfter.shortONtoken, ZERO_ADDR, 'short otken address mismatch')
-    })
-
-    it('should revert when trying to remove wrong short onToken', async () => {
-      const fpiZero: FixedPointIntStruct = { value: BigNumber.from(0) }
-      const vaultCounter = BigNumber.from(0)
-      await expectRevert(marginVaultTester.testRemoveShort(vaultCounter, onToken2.address, 1, fpiZero, 0), 'V3')
     })
   })
 

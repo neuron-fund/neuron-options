@@ -64,42 +64,27 @@ library MarginVault {
     /**
      * @dev increase the short onToken balance in a vault when a new onToken is minted
      * @param _vault vault to add or increase the short position in
-     * @param _shortONtoken address of the _shortONtoken being minted from the user's vault
      * @param _amount number of _shortONtoken being minted from the user's vault
      */
-    function addShort(
-        Vault storage _vault,
-        address _shortONtoken,
-        uint256 _amount
-    ) external {
+    function addShort(Vault storage _vault, uint256 _amount) external {
         require(_amount > 0, "V1");
-        require(_vault.shortONtoken == address(0) || _vault.shortONtoken == _shortONtoken, "V10");
-
-        if (_vault.shortONtoken == _shortONtoken) {
-            _vault.shortAmount = _vault.shortAmount.add(_amount);
-        } else {
-            _vault.shortONtoken = _shortONtoken;
-            _vault.shortAmount = _amount;
-        }
+        _vault.shortAmount = _vault.shortAmount.add(_amount);
     }
 
     /**
      * @dev decrease the short onToken balance in a vault when an onToken is burned
      * @param _vault vault to decrease short position in
-     * @param _shortONtoken address of the _shortONtoken being reduced in the user's vault
      * @param _amount number of _shortONtoken being reduced in the user's vault
      * @param _newCollateralRatio ratio represents how much of already used collateral will be used after burn
      * @param _newUsedLongAmount new used long amount
      */
     function removeShort(
         Vault storage _vault,
-        address _shortONtoken,
         uint256 _amount,
         FPI.FixedPointInt memory _newCollateralRatio,
         uint256 _newUsedLongAmount
     ) external returns (uint256[] memory freedCollateralAmounts, uint256[] memory freedCollateralValues) {
         // check that the removed short onToken exists in the vault
-        require(_vault.shortONtoken == _shortONtoken, "V3");
 
         uint256 newShortAmount = _vault.shortAmount.sub(_amount);
         uint256 collateralAssetsLength = _vault.collateralAssets.length;

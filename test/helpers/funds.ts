@@ -8,7 +8,7 @@ export const whales = {
   [DAI]: '0x5a16552f59ea34e44ec81e58b3817833e9fd5436',
   [USDT]: '0x5754284f345afc66a98fbb0a0afe71e0f007b949',
   [CRV_CVX_ETH]: '0x38ee5f5a39c01cb43473992c12936ba1219711ab',
-  [LIDO_ST_ETH]: '0x3BA21b6477F48273f41d241AA3722FFb9E07E247',
+  [LIDO_ST_ETH]: '0x06601571AA9D3E8f5f7CDd5b993192618964bAB5',
 } as const
 
 export type AseetsWithWhales = keyof typeof whales

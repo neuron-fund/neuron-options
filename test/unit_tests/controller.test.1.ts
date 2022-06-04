@@ -215,7 +215,7 @@ contract(
             vaultId: '0',
           }),
         ]
-        await expectRevert(controllerProxy.operate(actionArgs, { from: accountOwner1 }), 'C15')
+        await expectRevert(controllerProxy.operate(actionArgs, { from: accountOwner1 }), 'C14')
       })
 
       it('should revert opening vault with not whitelisted token', async () => {
@@ -227,7 +227,7 @@ contract(
           }),
         ]
 
-        await expectRevert(controllerProxy.operate(actionArgs, { from: accountOwner1 }), 'C23')
+        await expectRevert(controllerProxy.operate(actionArgs, { from: accountOwner1 }), 'C19')
       })
 
       it('should revert opening multiple vaults in the same operate call', async () => {
@@ -257,7 +257,7 @@ contract(
           }),
         ]
 
-        await expectRevert(controllerProxy.operate(actionArgs, { from: accountOwner1 }), 'C15') //'A3')
+        await expectRevert(controllerProxy.operate(actionArgs, { from: accountOwner1 }), 'C14') //'A3')
       })
 
       it('should revert opening multiple vaults for different owners in the same operate call', async () => {
@@ -365,30 +365,6 @@ contract(
         callTester = await CallTester.new()
       })
 
-      it('should call any arbitrary destination address when restriction is not activated', async () => {
-        //whitelist callee before call action
-        await whitelist.whitelistCallee(callTester.address, { from: owner })
-
-        const actionArgs = [
-          {
-            actionType: ActionType.Call,
-            owner: ZERO_ADDR,
-            secondAddress: callTester.address,
-            assets: [ZERO_ADDR],
-            vaultId: '0',
-            amounts: ['0'],
-            index: '0',
-            data: ZERO_ADDR,
-          },
-        ]
-
-        expectEvent(await controllerProxy.operate(actionArgs, { from: accountOwner1 }), 'CallExecuted', {
-          from: accountOwner1,
-          to: callTester.address,
-          data: ZERO_ADDR,
-        })
-      })
-
       it('should revert activating call action restriction from non-owner', async () => {
         await expectRevert(
           controllerProxy.setCallRestriction(true, { from: random }),
@@ -400,49 +376,6 @@ contract(
         await expectRevert(controllerProxy.setCallRestriction(true, { from: owner }), 'C9')
       })
 
-      it('should revert calling any arbitrary address when call restriction is activated', async () => {
-        const arbitraryTarget: CallTesterInstance = await CallTester.new()
-
-        const actionArgs = [
-          {
-            actionType: ActionType.Call,
-            owner: ZERO_ADDR,
-            secondAddress: arbitraryTarget.address,
-            assets: [ZERO_ADDR],
-            vaultId: '0',
-            amounts: ['0'],
-            index: '0',
-            data: ZERO_ADDR,
-          },
-        ]
-
-        await expectRevert(controllerProxy.operate(actionArgs, { from: accountOwner1 }), 'C3')
-      })
-
-      it('should call whitelisted callee address when restriction is activated', async () => {
-        // whitelist callee
-        await whitelist.whitelistCallee(callTester.address, { from: owner })
-
-        const actionArgs = [
-          {
-            actionType: ActionType.Call,
-            owner: ZERO_ADDR,
-            secondAddress: callTester.address,
-            assets: [ZERO_ADDR],
-            vaultId: '0',
-            amounts: ['0'],
-            index: '0',
-            data: ZERO_ADDR,
-          },
-        ]
-
-        expectEvent(await controllerProxy.operate(actionArgs, { from: accountOwner1 }), 'CallExecuted', {
-          from: accountOwner1,
-          to: callTester.address,
-          data: ZERO_ADDR,
-        })
-      })
-
       it('should deactivate call action restriction from owner', async () => {
         await controllerProxy.setCallRestriction(false, { from: owner })
 
@@ -451,37 +384,6 @@ contract(
 
       it('should revert deactivating call action restriction when it is already deactivated', async () => {
         await expectRevert(controllerProxy.setCallRestriction(false, { from: owner }), 'C9')
-      })
-    })
-
-    describe('Sync vault latest update timestamp', () => {
-      it('should update vault latest update timestamp', async () => {
-        const vaultCounter = await controllerProxy.accountVaultCounter(accountOwner1)
-        const timestampBefore = (await controllerProxy.getVaultWithDetails(accountOwner1, vaultCounter.toNumber()))[1]
-
-        await controllerProxy.sync(accountOwner1, vaultCounter.toNumber(), { from: random })
-
-        const timestampAfter = (await controllerProxy.getVaultWithDetails(accountOwner1, vaultCounter.toNumber()))[1]
-
-        assert.isAbove(
-          timestampAfter.toNumber(),
-          timestampBefore.toNumber(),
-          'Vault latest update timestamp did not sync'
-        )
-      })
-    })
-
-    describe('Donate to pool', () => {
-      it('it should donate to margin pool', async () => {
-        const amountToDonate = createTokenAmount(10, usdcDecimals)
-        const storedBalanceBefore = await marginPool.getStoredBalance(usdc.address)
-
-        await usdc.approve(marginPool.address, amountToDonate, { from: donor })
-        await controllerProxy.donate(usdc.address, amountToDonate, { from: donor })
-
-        const storedBalanceAfter = await marginPool.getStoredBalance(usdc.address)
-
-        assert.equal(storedBalanceAfter.sub(storedBalanceBefore).toString(), amountToDonate, 'Donated amount mismatch')
       })
     })
   }

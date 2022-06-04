@@ -287,7 +287,8 @@ contract Oracle is Ownable {
      * @dev if asset is a stable asset, will return stored price and timestamp equal to block.timestamp
      * @param _asset asset address to get it's historical price
      * @param _roundId chainlink round id
-     * @return price and round timestamp
+     * @return price
+     * @return round timestamp
      */
     function getChainlinkRoundData(address _asset, uint80 _roundId) external view returns (uint256, uint256) {
         uint256 price = stablePrice[_asset];

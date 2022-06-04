@@ -102,7 +102,7 @@ contract MarginCalculator is Ownable {
     /**
      * @notice return the cash value of an expired onToken, denominated in collateral
      * @param _onToken onToken address
-     * @return collateralsPayoutRate how much collateral can be taken out by 1 onToken unit, scaled by 1e8,
+     * @return collateralsPayoutRate - how much collateral can be taken out by 1 onToken unit, scaled by 1e8,
      * or how much collateral can be taken out for 1 (1e8) onToken
      */
     function getExpiredPayoutRate(address _onToken) public view returns (uint256[] memory collateralsPayoutRate) {
@@ -169,7 +169,7 @@ contract MarginCalculator is Ownable {
      * @notice returns the amount of collateral that can be removed from an actual or a theoretical vault
      * @dev return amount is denominated in the collateral asset for the onToken in the vault, or the collateral asset in the vault
      * @param _vault theoretical vault that needs to be checked
-     * @return excessCollateral the amount by which the margin is above or below the required amount
+     * @return excessCollateral - the amount by which the margin is above or below the required amount
      */
     function getExcessCollateral(MarginVault.Vault memory _vault) external view returns (uint256[] memory) {
         bool hasExpiredShort = ONtokenInterface(_vault.shortONtoken).expiryTimestamp() <= block.timestamp;
@@ -256,24 +256,6 @@ contract MarginCalculator is Ownable {
     }
 
     /**
-     * @notice calculates sum of uint256 array with corresponing elemnt of second array
-     * @param _array uint256[] memory
-     * @param _array2 uint256[] memory
-     * @return uint256[] memory array with elements sum of input arrays
-     */
-    function uint256ArraysAdd(uint256[] memory _array, uint256[] memory _array2)
-        internal
-        pure
-        returns (uint256[] memory)
-    {
-        uint256[] memory result = new uint256[](_array.length);
-        for (uint256 i = 0; i < _array.length; i++) {
-            result[i] = _array[i].add(_array2[i]);
-        }
-        return result;
-    }
-
-    /**
      * @notice return the cash value of an expired onToken, denominated in strike asset
      * @dev for a call, return Max (0, underlyingPriceInStrike - onToken.strikePrice)
      * @dev for a put, return Max(0, onToken.strikePrice - underlyingPriceInStrike)
@@ -282,7 +264,7 @@ contract MarginCalculator is Ownable {
      * @param _expiryTimestamp onToken expiry timestamp
      * @param _strikePrice onToken strike price
      * @param _strikePrice true if onToken is put otherwise false
-     * @return cash value of an expired onToken, denominated in the strike asset
+     * @return cash value of an expired onToken, denominated in the strike asset, as FPI.FixedPointInt
      */
     function _getExpiredCashValue(
         address _underlying, // WETH
@@ -636,7 +618,10 @@ contract MarginCalculator is Ownable {
      * required to mint amount of onToken for a given vault
      * @param _vaultDetails details of the vault to calculate for
      * @param _shortAmount short onToken amount to be covered
-     * @return collateralsAmountsRequired, collateralsValuesRequired, collateralsAmountsUsed, collateralsValuesUsed
+     * @return collateralsAmountsRequired collaterals amounts required to be available in vault to cover short amount
+     * @return collateralsValuesRequired collaterals values (in strike asset) required to be available in vault to cover short amount
+     * @return collateralsAmountsUsed collaterals amounts used in vault to cover short amount, combining  collateralsAmountsRequired and collaterals amounts used from long
+     * @return collateralsValuesUsed  collaterals values (in strike asset) used to cover short amount, combining  collateralsValuesRequired and collaterals values used from long
      */
     function _getCollateralsToCoverShort(VaultDetails memory _vaultDetails, uint256 _shortAmount)
         internal
@@ -678,7 +663,10 @@ contract MarginCalculator is Ownable {
      * @param _vaultDetails details of the vault to calculate for
      * @param _valueRequired value required to cover, denominated in strike asset
      * @param _toUseLongAmount long amounts that can be used to fully or partly cover the value
-     * @return collateralsAmountsRequired, collateralsValuesRequired, collateralsAmountsUsed, collateralsValuesUsed
+     * @return collateralsAmountsRequired collaterals amounts required to be available in vault to cover value required
+     * @return collateralsValuesRequired collaterals values (in strike asset) required to be available in vault to cover value required
+     * @return collateralsAmountsUsed collaterals amounts used in vault to cover value required, combining  collateralsAmountsRequired and collaterals amounts used from long
+     * @return collateralsValuesUsed  collaterals values (in strike asset) used to cover value required, combining  collateralsValuesRequired and collaterals values used from long
      */
     function _getCollateralsToCoverValue(
         VaultDetails memory _vaultDetails,
@@ -761,8 +749,8 @@ contract MarginCalculator is Ownable {
      * not including value and amounts from vault's long, values are denominated in strike asset
      * @param _vaultDetails details of the vault to calculate for
      * @return availableCollateralsAmounts - amounts of collaterals available in vault
-     * availableCollateralsValues - how much worth available vaults collateral in strike asset
-     * availableCollateralTotalValue - how much value totally available in vault in valueAsset
+     * @return availableCollateralsValues - how much worth available vaults collateral in strike asset
+     * @return availableCollateralTotalValue - how much value totally available in vault in valueAsset
      */
     function _calculateVaultAvailableCollateralsValues(VaultDetails memory _vaultDetails)
         internal
@@ -827,6 +815,7 @@ contract MarginCalculator is Ownable {
      * marginRequired = max( (short amount * short strike) - (long strike * min (short amount, long amount)) , 0 )
      *
      * @return margin requirement denominated in the strike asset
+     * @return long amount used to cover short
      */
     function _getPutSpreadMarginRequired(
         uint256 _shortAmount,
@@ -858,6 +847,7 @@ contract MarginCalculator is Ownable {
      *
      * @dev if long strike = 0, return max( short amount - long amount, 0)
      * @return margin requirement denominated in the underlying asset
+     * @return long amount used to cover short
      */
     function _getCallSpreadMarginRequired(
         uint256 _shortAmount,
@@ -896,9 +886,8 @@ contract MarginCalculator is Ownable {
 
     /**
      * @dev calculates current onToken's amount collaterization with it's collaterals
-     * @return (collateralsAmountsUsed, collateralsValuesUsed)
-     * collateralsAmountsUsed - is amounts of each collateral used to cover onToken
-     * collateralsValuesUsed - is value (in strike asset) of each collateral used to cover onToken
+     * @return collateralsAmountsUsed - is amounts of each collateral used to cover onToken
+     * @return collateralsValuesUsed - is value (in strike asset) of each collateral used to cover onToken
      */
     function _calculateONtokenCollaterizationsOfAmount(address _onToken, FPI.FixedPointInt memory _amount)
         internal
