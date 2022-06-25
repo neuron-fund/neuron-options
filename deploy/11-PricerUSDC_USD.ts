@@ -25,6 +25,7 @@ const deploy: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const lockingPeriod = 0
   const disputePeriod = 60 * 20
   // await oracle.setAssetPricer(asset, pricerDeployResult.address)
+  await oracle.setStablePrice(asset, '100000000')
   await oracle.setLockingPeriod(pricerDeployResult.address, lockingPeriod)
   await oracle.setDisputePeriod(pricerDeployResult.address, disputePeriod)
 }
