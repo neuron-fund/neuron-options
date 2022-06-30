@@ -45,13 +45,8 @@ const config: HardhatUserConfig = {
   networks: {
     hardhat: {
       chainId: 1337,
-      forking: process.env.ALCHEMY && {
-        url: process.env.ALCHEMY,
-        // Hardhat advices to set block number for testing
-        // "You're running a network fork starting from the latest block.
-        // Performance may degrade due to fetching data from the network with each run.
-        // If connecting to an archival node (e.g. Alchemy), we strongly recommend setting
-        // blockNumber to a fixed value to increase performance with a local cache."
+      forking: {
+        url: process.env.RPC_URL,
         blockNumber: Number(process.env.FORK_BLOCK_NUMBER) || undefined,
       },
       loggingEnabled: true,
