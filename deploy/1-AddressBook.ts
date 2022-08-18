@@ -4,8 +4,8 @@ import { DeployArgs } from '../types'
 import { AddressBook__factory } from '../typechain-types'
 import { namedAccountsSigners } from '../utils/hardhat'
 
-const deploy: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { ethers, deployments, getNamedAccounts } = hre
+const deploy: DeployFunction = async function(hre: HardhatRuntimeEnvironment) {
+  const { deployments, getNamedAccounts } = hre
   const { deploy } = deployments
   const { deployer } = await namedAccountsSigners(getNamedAccounts)
 
