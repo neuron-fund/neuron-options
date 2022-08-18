@@ -15,7 +15,7 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
     actionTester = (await ActionTester.deploy()) as ActionTesterType
     await actionTester.deployed()
   })
-  describe('Parse Deposit Arguments', function () {
+  describe('Parse Deposit Arguments', function() {
     it('should not be able to parse a non Deposit action', async () => {
       //const {deployer: owner} = await getNamedAccounts();
       const data = {
@@ -26,7 +26,6 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
         vaultId: '0',
         amounts: ['10', '10'],
         index: '0',
-        data: ZERO_ADDR,
       }
       await expect(actionTester.testParseDespositCollateralAction(data)).to.be.revertedWith('A8')
     })
@@ -40,7 +39,6 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
         vaultId: '0',
         amounts: ['10', '10'],
         index: '0',
-        data: ZERO_ADDR,
       }
       await expect(actionTester.testParseDespositCollateralAction(data)).to.be.revertedWith('A9')
     })
@@ -61,7 +59,6 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
         vaultId: vaultId,
         amounts: amounts,
         index: index,
-        data: bytesArgs,
       }
 
       await actionTester.testParseDespositLongAction(data)
@@ -91,7 +88,6 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
         vaultId: vaultId,
         amounts: amounts,
         index: index,
-        data: bytesArgs,
       }
 
       await actionTester.testParseDespositCollateralAction(data)
@@ -115,7 +111,6 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
         vaultId: '0',
         amounts: ['10', '10'],
         index: '0',
-        data: ZERO_ADDR,
       }
       await expect(actionTester.testParseOpenVaultAction(data)).to.be.revertedWith('A1')
     })
@@ -136,7 +131,6 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
         vaultId: vaultId,
         amounts: amounts,
         index: index,
-        data: bytesArgs,
       }
       await expect(actionTester.testParseOpenVaultAction(data)).to.be.revertedWith('A2')
     })
@@ -158,7 +152,6 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
         vaultId: vaultId,
         amounts: amounts,
         index: index,
-        data: bytesArgs,
       }
 
       await actionTester.testParseOpenVaultAction(data)
@@ -181,7 +174,6 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
         vaultId: '0',
         amounts: ['10'],
         index: '0',
-        data: ZERO_ADDR,
       }
 
       await expect(actionTester.testParseRedeemAction(data)).to.be.revertedWith('A13')
@@ -196,7 +188,6 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
         vaultId: '0',
         amounts: ['10'],
         index: '0',
-        data: ZERO_ADDR,
       }
       await expect(actionTester.testParseRedeemAction(data)).to.be.revertedWith('A26')
 
@@ -227,7 +218,6 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
         vaultId: vaultId,
         amounts: amounts,
         index: index,
-        data: bytesArgs,
       }
 
       await actionTester.testParseRedeemAction(data)
@@ -256,7 +246,6 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
         vaultId: vaultId,
         amounts: amounts,
         index: index,
-        data: bytesArgs,
       }
 
       await expect(actionTester.testParseSettleVaultAction(data)).to.be.revertedWith('A15')
@@ -278,7 +267,6 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
         vaultId: vaultId,
         amounts: amounts,
         index: index,
-        data: bytesArgs,
       }
 
       await expect(actionTester.testParseSettleVaultAction(data)).to.be.revertedWith('A16')
@@ -300,7 +288,6 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
         vaultId: vaultId,
         amounts: amounts,
         index: index,
-        data: bytesArgs,
       }
 
       await actionTester.testParseSettleVaultAction(data)
@@ -327,7 +314,6 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
         vaultId: vaultId,
         amounts: amounts,
         index: index,
-        data: bytesArgs,
       }
 
       await expect(actionTester.testParseSettleVaultAction(data)).to.be.revertedWith('A17')
@@ -351,7 +337,6 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
         vaultId: vaultId,
         amounts: amounts,
         index: index,
-        data: bytesArgs,
       }
 
       await expect(actionTester.testParseWithdrawAction(data)).to.be.revertedWith('A10')
@@ -373,7 +358,6 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
         vaultId: vaultId,
         amounts: amounts,
         index: index,
-        data: bytesArgs,
       }
 
       await expect(actionTester.testParseWithdrawAction(data)).to.be.revertedWith('A12')
@@ -395,7 +379,6 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
         vaultId: vaultId,
         amounts: amounts,
         index: index,
-        data: bytesArgs,
       }
 
       await expect(actionTester.testParseWithdrawAction(data)).to.be.revertedWith('A11')
@@ -417,7 +400,6 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
         vaultId: vaultId,
         amounts: amounts,
         index: index,
-        data: bytesArgs,
       }
 
       await actionTester.testParseWithdrawLong(data)
@@ -444,7 +426,6 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
         vaultId: vaultId,
         amounts: amounts,
         index: index,
-        data: bytesArgs,
       }
 
       await actionTester.testParseWithdrawAction(data)
@@ -469,7 +450,6 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
         vaultId: '0',
         amounts: ['10', '10'],
         index: '0',
-        data: ZERO_ADDR,
       }
 
       await expect(actionTester.testParseMintAction(data)).to.be.revertedWith('A4')
@@ -491,7 +471,6 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
         vaultId: vaultId,
         amounts: amounts,
         index: index,
-        data: bytesArgs,
       }
 
       await expect(actionTester.testParseMintAction(data)).to.be.revertedWith('A5')
@@ -514,7 +493,6 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
         vaultId: vaultId,
         amounts: amounts,
         index: index,
-        data: bytesArgs,
       }
 
       await actionTester.testParseMintAction(data)
@@ -544,7 +522,6 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
         vaultId: vaultId,
         amounts: amounts,
         index: index,
-        data: bytesArgs,
       }
 
       await actionTester.testParseMintAction(data)
@@ -576,7 +553,6 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
         vaultId: vaultId,
         amounts: amounts,
         index: index,
-        data: bytesArgs,
       }
 
       await expect(actionTester.testParseBurnAction(data)).to.be.revertedWith('A6')
@@ -598,7 +574,6 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
         vaultId: vaultId,
         amounts: amounts,
         index: index,
-        data: bytesArgs,
       }
 
       await expect(actionTester.testParseBurnAction(data)).to.be.revertedWith('A7')
@@ -620,7 +595,6 @@ contract('Actions', ([owner, random, random_user, random_user2, random_user3]) =
         vaultId: vaultId,
         amounts: amounts,
         index: index,
-        data: bytesArgs,
       }
 
       await actionTester.testParseBurnAction(data)

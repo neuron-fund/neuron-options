@@ -19,7 +19,6 @@ export type ActionArgsKeys = keyof ActionArgsStruct
 export const ActionDefaults = {
   amounts: [],
   assets: [],
-  data: AddressZero,
   index: 0,
   owner: AddressZero,
   secondAddress: AddressZero,
@@ -38,29 +37,27 @@ export type UnMappedActionKeys<T extends ActionParamsMapping> = keyof Omit<typeo
 export type ActionDefaults<T extends ActionParamsMapping> = Pick<typeof ActionDefaults, UnMappedActionKeys<T>>
 export const mapActionParams = <T extends ActionParamsMapping>(
   mapping: T,
-  values: GetActionArgsParams<T>
+  values: GetActionArgsParams<T>,
 ): Pick<ActionArgsStruct, T[keyof T]> =>
   Object.keys(mapping).reduce((acc, key) => {
     acc[mapping[key]] = values[key]
     return acc
   }, {}) as Pick<ActionArgsStruct, T[keyof T]>
 
-export const getActionFactory =
-  <T extends ActionParamsMapping>(
-    actionType: ActionType,
-    mappings: T
-  ): ((values: GetActionArgsParams<T>) => ActionArgsStruct) =>
-  (values: GetActionArgsParams<T>) => ({
-    actionType: actionType,
-    ...ActionDefaults,
-    assets: [...ActionDefaults.assets],
-    amounts: [...ActionDefaults.amounts],
-    ...mapActionParams(mappings, values),
-  })
+export const getActionFactory = <T extends ActionParamsMapping>(
+  actionType: ActionType,
+  mappings: T,
+): ((values: GetActionArgsParams<T>) => ActionArgsStruct) => (values: GetActionArgsParams<T>) => ({
+  actionType: actionType,
+  ...ActionDefaults,
+  assets: [...ActionDefaults.assets],
+  amounts: [...ActionDefaults.amounts],
+  ...mapActionParams(mappings, values),
+})
 
 export const getAction = <T extends keyof DefinedActionsMappings>(
   actionType: T,
-  values: GetActionArgsParams<DefinedActionsMappings[T]>
+  values: GetActionArgsParams<DefinedActionsMappings[T]>,
 ) => getActionFactory(actionType, ActionTypeToMappings[actionType])(values)
 
 export const OpenVaultArgsMappings = {
