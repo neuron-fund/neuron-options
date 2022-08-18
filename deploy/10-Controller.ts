@@ -4,7 +4,7 @@ import { DeployArgs } from '../types'
 import { AddressBook, Controller__factory } from '../typechain-types'
 import { namedAccountsSigners } from '../utils/hardhat'
 
-const deploy: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
+const deploy: DeployFunction = async function(hre: HardhatRuntimeEnvironment) {
   const { ethers, deployments, getNamedAccounts } = hre
   const { deploy, get } = deployments
   const { deployer } = await namedAccountsSigners(getNamedAccounts)
@@ -26,6 +26,7 @@ const deploy: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const controller = await get('Controller')
   // Set controller to proxy address not implementation
   controller.address = await addressBook.getController()
+  await deployments.save('Controller', controller)
 }
 
 deploy.tags = ['Controller']
