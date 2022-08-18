@@ -45,8 +45,8 @@ const config: HardhatUserConfig = {
   networks: {
     hardhat: {
       chainId: 1337,
-      forking: process.env.ALCHEMY && {
-        url: process.env.ALCHEMY,
+      forking: process.env.RPC_URL && {
+        url: process.env.RPC_URL,
         // Hardhat advices to set block number for testing
         // "You're running a network fork starting from the latest block.
         // Performance may degrade due to fetching data from the network with each run.

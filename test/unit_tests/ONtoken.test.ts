@@ -62,7 +62,7 @@ contract('ONtoken', ([deployer, controller, user1, user2, random]) => {
         isPut,
         {
           from: deployer,
-        }
+        },
       )
       assert.equal(await onToken.underlyingAsset(), weth.address)
       assert.equal(await onToken.strikeAsset(), usdc.address)
@@ -107,14 +107,14 @@ contract('ONtoken', ([deployer, controller, user1, user2, random]) => {
     it('should revert when init is called again with the same parameters', async () => {
       await expectRevert(
         onToken.init(addressBookAddr, weth.address, usdc.address, [usdc.address], ['0'], strikePrice, expiry, isPut),
-        'Initializable: contract is already initialized'
+        'Initializable: contract is already initialized',
       )
     })
 
     it('should revert when init is called again with different parameters', async () => {
       await expectRevert(
         onToken.init(addressBookAddr, usdc.address, weth.address, [weth.address], ['0'], strikePrice, expiry, false),
-        'Initializable: contract is already initialized'
+        'Initializable: contract is already initialized',
       )
     })
 
@@ -131,7 +131,7 @@ contract('ONtoken', ([deployer, controller, user1, user2, random]) => {
         false,
         {
           from: deployer,
-        }
+        },
       )
       assert.equal(await callOption.name(), `WETHUSDC 25-September-2020 200Call WETH Collateral`)
       assert.equal(await callOption.symbol(), `oWETHUSDC/WETH-25SEP20-200C`)
@@ -150,7 +150,7 @@ contract('ONtoken', ([deployer, controller, user1, user2, random]) => {
         false,
         {
           from: deployer,
-        }
+        },
       )
       assert.equal(await callOption.name(), `WETHUSDC 25-September-2020 200Call MULTI02 Collateral`)
       assert.equal(await callOption.symbol(), `oWETHUSDC/MULTI02-25SEP20-200C`)
@@ -202,7 +202,7 @@ contract('ONtoken', ([deployer, controller, user1, user2, random]) => {
         true,
         {
           from: deployer,
-        }
+        },
       )
       assert.equal(await onToken.name(), `WETHUSDC 25-September-2020 0Put USDC Collateral`)
       assert.equal(await onToken.symbol(), `oWETHUSDC/USDC-25SEP20-0P`)
@@ -222,7 +222,7 @@ contract('ONtoken', ([deployer, controller, user1, user2, random]) => {
         isPut,
         {
           from: deployer,
-        }
+        },
       )
       assert.equal(await putOption.name(), `WETHUSDC 25-September-2020 200Put USDC Collateral`)
       assert.equal(await putOption.symbol(), `oWETHUSDC/USDC-25SEP20-200P`)
@@ -235,7 +235,7 @@ contract('ONtoken', ([deployer, controller, user1, user2, random]) => {
         put.init(addressBookAddr, random, usdc.address, [usdc.address], ['0'], strikePrice, expiry, isPut, {
           from: deployer,
         }),
-        'revert'
+        'revert',
       )
     })
 
@@ -264,7 +264,7 @@ contract('ONtoken', ([deployer, controller, user1, user2, random]) => {
         isPut,
         {
           from: deployer,
-        }
+        },
       )
       assert.equal(await onToken.name(), `WETHUSDC 31-December-2345 200Put USDC Collateral`)
       assert.equal(await onToken.symbol(), `oWETHUSDC/USDC-31DEC45-200P`)
@@ -284,7 +284,7 @@ contract('ONtoken', ([deployer, controller, user1, user2, random]) => {
         true,
         {
           from: deployer,
-        }
+        },
       )
       assert.equal(await onToken.symbol(), 'oWETHUSDC/USDC-29JUL09-200P')
       assert.equal(await onToken.name(), 'WETHUSDC 29-July-2209 200Put USDC Collateral')
@@ -304,7 +304,7 @@ contract('ONtoken', ([deployer, controller, user1, user2, random]) => {
         isPut,
         {
           from: deployer,
-        }
+        },
       )
       assert.equal(await January.name(), 'WETHUSDC 01-January-2030 200Put USDC Collateral')
       assert.equal(await January.symbol(), 'oWETHUSDC/USDC-01JAN30-200P')
@@ -321,7 +321,7 @@ contract('ONtoken', ([deployer, controller, user1, user2, random]) => {
         isPut,
         {
           from: deployer,
-        }
+        },
       )
       assert.equal(await February.name(), 'WETHUSDC 01-February-2030 200Put USDC Collateral')
       assert.equal(await February.symbol(), 'oWETHUSDC/USDC-01FEB30-200P')
@@ -338,7 +338,7 @@ contract('ONtoken', ([deployer, controller, user1, user2, random]) => {
         isPut,
         {
           from: deployer,
-        }
+        },
       )
       assert.equal(await March.name(), 'WETHUSDC 01-March-2030 200Put USDC Collateral')
       assert.equal(await March.symbol(), 'oWETHUSDC/USDC-01MAR30-200P')
@@ -355,7 +355,7 @@ contract('ONtoken', ([deployer, controller, user1, user2, random]) => {
         isPut,
         {
           from: deployer,
-        }
+        },
       )
       assert.equal(await April.name(), 'WETHUSDC 01-April-2030 200Put USDC Collateral')
       assert.equal(await April.symbol(), 'oWETHUSDC/USDC-01APR30-200P')
@@ -372,7 +372,7 @@ contract('ONtoken', ([deployer, controller, user1, user2, random]) => {
         isPut,
         {
           from: deployer,
-        }
+        },
       )
       assert.equal(await May.name(), 'WETHUSDC 01-May-2030 200Put USDC Collateral')
       assert.equal(await May.symbol(), 'oWETHUSDC/USDC-01MAY30-200P')
@@ -389,7 +389,7 @@ contract('ONtoken', ([deployer, controller, user1, user2, random]) => {
         isPut,
         {
           from: deployer,
-        }
+        },
       )
       assert.equal(await June.name(), 'WETHUSDC 01-June-2030 200Put USDC Collateral')
       assert.equal(await June.symbol(), 'oWETHUSDC/USDC-01JUN30-200P')
@@ -406,7 +406,7 @@ contract('ONtoken', ([deployer, controller, user1, user2, random]) => {
         isPut,
         {
           from: deployer,
-        }
+        },
       )
       assert.equal(await July.name(), 'WETHUSDC 01-July-2030 200Put USDC Collateral')
       assert.equal(await July.symbol(), 'oWETHUSDC/USDC-01JUL30-200P')
@@ -423,7 +423,7 @@ contract('ONtoken', ([deployer, controller, user1, user2, random]) => {
         isPut,
         {
           from: deployer,
-        }
+        },
       )
       assert.equal(await August.name(), 'WETHUSDC 01-August-2030 200Put USDC Collateral')
       assert.equal(await August.symbol(), 'oWETHUSDC/USDC-01AUG30-200P')
@@ -440,7 +440,7 @@ contract('ONtoken', ([deployer, controller, user1, user2, random]) => {
         isPut,
         {
           from: deployer,
-        }
+        },
       )
       assert.equal(await September.name(), 'WETHUSDC 01-September-2030 200Put USDC Collateral')
       assert.equal(await September.symbol(), 'oWETHUSDC/USDC-01SEP30-200P')
@@ -457,7 +457,7 @@ contract('ONtoken', ([deployer, controller, user1, user2, random]) => {
         isPut,
         {
           from: deployer,
-        }
+        },
       )
       assert.equal(await October.name(), 'WETHUSDC 01-October-2030 200Put USDC Collateral')
       assert.equal(await October.symbol(), 'oWETHUSDC/USDC-01OCT30-200P')
@@ -474,7 +474,7 @@ contract('ONtoken', ([deployer, controller, user1, user2, random]) => {
         isPut,
         {
           from: deployer,
-        }
+        },
       )
       assert.equal(await November.name(), 'WETHUSDC 01-November-2030 200Put USDC Collateral')
       assert.equal(await November.symbol(), 'oWETHUSDC/USDC-01NOV30-200P')
@@ -491,7 +491,7 @@ contract('ONtoken', ([deployer, controller, user1, user2, random]) => {
         isPut,
         {
           from: deployer,
-        }
+        },
       )
       assert.equal(await December.name(), 'WETHUSDC 01-December-2030 200Put USDC Collateral')
       assert.equal(await December.symbol(), 'oWETHUSDC/USDC-01DEC30-200P')
@@ -531,25 +531,25 @@ contract('ONtoken', ([deployer, controller, user1, user2, random]) => {
       await onToken.mintONtoken(user1, amountToMint, [collateralAmount2], [collateralValue2], { from: controller })
       assert.equal(
         (await onToken.getCollateralsAmounts())[0].toString(),
-        (collateralAmount + collateralAmount2).toString()
+        (collateralAmount + collateralAmount2).toString(),
       )
       assert.equal(
         (await onToken.getCollateralsValues())[0].toString(),
-        (collateralValue + collateralValue2).toString()
+        (collateralValue + collateralValue2).toString(),
       )
     })
 
     it('should revert when minting from random address', async () => {
       await expectRevert(
         onToken.mintONtoken(user1, amountToMint, [collateralAmount], [collateralValue], { from: random }),
-        'ONtoken: Only Controller can mint ONtokens'
+        'ONtoken: Only Controller can mint ONtokens',
       )
     })
 
     it('should revert when someone try to mint for himself.', async () => {
       await expectRevert(
         onToken.mintONtoken(user1, amountToMint, [collateralAmount], [collateralValue], { from: user1 }),
-        'ONtoken: Only Controller can mint ONtokens'
+        'ONtoken: Only Controller can mint ONtokens',
       )
     })
   })
@@ -565,14 +565,14 @@ contract('ONtoken', ([deployer, controller, user1, user2, random]) => {
     it('should revert when calling transferFrom with no allownace', async () => {
       await expectRevert(
         onToken.transferFrom(user2, user1, amountToMint, { from: random }),
-        'ERC20: transfer amount exceeds allowance'
+        'ERC20: insufficient allowance',
       )
     })
 
     it('should revert when controller call transferFrom with no allownace', async () => {
       await expectRevert(
         onToken.transferFrom(user2, user1, amountToMint, { from: controller }),
-        'ERC20: transfer amount exceeds allowance'
+        'ERC20: insufficient allowance',
       )
     })
 
@@ -589,20 +589,25 @@ contract('ONtoken', ([deployer, controller, user1, user2, random]) => {
     it('should revert when burning from random address', async () => {
       await expectRevert(
         onToken.burnONtoken(user1, amountToMint, { from: random }),
-        'ONtoken: Only Controller can burn ONtokens'
+        'ONtoken: Only Controller can burn ONtokens',
       )
     })
 
     it('should revert when someone trys to burn for himeself', async () => {
       await expectRevert(
         onToken.burnONtoken(user1, amountToMint, { from: user1 }),
-        'ONtoken: Only Controller can burn ONtokens'
+        'ONtoken: Only Controller can burn ONtokens',
       )
     })
 
     it('should be able to burn tokens from controller address', async () => {
       const balanceBeforeBurn = await onToken.balanceOf(user1)
-      assert.equal(balanceBeforeBurn.toString(), BigNumber.from(amountToMint).mul(2).toString())
+      assert.equal(
+        balanceBeforeBurn.toString(),
+        BigNumber.from(amountToMint)
+          .mul(2)
+          .toString(),
+      )
       await onToken.burnONtoken(user1, balanceBeforeBurn, { from: controller })
       const balance = await onToken.balanceOf(user1)
       assert.equal(balance.toString(), '0')

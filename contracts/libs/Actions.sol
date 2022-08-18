@@ -70,8 +70,6 @@ library Actions {
         uint256 vaultId;
         // amount of asset that is to be transfered
         uint256[] amounts;
-        // any other data that needs to be passed in for arbitrary function calls
-        bytes data;
     }
 
     struct MintArgs {

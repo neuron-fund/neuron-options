@@ -13,7 +13,7 @@ import { testDeploy } from './helpers/fixtures'
 import { getAssetFromWhale } from './helpers/funds'
 import { CreateONtokenParamsObject, findONToken, whitelistAndCreateONtoken } from './helpers/onToken'
 
-describe('Open Vault, Deposit collateral, Mint ONtoken', function () {
+describe('Open Vault, Deposit collateral, Mint ONtoken', function() {
   it('Open Vault, Deposit collateral, Mint ONtoken', async () => {
     const { user, deployer } = await namedAccountsSigners(getNamedAccounts)
     const { controller, whitelist, onTokenFactory, marginPool } = await testDeploy()
@@ -24,6 +24,7 @@ describe('Open Vault, Deposit collateral, Mint ONtoken', function () {
       strikeAsset: USDC,
       strikePriceFormatted: 3800,
       expiry: createValidExpiry(7),
+      collateralConstraints: [0, 0],
       isPut: true,
     }
 
@@ -34,28 +35,28 @@ describe('Open Vault, Deposit collateral, Mint ONtoken', function () {
         protocolOwner: deployer,
         onTokenCreator: user,
       },
-      onTokenParams
+      onTokenParams,
     )
 
     const onToken = await findONToken(user, onTokenFactory, onTokenParams)
     const collateralAmountsNoDecimals = [3800, 3800]
     const collateralAmounts = await Promise.all(
       collateralAmountsNoDecimals.map(async (amount, i) =>
-        addTokenDecimalsToAmount(onTokenParams.collateralAssets[i], amount, user)
-      )
+        addTokenDecimalsToAmount(onTokenParams.collateralAssets[i], amount, user),
+      ),
     )
 
     const amountOfONTokensToMint = parseUnits('1', BigNumber.from(8))
 
     // Transfer collateral tokens from whales to user
     await Promise.all(
-      collateralAmounts.map((amount, i) => getAssetFromWhale(onTokenParams.collateralAssets[i], amount, user.address))
+      collateralAmounts.map((amount, i) => getAssetFromWhale(onTokenParams.collateralAssets[i], amount, user.address)),
     )
     // Approve collateral tokens for spending by controller
     await Promise.all(
       collateralAmounts.map((amount, i) =>
-        approveERC20(onTokenParams.collateralAssets[i], amount, user, marginPool.address)
-      )
+        approveERC20(onTokenParams.collateralAssets[i], amount, user, marginPool.address),
+      ),
     )
 
     const vaultId = 1
@@ -76,7 +77,6 @@ describe('Open Vault, Deposit collateral, Mint ONtoken', function () {
         owner: user.address,
         amount: [amountOfONTokensToMint],
         vaultId,
-        onToken: [onToken.address],
         to: user.address,
       }),
     ]
