@@ -15,7 +15,6 @@ export const whales = {
 export type AseetsWithWhales = keyof typeof whales
 
 export const getAssetFromWhale = async (asset: string, amount: BigNumber, recipient: string) => {
-  const localSigner = (await ethers.getSigners())[0]
   const whaleAddress = whales[asset]
   if (!whaleAddress) {
     throw new Error(`whale for ${asset} is not defined`)
